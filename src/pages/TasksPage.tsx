@@ -4,12 +4,12 @@ import { Task, Project, User, TaskStatus, TaskPriority } from '../types';
 import { api } from '../services/api';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { PriorityBadge } from '../components/common/PriorityBadge';
-import { ProgressBar } from '../components/common/ProgressBar';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { EmptyState } from '../components/common/EmptyState';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { TaskModal } from '../components/tasks/TaskModal';
 import { SubmitTaskModal } from '../components/tasks/SubmitTaskModal';
+import { ImportTasksModal } from '../components/tasks/ImportTasksModal';
 import {
   CheckSquare,
   Search,
@@ -20,6 +20,8 @@ import {
   Trash2,
   Filter,
   Send,
+  FileSpreadsheet,
+  Download,
 } from 'lucide-react';
 
 interface TasksPageProps {
@@ -44,6 +46,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(openCreateModalDirectly);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -115,17 +118,29 @@ export const TasksPage: React.FC<TasksPageProps> = ({
         </div>
 
         {canManage && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingTask(null);
-              setIsModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-600 text-black text-sm font-bold rounded-lg shadow-sm border border-gold-600 transition-colors shrink-0 cursor-pointer btn-hover-lift"
-          >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
-            Create Task
-          </button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsImportModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gold-100 text-black text-xs sm:text-sm font-bold rounded-lg border border-gold-300 transition-colors shrink-0 cursor-pointer shadow-xs"
+              title="Bulk import tasks from Excel file (.xlsx, .xls)"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-gold-700" />
+              Import from Excel
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingTask(null);
+                setIsModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-600 text-black text-xs sm:text-sm font-bold rounded-lg shadow-sm border border-gold-600 transition-colors shrink-0 cursor-pointer btn-hover-lift"
+            >
+              <Plus className="h-4 w-4 stroke-[2.5]" />
+              Create Task
+            </button>
+          </div>
         )}
       </div>
 
@@ -249,21 +264,13 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                 </div>
               </div>
 
-              {/* Progress, Status, Actions */}
+              {/* Status and Actions */}
               <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-gold-200">
-                <div className="w-28 sm:w-36">
-                  <div className="flex justify-between text-[11px] mb-1">
-                    <span className="text-black/60 font-medium">Progress</span>
-                    <span className="font-extrabold text-black">{task.progress}%</span>
-                  </div>
-                  <ProgressBar progress={task.progress} size="sm" showLabel={false} />
-                </div>
-
                 {isClient ? (
                   <StatusBadge status={task.status} size="sm" />
                 ) : user?.role === 'TEAM_MEMBER' ? (
                   <div className="flex items-center gap-2">
-                    {task.progress === 100 && task.status !== 'REVIEW' && task.status !== 'COMPLETED' && task.assignedToId === user?.id && (
+                    {task.status !== 'REVIEW' && task.status !== 'COMPLETED' && task.assignedToId === user?.id && (
                       <button
                         type="button"
                         onClick={() => setSubmitTask(task)}
@@ -350,6 +357,15 @@ export const TasksPage: React.FC<TasksPageProps> = ({
         task={editingTask}
         projects={projects}
         users={users}
+      />
+
+      {/* Import Tasks Modal */}
+      <ImportTasksModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={loadData}
+        projects={projects}
+        defaultProjectId={projectFilter !== 'ALL' ? projectFilter : undefined}
       />
 
       {/* Submit Task for Client Approval Modal */}

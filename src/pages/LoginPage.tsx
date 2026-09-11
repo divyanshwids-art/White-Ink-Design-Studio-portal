@@ -3,11 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { BrandLogo } from '../components/common/BrandLogo';
 
-interface LoginPageProps {
-  onNavigateToRegister: () => void;
-}
-
-export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) => {
+export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -98,19 +94,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister }) =>
               <ArrowRight className="h-4 w-4 stroke-[2.5]" />
             </button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-xs text-black/80 font-medium">
-              Don&apos;t have an account?{' '}
-              <button
-                type="button"
-                onClick={onNavigateToRegister}
-                className="text-black font-extrabold hover:text-gold-700 underline cursor-pointer"
-              >
-                Register your company
-              </button>
-            </p>
-          </div>
         </div>
       </div>
     </div>

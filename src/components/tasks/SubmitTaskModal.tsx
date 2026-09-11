@@ -18,10 +18,6 @@ export const SubmitTaskModal: React.FC<SubmitTaskModalProps> = ({ task, onClose,
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (task.progress !== 100) {
-      setError('Task progress must be 100% before submission.');
-      return;
-    }
     if (!submissionDescription.trim() || !proofDetails.trim()) {
       setError('Completion description and proof details are required.');
       return;
@@ -46,7 +42,7 @@ export const SubmitTaskModal: React.FC<SubmitTaskModalProps> = ({ task, onClose,
     <Modal isOpen onClose={onClose} title="Submit for Client Approval" subtitle="Submit this completed task to the client for approval." maxWidth="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="p-3 rounded-lg bg-gold-50 border border-gold-200 text-xs font-semibold text-black/75">
-          {task.title} is at {task.progress}% progress. Include enough detail for the client to verify the completed work.
+          Submitting deliverable for &quot;{task.title}&quot;. Include enough detail and proof for the client to review and approve the completed work.
         </div>
         {error && <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-sm font-semibold text-rose-700">{error}</div>}
         <label className="block text-xs font-bold uppercase tracking-wider text-black">
@@ -63,7 +59,7 @@ export const SubmitTaskModal: React.FC<SubmitTaskModalProps> = ({ task, onClose,
         </label>
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold border border-gold-300 rounded-lg hover:bg-gold-50 cursor-pointer">Cancel</button>
-          <button type="submit" disabled={isSubmitting || task.progress !== 100} className="px-4 py-2 text-xs font-bold bg-gold-500 border border-gold-600 rounded-lg hover:bg-gold-600 disabled:opacity-50 cursor-pointer">{isSubmitting ? 'Submitting...' : 'Submit for Client Approval'}</button>
+          <button type="submit" disabled={isSubmitting} className="px-4 py-2 text-xs font-bold bg-gold-500 border border-gold-600 rounded-lg hover:bg-gold-600 disabled:opacity-50 cursor-pointer">{isSubmitting ? 'Submitting...' : 'Submit for Client Approval'}</button>
         </div>
       </form>
     </Modal>

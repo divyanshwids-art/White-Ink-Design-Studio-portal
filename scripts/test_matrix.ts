@@ -42,8 +42,8 @@ async function runTests() {
     }
   }
 
-  // 1. Direct registration endpoint creates CLIENT_ADMIN + Client
-  await testCase('Public register creates 1 Client and 1 CLIENT_ADMIN with clientId', async () => {
+  // 1. Direct registration endpoint is disabled (403 Forbidden)
+  await testCase('Public register is disabled (returns 403 Forbidden)', async () => {
     const unique = Date.now();
     const res = await fetch(`${BASE}/api/auth/register`, {
       method: 'POST',
@@ -56,12 +56,10 @@ async function runTests() {
       })
     });
     const data = await res.json();
-    if (res.status !== 201) throw new Error(`Expected 201, got ${res.status}: ${JSON.stringify(data)}`);
-    if (data.user.role !== 'CLIENT_ADMIN') throw new Error(`Expected role CLIENT_ADMIN, got ${data.user.role}`);
-    if (!data.user.clientId) throw new Error(`Expected user.clientId to be set, got ${data.user.clientId}`);
-    // Clean up created user and client
-    await db.deleteUser(data.user.id);
-    await db.deleteClient(data.user.clientId);
+    if (res.status !== 403) throw new Error(`Expected 403, got ${res.status}: ${JSON.stringify(data)}`);
+    if (!data.message || !data.message.toLowerCase().includes('disabled')) {
+      throw new Error(`Expected disabled message, got ${JSON.stringify(data)}`);
+    }
   });
 
   // Login actors with correct seed credentials

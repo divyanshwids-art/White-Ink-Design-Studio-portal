@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { db, TaskStatus, TaskPriority } from '../db.ts';
 import { requireAuth, AuthenticatedRequest, sanitizeUser } from '../auth.ts';
 import multer from 'multer';
+import XLSX from 'xlsx';
 import { uploadFileToDrive, ensureProjectFolderStructure } from '../services/google/drive.ts';
 import {
   sendTaskSubmittedForReviewEmail,
@@ -14,7 +15,378 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
 
+const excelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (_req, file, cb) => {
+    const isExcel =
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.mimetype === 'application/vnd.ms-excel' ||
+      file.mimetype === 'application/octet-stream' ||
+      file.originalname.toLowerCase().endsWith('.xlsx') ||
+      file.originalname.toLowerCase().endsWith('.xls');
+    if (isExcel) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files (.xlsx, .xls) are supported.'));
+    }
+  },
+});
+
 export const tasksRouter = Router();
+
+// GET /api/tasks/import-template — Download standardized Excel template for task bulk import
+tasksRouter.get('/import-template', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const currentUser = req.user!;
+  if (currentUser.role === 'CLIENT' || currentUser.role === 'CLIENT_ADMIN') {
+    return res.status(403).json({ message: 'Clients cannot access task templates.' });
+  }
+
+  const projects = db.getProjects();
+  const sampleProjectName = projects[0]?.name || 'Residential Villa Interior';
+  const teamMembers = db.getUsers().filter((u) => u.role !== 'CLIENT' && u.role !== 'CLIENT_ADMIN');
+  const sampleAssignee = teamMembers[0]?.email || 'team.member@whiteink.com';
+  const sampleAssignee2 = teamMembers[1]?.email || sampleAssignee;
+
+  const templateData = [
+    {
+      'Project Name': sampleProjectName,
+      'Task Title': 'Produce 3D Living Room Concept Renders',
+      'Description': 'Generate high resolution 3D architectural renders including day and night lighting scenes.',
+      'Assigned To (Email or Name)': sampleAssignee,
+      'Priority': 'HIGH',
+      'Status': 'TODO',
+      'Due Date (YYYY-MM-DD)': '2026-10-15',
+    },
+    {
+      'Project Name': sampleProjectName,
+      'Task Title': 'Material Specification & Moodboard Sign-off',
+      'Description': 'Prepare comprehensive FF&E material specifications and finish samples palette for client presentation.',
+      'Assigned To (Email or Name)': sampleAssignee2,
+      'Priority': 'MEDIUM',
+      'Status': 'IN_PROGRESS',
+      'Due Date (YYYY-MM-DD)': '2026-10-22',
+    },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(templateData);
+
+  ws['!cols'] = [
+    { wch: 32 }, // Project Name
+    { wch: 40 }, // Task Title
+    { wch: 60 }, // Description
+    { wch: 32 }, // Assigned To
+    { wch: 14 }, // Priority
+    { wch: 16 }, // Status
+    { wch: 22 }, // Due Date
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Tasks');
+  const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="tasks_import_template.xlsx"');
+  return res.send(buffer);
+});
+
+// POST /api/tasks/import — Bulk import tasks from Excel (.xlsx, .xls)
+tasksRouter.post('/import', requireAuth, excelUpload.single('file'), (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const currentUser = req.user!;
+    if (currentUser.role === 'CLIENT' || currentUser.role === 'CLIENT_ADMIN') {
+      return res.status(403).json({ message: 'Clients cannot import internal tasks.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload a valid Excel file (.xlsx or .xls).' });
+    }
+
+    const { defaultProjectId } = req.body;
+
+    let workbook: XLSX.WorkBook;
+    try {
+      workbook = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
+    } catch (parseErr: any) {
+      return res.status(400).json({ message: 'Failed to parse Excel file. Please ensure it is a valid .xlsx or .xls file.' });
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      return res.status(400).json({ message: 'The Excel file contains no sheets.' });
+    }
+
+    const worksheet = workbook.Sheets[sheetName];
+    const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+    if (rawRows.length === 0) {
+      return res.status(400).json({ message: 'The uploaded Excel sheet contains no data rows.' });
+    }
+
+    const allProjects = db.getProjects();
+    const allUsers = db.getUsers();
+    const allMembers = db.getAllProjectMembers();
+
+    const importedTasks: any[] = [];
+    const failedRows: { row: number; title: string; reason: string }[] = [];
+
+    // Helper for checking row value across common header aliases (case-insensitive)
+    const getRowValue = (row: any, ...keys: string[]): any => {
+      for (const k of keys) {
+        if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
+          return row[k];
+        }
+        const foundKey = Object.keys(row).find((rk) => rk.trim().toLowerCase() === k.toLowerCase());
+        if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null && String(row[foundKey]).trim() !== '') {
+          return row[foundKey];
+        }
+      }
+      return '';
+    };
+
+    rawRows.forEach((row, index) => {
+      const rowNum = index + 2; // Row 1 is header
+      const rawTitle = getRowValue(row, 'Task Title', 'Title', 'Task Name', 'Name', 'Task');
+      const title = String(rawTitle).trim();
+
+      const rawDesc = getRowValue(row, 'Description', 'Task Description', 'Details', 'Notes');
+      const description = rawDesc ? String(rawDesc).trim() : null;
+
+      const rawProject = getRowValue(row, 'Project Name', 'Project', 'Project ID', 'ProjectName') || defaultProjectId;
+      const projectIdentifier = rawProject ? String(rawProject).trim() : '';
+
+      const rawAssignee = getRowValue(
+        row,
+        'Assigned To (Email or Name)',
+        'Assigned To',
+        'Assignee',
+        'Assigned User',
+        'Assigned Email',
+        'Member',
+        'AssignedTo'
+      );
+      const assigneeIdentifier = rawAssignee ? String(rawAssignee).trim() : '';
+
+      const rawPriority = getRowValue(row, 'Priority', 'Task Priority');
+      const priorityStr = rawPriority ? String(rawPriority).trim().toUpperCase() : 'MEDIUM';
+
+      const rawStatus = getRowValue(row, 'Status', 'Task Status');
+      const statusStr = rawStatus ? String(rawStatus).trim().toUpperCase() : 'TODO';
+
+      const rawDueDate = getRowValue(row, 'Due Date (YYYY-MM-DD)', 'Due Date', 'DueDate', 'Deadline', 'Target Date');
+
+      // Validation 1: Title
+      if (!title) {
+        failedRows.push({
+          row: rowNum,
+          title: `Row ${rowNum}`,
+          reason: 'Task title is required.',
+        });
+        return;
+      }
+
+      // Validation 2: Project
+      if (!projectIdentifier) {
+        failedRows.push({
+          row: rowNum,
+          title,
+          reason: 'Project is required. Please specify a Project column or select a default project.',
+        });
+        return;
+      }
+
+      const matchedProject = allProjects.find(
+        (p) => p.id === projectIdentifier || p.name.toLowerCase() === projectIdentifier.toLowerCase()
+      );
+
+      if (!matchedProject) {
+        failedRows.push({
+          row: rowNum,
+          title,
+          reason: `Project "${projectIdentifier}" not found.`,
+        });
+        return;
+      }
+
+      // Check Team Member permission for project
+      if (currentUser.role === 'TEAM_MEMBER') {
+        const isProjectMember = allMembers.some((pm) => pm.projectId === matchedProject.id && pm.userId === currentUser.id);
+        if (!isProjectMember && matchedProject.createdById !== currentUser.id) {
+          failedRows.push({
+            row: rowNum,
+            title,
+            reason: `Forbidden: You are not assigned to project "${matchedProject.name}".`,
+          });
+          return;
+        }
+      }
+
+      // Validation 3: Assigned User
+      let assignedToId: string | null = null;
+      if (assigneeIdentifier && !['unassigned', 'none', 'n/a', '-', 'null'].includes(assigneeIdentifier.toLowerCase())) {
+        const matchedUser = allUsers.find(
+          (u) =>
+            u.id === assigneeIdentifier ||
+            u.email.toLowerCase() === assigneeIdentifier.toLowerCase() ||
+            u.name.toLowerCase() === assigneeIdentifier.toLowerCase()
+        );
+
+        if (!matchedUser) {
+          failedRows.push({
+            row: rowNum,
+            title,
+            reason: `Assigned user "${assigneeIdentifier}" not found.`,
+          });
+          return;
+        }
+
+        if (matchedUser.role === 'CLIENT' || matchedUser.role === 'CLIENT_ADMIN') {
+          failedRows.push({
+            row: rowNum,
+            title,
+            reason: `Cannot assign task to client user "${matchedUser.name}".`,
+          });
+          return;
+        }
+
+        assignedToId = matchedUser.id;
+      }
+
+      // Validation 4: Priority
+      let priority: TaskPriority = 'MEDIUM';
+      const validPriorities: Record<string, TaskPriority> = {
+        LOW: 'LOW',
+        MEDIUM: 'MEDIUM',
+        HIGH: 'HIGH',
+        URGENT: 'URGENT',
+      };
+      if (priorityStr) {
+        if (validPriorities[priorityStr]) {
+          priority = validPriorities[priorityStr];
+        } else {
+          failedRows.push({
+            row: rowNum,
+            title,
+            reason: `Invalid priority "${rawPriority}". Must be Low, Medium, High, or Urgent.`,
+          });
+          return;
+        }
+      }
+
+      // Validation 5: Status
+      let status: TaskStatus = 'TODO';
+      const statusMap: Record<string, TaskStatus> = {
+        TODO: 'TODO',
+        'TO DO': 'TODO',
+        PENDING: 'TODO',
+        IN_PROGRESS: 'IN_PROGRESS',
+        'IN PROGRESS': 'IN_PROGRESS',
+        DOING: 'IN_PROGRESS',
+        ACTIVE: 'IN_PROGRESS',
+        REVIEW: 'REVIEW',
+        'IN REVIEW': 'REVIEW',
+        COMPLETED: 'COMPLETED',
+        DONE: 'COMPLETED',
+        COMPLETE: 'COMPLETED',
+        REVISION_REQUESTED: 'REVISION_REQUESTED',
+        'REVISION REQUESTED': 'REVISION_REQUESTED',
+        REVISION: 'REVISION_REQUESTED',
+      };
+
+      if (statusStr) {
+        if (statusMap[statusStr]) {
+          status = statusMap[statusStr];
+        } else {
+          failedRows.push({
+            row: rowNum,
+            title,
+            reason: `Invalid status "${rawStatus}". Must be To Do, In Progress, Review, Completed, or Revision Requested.`,
+          });
+          return;
+        }
+      }
+
+      // Validation 6: Due Date
+      let dueDateIso: string | null = null;
+      if (rawDueDate) {
+        if (rawDueDate instanceof Date) {
+          if (!isNaN(rawDueDate.getTime())) {
+            dueDateIso = rawDueDate.toISOString();
+          } else {
+            failedRows.push({
+              row: rowNum,
+              title,
+              reason: `Invalid due date format "${rawDueDate}".`,
+            });
+            return;
+          }
+        } else {
+          const parsed = new Date(String(rawDueDate).trim());
+          if (!isNaN(parsed.getTime())) {
+            dueDateIso = parsed.toISOString();
+          } else {
+            failedRows.push({
+              row: rowNum,
+              title,
+              reason: `Invalid due date format "${rawDueDate}". Expected YYYY-MM-DD or standard date.`,
+            });
+            return;
+          }
+        }
+      }
+
+      // Create the valid task using db.createTask
+      try {
+        const newTask = db.createTask({
+          id: `tsk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}_${index}`,
+          title,
+          description,
+          projectId: matchedProject.id,
+          assignedToId,
+          createdById: currentUser.id,
+          status,
+          priority,
+          progress: status === 'COMPLETED' ? 100 : status === 'REVIEW' ? 75 : status === 'IN_PROGRESS' ? 25 : 0,
+          dueDate: dueDateIso,
+        });
+
+        const assignedUser = newTask.assignedToId ? db.getUserById(newTask.assignedToId) : null;
+        importedTasks.push({
+          ...newTask,
+          project: { id: matchedProject.id, name: matchedProject.name },
+          assignedTo: assignedUser ? sanitizeUser(assignedUser) : null,
+        });
+      } catch (createErr: any) {
+        failedRows.push({
+          row: rowNum,
+          title,
+          reason: `Failed to save task: ${createErr?.message || 'Database error'}`,
+        });
+      }
+    });
+
+    if (importedTasks.length > 0) {
+      db.logActivity({
+        id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: currentUser.id,
+        action: 'TASKS_BULK_IMPORTED',
+        entityType: 'TASK',
+        details: `Imported ${importedTasks.length} tasks from Excel (${failedRows.length} failed rows)`,
+      });
+    }
+
+    return res.status(200).json({
+      total: rawRows.length,
+      imported: importedTasks.length,
+      failed: failedRows.length,
+      failedRows,
+      importedTasks,
+    });
+  } catch (error: any) {
+    console.error('Error importing tasks from Excel:', error);
+    return res.status(500).json({ message: 'Failed to process Excel import: ' + (error?.message || 'Server error') });
+  }
+});
 
 // GET /api/tasks
 tasksRouter.get('/', requireAuth, (req: AuthenticatedRequest, res: Response) => {
@@ -536,7 +908,6 @@ tasksRouter.post('/:id/submit', requireAuth, upload.single('file'), async (req: 
   const task = db.getTaskById(id);
   if (!task) return res.status(404).json({ message: 'Task not found.' });
   if (task.assignedToId !== currentUser.id) return res.status(403).json({ message: 'You can only submit tasks assigned to you.' });
-  if (task.progress !== 100) return res.status(400).json({ message: 'Task progress must be 100% before submission.' });
   if (task.status === 'REVIEW' && task.clientApprovalStatus === 'PENDING') {
     return res.status(400).json({ message: 'This task is already awaiting client approval.' });
   }
@@ -592,6 +963,7 @@ tasksRouter.post('/:id/submit', requireAuth, upload.single('file'), async (req: 
   const submittedAt = new Date().toISOString();
   const updated = db.updateTask(id, {
     status: 'REVIEW',
+    progress: 100,
     clientApprovalStatus: 'PENDING',
     submissionDescription: submissionDescription.trim(),
     proofDetails: proofDetails.trim(),

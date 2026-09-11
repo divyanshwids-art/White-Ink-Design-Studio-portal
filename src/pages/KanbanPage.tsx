@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { Task, Project, User, TaskStatus, TaskPriority } from '../types';
 import { api } from '../services/api';
 import { PriorityBadge } from '../components/common/PriorityBadge';
-import { ProgressBar } from '../components/common/ProgressBar';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { TaskModal } from '../components/tasks/TaskModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -310,15 +309,6 @@ export const KanbanPage: React.FC = () => {
                               {task.description}
                             </p>
                           )}
-
-                          {/* Progress */}
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-[11px]">
-                              <span className="text-black/60 font-medium">Progress</span>
-                              <span className="font-bold text-black">{task.progress}%</span>
-                            </div>
-                            <ProgressBar progress={task.progress} size="sm" showLabel={false} />
-                          </div>
 
                           {/* Footer: Assignee, Due Date, Move arrows */}
                           <div className="flex items-center justify-between pt-2 border-t border-gold-200 text-xs">

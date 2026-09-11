@@ -532,3 +532,17 @@ export interface GoogleIntegrationStatus {
   lastSyncAt?: string | null;
   updatedAt?: string;
 }
+
+export interface TaskImportFailedRow {
+  row: number;
+  title: string;
+  reason: string;
+}
+
+export interface TaskImportResult {
+  total: number;
+  imported: number;
+  failed: number;
+  failedRows: TaskImportFailedRow[];
+  importedTasks: Task[];
+}

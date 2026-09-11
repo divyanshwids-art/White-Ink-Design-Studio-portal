@@ -3,9 +3,8 @@ import { motion } from 'motion/react';
 import { BrandLogo } from '../components/common/BrandLogo';
 import { Sparkles, Layers, ShieldCheck } from 'lucide-react';
 
-export const LandingPage: React.FC<{ onLogin: () => void; onRegister: () => void }> = ({
+export const LandingPage: React.FC<{ onLogin: () => void }> = ({
   onLogin,
-  onRegister,
 }) => {
   const features = [
     {
@@ -61,15 +60,9 @@ export const LandingPage: React.FC<{ onLogin: () => void; onRegister: () => void
         <div className="flex items-center gap-3">
           <button
             onClick={onLogin}
-            className="px-4 py-2 text-sm font-semibold text-heading hover:text-gold-700 transition-colors"
-          >
-            Sign In
-          </button>
-          <button
-            onClick={onRegister}
             className="primary-cta px-4 py-2 text-sm font-medium rounded-lg shadow-xs hover:bg-gold-600 transition-all cursor-pointer"
           >
-            Register
+            Sign In
           </button>
         </div>
       </header>

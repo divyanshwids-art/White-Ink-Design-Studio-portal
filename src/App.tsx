@@ -4,7 +4,6 @@ import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { LoginPage } from './pages/LoginPage';
 import { LandingPage } from './pages/LandingPage';
-import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
@@ -37,7 +36,7 @@ import { Client, Project, User } from './types';
 
 function MainApp() {
   const { user, isLoading } = useAuth();
-  const [authView, setAuthView] = useState<'landing' | 'login' | 'register'>('landing');
+  const [authView, setAuthView] = useState<'landing' | 'login'>('landing');
   const [currentPath, setCurrentPath] = useState<string>('/dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -83,17 +82,9 @@ function MainApp() {
 
   if (!user) {
     if (authView === 'landing') {
-      return (
-        <LandingPage
-          onLogin={() => setAuthView('login')}
-          onRegister={() => setAuthView('register')}
-        />
-      );
+      return <LandingPage onLogin={() => setAuthView('login')} />;
     }
-    if (authView === 'register') {
-      return <RegisterPage onNavigateToLogin={() => setAuthView('login')} />;
-    }
-    return <LoginPage onNavigateToRegister={() => setAuthView('register')} />;
+    return <LoginPage />;
   }
 
   // Force password change screen on first login for users provisioned with generated passwords

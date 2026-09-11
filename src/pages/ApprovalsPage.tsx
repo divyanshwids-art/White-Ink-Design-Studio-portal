@@ -484,7 +484,6 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                                 onClick={() => handleApproveTask(task)}
                                 disabled={
                                   taskActionLoading === task.id ||
-                                  task.progress < 100 ||
                                   !task.submittedAt ||
                                   !task.submissionDescription?.trim() ||
                                   !task.proofDetails?.trim() ||
@@ -492,8 +491,8 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                                   task.clientApprovalStatus !== 'PENDING'
                                 }
                                 title={
-                                  task.progress < 100
-                                    ? 'Task must reach 100% and be submitted before approval'
+                                  !task.submittedAt
+                                    ? 'Task must be submitted before approval'
                                     : undefined
                                 }
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black hover:bg-gold-500 text-gold-400 hover:text-black border border-gold-400/50 text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -501,8 +500,8 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 {taskActionLoading === task.id
                                   ? 'Approving...'
-                                  : task.progress < 100
-                                  ? `Incomplete (${task.progress}%)`
+                                  : !task.submittedAt
+                                  ? 'Not Submitted'
                                   : 'Approve'}
                               </button>
                               <button

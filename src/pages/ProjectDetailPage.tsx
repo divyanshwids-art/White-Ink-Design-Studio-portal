@@ -34,7 +34,9 @@ import {
 } from 'lucide-react';
 import { FinalHandoverView } from '../components/projects/FinalHandoverView';
 import { SubmitTaskModal } from '../components/tasks/SubmitTaskModal';
+import { ImportTasksModal } from '../components/tasks/ImportTasksModal';
 import { ProjectMeetingsView } from '../components/projects/ProjectMeetingsView';
+import { FileSpreadsheet } from 'lucide-react';
 
 interface ProjectDetailPageProps {
   projectId: string;
@@ -76,6 +78,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   // Modals
   const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [isDeletingTask, setIsDeletingTask] = useState(false);
@@ -435,17 +438,28 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-black">Project Deliverables & Tasks</h3>
             {canManage && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingTask(null);
-                  setIsTaskModalOpen(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg transition-colors cursor-pointer btn-hover-lift"
-              >
-                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-                Add Task
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors cursor-pointer shadow-xs"
+                  title="Import multiple tasks from Excel file"
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-gold-700" />
+                  Import from Excel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTask(null);
+                    setIsTaskModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg transition-colors cursor-pointer btn-hover-lift"
+                >
+                  <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                  Add Task
+                </button>
+              </div>
             )}
           </div>
 
@@ -498,17 +512,13 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Progress & Actions */}
+                  {/* Actions */}
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                    <div className="w-28 sm:w-32">
-                      <ProgressBar progress={task.progress} size="sm" showLabel={false} />
-                    </div>
-
                     {isClient ? (
                       <StatusBadge status={task.status} size="sm" />
                     ) : user?.role === 'TEAM_MEMBER' ? (
                       <div className="flex items-center gap-2">
-                        {task.progress === 100 && task.status !== 'REVIEW' && task.status !== 'COMPLETED' && task.assignedToId === user?.id && (
+                        {task.status !== 'REVIEW' && task.status !== 'COMPLETED' && task.assignedToId === user?.id && (
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setSubmitTask(task); }}
@@ -919,10 +929,21 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         onClose={() => setIsTaskModalOpen(false)}
         onSuccess={loadProjectDetails}
         task={editingTask}
-        projects={[project]}
+        projects={project ? [project] : []}
         users={allUsers}
-        defaultProjectId={project.id}
+        defaultProjectId={project?.id}
       />
+
+      {/* Import Tasks Modal */}
+      {project && (
+        <ImportTasksModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={loadProjectDetails}
+          projects={[project]}
+          defaultProjectId={project.id}
+        />
+      )}
 
       {submitTask && (
         <SubmitTaskModal

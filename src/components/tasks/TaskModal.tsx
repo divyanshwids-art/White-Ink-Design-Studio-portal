@@ -36,7 +36,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [assignedToId, setAssignedToId] = useState<string>('');
   const [status, setStatus] = useState<TaskStatus>('TODO');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
-  const [progress, setProgress] = useState<number>(0);
   const [dueDate, setDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +48,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setAssignedToId(task.assignedToId || '');
       setStatus(task.status || 'TODO');
       setPriority(task.priority || 'MEDIUM');
-      setProgress(task.progress || 0);
       setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
     } else {
       setTitle('');
@@ -58,7 +56,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setAssignedToId('');
       setStatus(defaultStatus || 'TODO');
       setPriority('MEDIUM');
-      setProgress(0);
       setDueDate('');
     }
     setError(null);
@@ -76,7 +73,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
 
     if (isTeamMember && (status === 'COMPLETED' || (status === 'REVIEW' && task?.status !== 'REVIEW'))) {
-      setError('Team members cannot directly mark tasks as In Review or Completed. Please submit for client review at 100% progress.');
+      setError('Team members cannot directly mark tasks as In Review or Completed. Please submit for client review.');
       return;
     }
 
@@ -92,7 +89,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           assignedToId: assignedToId || undefined,
           status,
           priority,
-          progress: Number(progress),
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         });
       } else {
@@ -103,7 +99,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           assignedToId: assignedToId || undefined,
           status,
           priority,
-          progress: Number(progress),
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         });
       }
@@ -117,17 +112,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
   };
 
-  // Status & progress auto syncing
   const handleStatusChange = (newStatus: TaskStatus) => {
     if (isTeamMember && (newStatus === 'COMPLETED' || (newStatus === 'REVIEW' && task?.status !== 'REVIEW'))) {
       return;
     }
     setStatus(newStatus);
-    if (newStatus === 'COMPLETED') setProgress(100);
-    else if (newStatus === 'REVIEW' && progress < 75) setProgress(75);
-    else if (newStatus === 'IN_PROGRESS' && progress === 0) setProgress(50);
-    else if (newStatus === 'TODO' && progress === 100) setProgress(0);
-    // REVISION_REQUESTED keeps current progress
   };
 
   return (
@@ -258,8 +247,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           </select>
         </div>
 
-        {/* Status and Priority */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Status, Priority & Due Date */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
               Status
@@ -302,27 +291,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <option value="HIGH">High</option>
               <option value="URGENT">Urgent</option>
             </select>
-          </div>
-        </div>
-
-        {/* Progress & Due Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-black">
-                Progress
-              </label>
-              <span className="text-xs font-extrabold text-black">{progress}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              className="w-full h-2 bg-gold-200 rounded-lg appearance-none cursor-pointer accent-gold-600"
-            />
           </div>
 
           <div>

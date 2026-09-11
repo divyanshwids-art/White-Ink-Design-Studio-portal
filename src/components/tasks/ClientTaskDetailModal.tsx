@@ -89,10 +89,8 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
   const isAlreadyApproved = task.clientApprovalStatus === 'APPROVED';
   const isRevisionRequested = task.status === 'REVISION_REQUESTED';
   const isSubmitted = Boolean(task.submittedAt);
-  const isComplete = task.progress === 100;
   const hasSubmissionDetails = Boolean(task.submissionDescription?.trim()) && Boolean(task.proofDetails?.trim());
   const canApprove =
-    isComplete &&
     isSubmitted &&
     hasSubmissionDetails &&
     task.status === 'REVIEW' &&
@@ -174,11 +172,11 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
             </div>
           )}
 
-          {/* Warning note if not 100% */}
-          {task.progress < 100 && (
+          {/* Warning note if not submitted */}
+          {!isSubmitted && task.status !== 'COMPLETED' && (
             <div className="mx-5 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
-              <span>Task must reach 100% and be submitted before approval (Current: {task.progress}%).</span>
+              <span>This task has not yet been submitted for approval by the assigned team member.</span>
             </div>
           )}
 
@@ -188,7 +186,7 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
               type="button"
               onClick={handleApprove}
               disabled={isApproving || !canApprove}
-              title={!isComplete ? 'Task must reach 100% and be submitted before approval' : undefined}
+              title={!isSubmitted ? 'Task must be submitted before approval' : undefined}
               className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                 isAlreadyApproved
                   ? 'bg-gold-200 text-black border border-gold-400 cursor-default'
@@ -202,8 +200,6 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
                 ? 'Approved'
                 : isApproving
                 ? 'Approving...'
-                : !isComplete
-                ? `Incomplete (${task.progress}%)`
                 : !isSubmitted
                 ? 'Not Submitted'
                 : 'Approve Task'}

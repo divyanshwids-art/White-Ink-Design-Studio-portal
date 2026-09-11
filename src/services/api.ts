@@ -19,6 +19,7 @@ import {
   AccessRequest,
   IssuedCredential,
   Meeting,
+  TaskImportResult,
 } from '../types';
 
 const API_BASE = '/api';
@@ -56,12 +57,6 @@ export const api = {
     request<{ token: string; user: User; message: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
-    }),
-
-  register: (payload: { name: string; email: string; password: string; confirmPassword?: string; companyName?: string }) =>
-    request<{ token: string; user: User; message: string }>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(payload),
     }),
 
   getMe: () => request<{ user: User }>('/auth/me'),
@@ -389,6 +384,36 @@ export const api = {
     request<{ message: string; deletedId: string }>(`/tasks/${id}`, {
       method: 'DELETE',
     }),
+
+  importTasks: async (formData: FormData): Promise<TaskImportResult> => {
+    const response = await fetch(`${API_BASE}/tasks/import`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeader(),
+      },
+      body: formData,
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to import tasks from Excel.');
+    }
+    return data as TaskImportResult;
+  },
+
+  downloadTaskTemplate: async (): Promise<Blob> => {
+    const response = await fetch(`${API_BASE}/tasks/import-template`, {
+      method: 'GET',
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download task import template.');
+    }
+    return response.blob();
+  },
 
   // Comments
   getProjectComments: (projectId: string) => request<Comment[]>(`/projects/${projectId}/comments`),
