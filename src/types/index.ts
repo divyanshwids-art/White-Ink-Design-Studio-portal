@@ -547,3 +547,45 @@ export interface TaskImportResult {
   failedRows: TaskImportFailedRow[];
   importedTasks: Task[];
 }
+
+export interface PersonalTodo {
+  id: string;
+  title: string;
+  description?: string | null;
+  completed: boolean;
+  dueDate?: string | null;
+  createdById: string;
+  assignedToId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
+    profileImage?: string | null;
+  };
+  assignedTo?: {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
+    profileImage?: string | null;
+  } | null;
+}
+
+export interface CreateTodoInput {
+  title: string;
+  description?: string | null;
+  dueDate?: string | null;
+  assignedToId?: string | null;
+}
+
+export interface UpdateTodoInput {
+  title?: string;
+  description?: string | null;
+  dueDate?: string | null;
+  assignedToId?: string | null;
+  completed?: boolean;
+}
+

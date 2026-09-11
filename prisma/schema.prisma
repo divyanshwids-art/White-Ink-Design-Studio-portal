@@ -120,6 +120,8 @@ model User {
   reviewedAccessRequests AccessRequest[] @relation("ReviewedAccessRequests")
   receivedCredentials   IssuedCredential[] @relation("CredentialRecipient")
   issuedCredentials     IssuedCredential[] @relation("CredentialIssuer")
+  createdTodos          PersonalTodo[]     @relation("TodoCreator")
+  assignedTodos         PersonalTodo[]     @relation("TodoAssignee")
 
   @@index([clientId])
   @@map("users")
@@ -584,3 +586,23 @@ model GoogleIntegration {
 
   @@map("google_integrations")
 }
+
+model PersonalTodo {
+  id           String    @id @default(uuid())
+  title        String
+  description  String?
+  completed    Boolean   @default(false)
+  dueDate      DateTime?
+  createdById  String
+  assignedToId String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  createdBy    User      @relation("TodoCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  assignedTo   User?     @relation("TodoAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([createdById])
+  @@index([assignedToId])
+  @@map("personal_todos")
+}
+

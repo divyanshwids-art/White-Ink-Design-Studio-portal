@@ -13,6 +13,7 @@ import { ClientsPage } from './pages/ClientsPage';
 import { UsersPage } from './pages/UsersPage';
 import { AccessRequestsPage } from './pages/AccessRequestsPage';
 import { CredentialsPage } from './pages/CredentialsPage';
+import { TodoPage } from './pages/TodoPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AttendancePage } from './pages/AttendancePage';
 import { MilestonesPage } from './pages/MilestonesPage';
@@ -65,9 +66,13 @@ function MainApp() {
     }
   }, [user]);
 
-  // Redirect client roles away from /users if navigated directly
+  // Redirect client roles away from /users or /todos if navigated directly
   useEffect(() => {
-    if (user && (user.role === 'CLIENT' || user.role === 'CLIENT_ADMIN') && currentPath === '/users') {
+    if (
+      user &&
+      (user.role === 'CLIENT' || user.role === 'CLIENT_ADMIN') &&
+      (currentPath === '/users' || currentPath === '/todos')
+    ) {
       navigate('/dashboard');
     }
   }, [user, currentPath]);
@@ -125,6 +130,17 @@ function MainApp() {
             <KanbanPage />
           ) : currentPath === '/tasks' ? (
             <TasksPage />
+          ) : currentPath === '/todos' ? (
+            user.role === 'CLIENT' || user.role === 'CLIENT_ADMIN' ? (
+              <DashboardPage
+                onNavigate={navigate}
+                onOpenNewProject={() => setIsQuickProjectOpen(true)}
+                onOpenClientProject={() => setIsClientProjectOpen(true)}
+                onOpenNewTask={() => setIsQuickTaskOpen(true)}
+              />
+            ) : (
+              <TodoPage />
+            )
           ) : currentPath === '/milestones' ? (
             <MilestonesPage />
           ) : currentPath === '/approvals' ? (

@@ -20,6 +20,9 @@ import {
   IssuedCredential,
   Meeting,
   TaskImportResult,
+  PersonalTodo,
+  CreateTodoInput,
+  UpdateTodoInput,
 } from '../types';
 
 const API_BASE = '/api';
@@ -1003,4 +1006,31 @@ export const api = {
         method: 'DELETE',
       }
     ),
+
+  // Personal Todos
+  getTodos: () => request<PersonalTodo[]>('/todos'),
+
+  getTodoById: (id: string) => request<PersonalTodo>(`/todos/${id}`),
+
+  createTodo: (payload: CreateTodoInput) =>
+    request<{ message: string; todo: PersonalTodo }>('/todos', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateTodo: (id: string, payload: UpdateTodoInput) =>
+    request<{ message: string; todo: PersonalTodo }>(`/todos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+
+  toggleTodo: (id: string) =>
+    request<{ message: string; todo: PersonalTodo }>(`/todos/${id}/toggle`, {
+      method: 'PATCH',
+    }),
+
+  deleteTodo: (id: string) =>
+    request<{ message: string }>(`/todos/${id}`, {
+      method: 'DELETE',
+    }),
 };

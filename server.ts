@@ -27,6 +27,7 @@ import { accessRequestsRouter } from './server/routes/access-requests.ts';
 import { credentialsRouter } from './server/routes/credentials.ts';
 import { googleRouter } from './server/routes/google.ts';
 import { meetingsRouter } from './server/routes/meetings.ts';
+import { todosRouter } from './server/routes/todos.ts';
 
 async function startServer() {
   // Initialize database
@@ -51,6 +52,7 @@ async function startServer() {
   app.use('/api/clients', clientsRouter);
   app.use('/api/projects', projectsRouter);
   app.use('/api/tasks', tasksRouter);
+  app.use('/api/todos', todosRouter);
   app.use('/api', commentsRouter);
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/attendance', attendanceRouter);

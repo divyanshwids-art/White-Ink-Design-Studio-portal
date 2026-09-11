@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Settings,
   KeyRound,
+  ListTodo,
 } from 'lucide-react';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -71,6 +72,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: '/tasks',
       icon: CheckSquare,
       show: true,
+      category: 'GENERAL',
+    },
+    {
+      name: 'Todo List',
+      path: '/todos',
+      icon: ListTodo,
+      show: isInternalStaff,
       category: 'GENERAL',
     },
     {

@@ -9,6 +9,8 @@ import {
   AttendanceStats,
   Milestone,
   ClientApproval,
+  PersonalTodo,
+  User,
 } from '../types';
 import { api } from '../services/api';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -16,6 +18,7 @@ import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { AttendanceStatusBadge } from '../components/attendance/AttendanceStatusBadge';
+import { TodoModal } from '../components/todos/TodoModal';
 import {
   FolderKanban,
   CheckCircle2,
@@ -31,6 +34,10 @@ import {
   Coffee,
   Flag,
   FileCheck,
+  ListTodo,
+  Check,
+  Calendar,
+  UserCheck,
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -54,6 +61,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [pendingApprovals, setPendingApprovals] = useState<ClientApproval[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
+  const [todos, setTodos] = useState<PersonalTodo[]>([]);
+  const [internalUsers, setInternalUsers] = useState<User[]>([]);
+  const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,6 +86,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       if (isInternalStaff) {
         promises.push(api.getTodayAttendance().catch(() => ({ attendance: null })));
         promises.push(api.getAttendanceStats().catch(() => null));
+        promises.push(api.getTodos().catch(() => []));
+        promises.push(api.getUsers().catch(() => []));
       }
 
       const results = await Promise.all(promises);
@@ -88,6 +100,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       if (isInternalStaff) {
         setTodayAttendance(results[5]?.attendance || null);
         setAttendanceStats(results[6] || null);
+        setTodos(results[7] || []);
+        setInternalUsers(
+          (results[8] || []).filter(
+            (u: User) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN' || u.role === 'TEAM_MEMBER'
+          )
+        );
       }
     } catch (err: any) {
       console.error('Error fetching dashboard metrics:', err);
@@ -107,6 +125,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       await loadDashboardData();
     } catch (err) {
       console.error('Failed to update task status:', err);
+    }
+  };
+
+  const handleQuickTodoToggle = async (todo: PersonalTodo) => {
+    try {
+      setTodos((prev) =>
+        prev.map((t) => (t.id === todo.id ? { ...t, completed: !t.completed } : t))
+      );
+      await api.toggleTodo(todo.id);
+    } catch (err) {
+      console.error('Failed to toggle todo status:', err);
+      loadDashboardData();
     }
   };
 
@@ -541,6 +571,141 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
+      {/* My Personal Todo Widget (Internal staff only) */}
+      {isInternalStaff && (
+        <div className="bg-white rounded-xl border border-gold-300 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gold-200 bg-gold-50/70">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-gold-100 text-black border border-gold-300 rounded-lg">
+                <ListTodo className="h-4 w-4 text-gold-700" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-black">My Todo List</h3>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gold-200 text-black border border-gold-400">
+                    {todos.filter((t) => !t.completed).length} pending
+                  </span>
+                  {todos.filter((t) => t.completed).length > 0 && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white text-black/70 border border-gold-200 hidden sm:inline-block">
+                      {todos.filter((t) => t.completed).length} completed
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-black/70 font-medium">
+                  Your active checklists, daily priorities, and delegated tasks
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsTodoModalOpen(true)}
+                className="px-2.5 py-1 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="h-3 w-3 stroke-[2.5]" />
+                <span>Add Todo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('/todos')}
+                className="text-xs font-bold text-black hover:text-gold-700 flex items-center gap-1 cursor-pointer"
+              >
+                View all <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+              </button>
+            </div>
+          </div>
+
+          <div className="divide-y divide-gold-100">
+            {todos.length === 0 ? (
+              <div className="p-6 text-center text-xs text-black/60 font-medium">
+                <CheckCircle2 className="h-6 w-6 mx-auto text-gold-400 mb-1" />
+                <p className="font-bold text-black mb-0.5">No todos found</p>
+                <p>You have no personal todos right now.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsTodoModalOpen(true)}
+                  className="mt-2.5 px-3 py-1 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg border border-gold-600 inline-flex items-center gap-1 cursor-pointer btn-hover-lift"
+                >
+                  <Plus className="h-3 w-3 stroke-[2.5]" />
+                  <span>Create First Todo</span>
+                </button>
+              </div>
+            ) : (
+              todos
+                .filter((t) => !t.completed)
+                .slice(0, 4)
+                .map((todo) => {
+                  const hasDueDate = Boolean(todo.dueDate);
+                  const dueDateObj = todo.dueDate ? new Date(todo.dueDate) : null;
+                  const isOverdue =
+                    dueDateObj &&
+                    new Date(dueDateObj.toDateString()) < new Date(new Date().toDateString());
+
+                  return (
+                    <div
+                      key={todo.id}
+                      className="p-3.5 hover:bg-gold-50/70 transition-colors flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => handleQuickTodoToggle(todo)}
+                          className="shrink-0 w-4.5 h-4.5 rounded border border-gold-400 hover:border-gold-600 bg-white hover:bg-gold-100 flex items-center justify-center cursor-pointer transition-colors"
+                          title="Mark as completed"
+                        >
+                          {todo.completed && <Check className="h-3 w-3 stroke-[3]" />}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-black truncate">{todo.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-black/60 font-medium">
+                            {hasDueDate && (
+                              <span
+                                className={`inline-flex items-center gap-1 ${
+                                  isOverdue ? 'text-red-700 font-bold' : ''
+                                }`}
+                              >
+                                <Calendar className="h-2.5 w-2.5" />
+                                {isOverdue ? 'Overdue: ' : ''}
+                                {dueDateObj?.toLocaleDateString()}
+                              </span>
+                            )}
+                            {todo.assignedTo && (
+                              <span className="inline-flex items-center gap-1">
+                                <UserCheck className="h-2.5 w-2.5 text-gold-700" />
+                                {todo.assignedToId === user?.id ? (
+                                  <>From {todo.createdBy?.name || 'Colleague'}</>
+                                ) : (
+                                  <>Assigned to {todo.assignedTo.name}</>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleQuickTodoToggle(todo)}
+                        className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded text-black/70 hover:text-black hover:bg-gold-200 border border-gold-200 transition-colors cursor-pointer"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  );
+                })
+            )}
+
+            {todos.length > 0 && todos.filter((t) => !t.completed).length === 0 && (
+              <div className="p-4 text-center text-xs text-black/70 font-medium bg-gold-50/40">
+                <CheckCircle2 className="h-4 w-4 mx-auto text-gold-600 mb-1" />
+                All caught up! All your todos are marked as completed.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Recent Projects Table & Recent Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Projects */}
@@ -669,7 +834,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
       </div>
+      {/* Add Todo Modal for Quick Creation */}
+      <TodoModal
+        isOpen={isTodoModalOpen}
+        onClose={() => setIsTodoModalOpen(false)}
+        onSuccess={loadDashboardData}
+        internalMembers={internalUsers}
+      />
     </div>
   );
-
 };

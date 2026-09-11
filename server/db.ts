@@ -248,6 +248,32 @@ export interface MeetingRecord {
   updatedAt: string;
 }
 
+export interface PersonalTodoRecord {
+  id: string;
+  title: string;
+  description?: string | null;
+  completed: boolean;
+  dueDate?: string | null;
+  createdById: string;
+  assignedToId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
+    profileImage?: string | null;
+  };
+  assignedTo?: {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
+    profileImage?: string | null;
+  } | null;
+}
+
 export interface GoogleIntegrationRecord {
   id: string;
   connectedEmail?: string | null;
@@ -404,6 +430,7 @@ export interface DatabaseSchema {
   issuedCredentials: IssuedCredentialRecord[];
   meetings: MeetingRecord[];
   googleIntegration: GoogleIntegrationRecord | null;
+  todos: PersonalTodoRecord[];
 }
 
 export function getTodayDateString(d: Date = new Date()): string {
@@ -455,6 +482,7 @@ class DatabaseService {
     issuedCredentials: [],
     meetings: [],
     googleIntegration: null,
+    todos: [],
     settings: {
       id: 'system_config',
       officeStartTime: '09:30',
@@ -556,6 +584,7 @@ class DatabaseService {
         issuedCredentials,
         meetings,
         googleInt,
+        todos,
       ] = await Promise.all([
         prisma.user.findMany().catch((err) => { console.warn('Prisma load users err:', err?.message); return []; }),
         prisma.client.findMany().catch((err) => { console.warn('Prisma load clients err:', err?.message); return []; }),
@@ -580,6 +609,7 @@ class DatabaseService {
         prisma.issuedCredential.findMany().catch((err) => { console.warn('Prisma load issuedCredentials err:', err?.message); return []; }),
         prisma.meeting.findMany().catch((err) => { console.warn('Prisma load meetings err:', err?.message); return []; }),
         prisma.googleIntegration.findFirst().catch((err) => { console.warn('Prisma load googleIntegration err:', err?.message); return null; }),
+        (prisma as any).personalTodo?.findMany().catch((err: any) => { console.warn('Prisma load todos err:', err?.message); return []; }) || [],
       ]);
 
       this.data = {
@@ -710,6 +740,12 @@ class DatabaseService {
           createdAt: toIsoSafe(m.createdAt),
           updatedAt: toIsoSafe(m.updatedAt),
         })) as MeetingRecord[],
+        todos: (todos || []).map((t: any) => ({
+          ...t,
+          dueDate: toNullableIsoSafe(t.dueDate),
+          createdAt: toIsoSafe(t.createdAt),
+          updatedAt: toIsoSafe(t.updatedAt),
+        })) as PersonalTodoRecord[],
         googleIntegration: googleInt
           ? ({
               ...googleInt,
@@ -809,6 +845,7 @@ class DatabaseService {
       issuedCredentials: [],
       meetings: [],
       googleIntegration: null,
+      todos: (seed.todos || []) as PersonalTodoRecord[],
     };
     this.recalculateAllProjectProgress();
     this.ensureClientAdmins();
@@ -3639,7 +3676,266 @@ class DatabaseService {
 
     return Array.from(clientIds);
   }
+
+  // --- PERSONAL TODOS ---
+  private formatTodo(todo: PersonalTodoRecord): PersonalTodoRecord {
+    const creator = this.getUserById(todo.createdById);
+    const assignee = todo.assignedToId ? this.getUserById(todo.assignedToId) : null;
+
+    return {
+      ...todo,
+      createdBy: creator
+        ? {
+            id: creator.id,
+            name: creator.name,
+            email: creator.email,
+            role: creator.role,
+            profileImage: creator.profileImage || null,
+          }
+        : undefined,
+      assignedTo: assignee
+        ? {
+            id: assignee.id,
+            name: assignee.name,
+            email: assignee.email,
+            role: assignee.role,
+            profileImage: assignee.profileImage || null,
+          }
+        : null,
+    };
+  }
+
+  public getTodos(userId: string): PersonalTodoRecord[] {
+    const userTodos = this.data.todos.filter(
+      (t) => t.createdById === userId || t.assignedToId === userId
+    );
+
+    // Sort: uncompleted first, then by dueDate asc (with nulls last), then createdAt desc
+    return userTodos
+      .sort((a, b) => {
+        if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1;
+        }
+        if (a.dueDate && b.dueDate) {
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        }
+        if (a.dueDate && !b.dueDate) return -1;
+        if (!a.dueDate && b.dueDate) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      })
+      .map((t) => this.formatTodo(t));
+  }
+
+  public getTodoById(id: string): PersonalTodoRecord | null {
+    const todo = this.data.todos.find((t) => t.id === id);
+    if (!todo) return null;
+    return this.formatTodo(todo);
+  }
+
+  public createTodo(data: {
+    title: string;
+    description?: string | null;
+    dueDate?: string | null;
+    createdById: string;
+    assignedToId?: string | null;
+  }): PersonalTodoRecord {
+    const now = new Date().toISOString();
+    const newTodo: PersonalTodoRecord = {
+      id: `todo_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      title: data.title.trim(),
+      description: data.description?.trim() || null,
+      completed: false,
+      dueDate: toNullableIsoSafe(data.dueDate),
+      createdById: data.createdById,
+      assignedToId: data.assignedToId || null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.data.todos.push(newTodo);
+
+    if (prisma && this.isPrismaActive) {
+      (prisma as any).personalTodo
+        ?.create({
+          data: {
+            id: newTodo.id,
+            title: newTodo.title,
+            description: newTodo.description,
+            completed: newTodo.completed,
+            dueDate: newTodo.dueDate ? new Date(newTodo.dueDate) : null,
+            createdById: newTodo.createdById,
+            assignedToId: newTodo.assignedToId,
+            createdAt: new Date(now),
+            updatedAt: new Date(now),
+          },
+        })
+        .catch((e: any) => console.warn('Prisma createTodo failed:', e.message));
+    }
+
+    // Notify assigned member if assigned to a colleague
+    if (newTodo.assignedToId && newTodo.assignedToId !== newTodo.createdById) {
+      const creator = this.getUserById(newTodo.createdById);
+      this.createNotification({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: newTodo.assignedToId,
+        title: 'New Todo Assigned',
+        message: `${creator?.name || 'A team member'} assigned a Todo to you: "${newTodo.title}"`,
+        type: 'TASK_ASSIGNED',
+        linkUrl: '/todos',
+        isRead: false,
+      });
+    }
+
+    this.logActivity({
+      userId: newTodo.createdById,
+      action: 'TODO_CREATED',
+      entityType: 'TODO',
+      entityId: newTodo.id,
+      details: `Created personal todo: "${newTodo.title}"`,
+    });
+
+    return this.formatTodo(newTodo);
+  }
+
+  public updateTodo(
+    id: string,
+    updates: Partial<{
+      title: string;
+      description?: string | null;
+      dueDate?: string | null;
+      assignedToId?: string | null;
+      completed?: boolean;
+    }>,
+    userId: string
+  ): PersonalTodoRecord | null {
+    const index = this.data.todos.findIndex((t) => t.id === id);
+    if (index === -1) return null;
+
+    const todo = this.data.todos[index];
+
+    // Check permissions:
+    // If updating metadata (title, description, dueDate, assignedToId), must be the creator.
+    const isOwner = todo.createdById === userId;
+    const isAssignee = todo.assignedToId === userId;
+
+    if (!isOwner && !isAssignee) {
+      return null;
+    }
+
+    // If not owner, assignee can ONLY toggle completed
+    if (!isOwner && isAssignee) {
+      if (
+        updates.title !== undefined ||
+        updates.description !== undefined ||
+        updates.dueDate !== undefined ||
+        updates.assignedToId !== undefined
+      ) {
+        return null; // Assignee cannot alter creator's metadata
+      }
+    }
+
+    const now = new Date().toISOString();
+    const oldAssigneeId = todo.assignedToId;
+
+    if (updates.title !== undefined) todo.title = updates.title.trim();
+    if (updates.description !== undefined) todo.description = updates.description?.trim() || null;
+    if (updates.dueDate !== undefined) todo.dueDate = toNullableIsoSafe(updates.dueDate);
+    if (updates.assignedToId !== undefined) todo.assignedToId = updates.assignedToId || null;
+    if (updates.completed !== undefined) todo.completed = Boolean(updates.completed);
+    todo.updatedAt = now;
+
+    if (prisma && this.isPrismaActive) {
+      const prismaData: any = { updatedAt: new Date(now) };
+      if (updates.title !== undefined) prismaData.title = todo.title;
+      if (updates.description !== undefined) prismaData.description = todo.description;
+      if (updates.dueDate !== undefined) prismaData.dueDate = todo.dueDate ? new Date(todo.dueDate) : null;
+      if (updates.assignedToId !== undefined) prismaData.assignedToId = todo.assignedToId;
+      if (updates.completed !== undefined) prismaData.completed = todo.completed;
+
+      (prisma as any).personalTodo
+        ?.update({
+          where: { id },
+          data: prismaData,
+        })
+        .catch((e: any) => console.warn('Prisma updateTodo failed:', e.message));
+    }
+
+    // Notify new assignee if assignment changed to a different colleague
+    if (
+      updates.assignedToId &&
+      updates.assignedToId !== oldAssigneeId &&
+      updates.assignedToId !== todo.createdById
+    ) {
+      const creator = this.getUserById(todo.createdById);
+      this.createNotification({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: updates.assignedToId,
+        title: 'New Todo Assigned',
+        message: `${creator?.name || 'A team member'} assigned a Todo to you: "${todo.title}"`,
+        type: 'TASK_ASSIGNED',
+        linkUrl: '/todos',
+        isRead: false,
+      });
+    }
+
+    return this.formatTodo(todo);
+  }
+
+  public toggleTodo(id: string, userId: string): PersonalTodoRecord | null {
+    const index = this.data.todos.findIndex((t) => t.id === id);
+    if (index === -1) return null;
+
+    const todo = this.data.todos[index];
+    if (todo.createdById !== userId && todo.assignedToId !== userId) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    todo.completed = !todo.completed;
+    todo.updatedAt = now;
+
+    if (prisma && this.isPrismaActive) {
+      (prisma as any).personalTodo
+        ?.update({
+          where: { id },
+          data: { completed: todo.completed, updatedAt: new Date(now) },
+        })
+        .catch((e: any) => console.warn('Prisma toggleTodo failed:', e.message));
+    }
+
+    return this.formatTodo(todo);
+  }
+
+  public deleteTodo(id: string, userId: string): boolean {
+    const index = this.data.todos.findIndex((t) => t.id === id);
+    if (index === -1) return false;
+
+    const todo = this.data.todos[index];
+    // Only creator can delete their personal Todo
+    if (todo.createdById !== userId) {
+      return false;
+    }
+
+    this.data.todos.splice(index, 1);
+
+    if (prisma && this.isPrismaActive) {
+      (prisma as any).personalTodo
+        ?.delete({ where: { id } })
+        .catch((e: any) => console.warn('Prisma deleteTodo failed:', e.message));
+    }
+
+    this.logActivity({
+      userId,
+      action: 'TODO_DELETED',
+      entityType: 'TODO',
+      entityId: id,
+      details: `Deleted personal todo: "${todo.title}"`,
+    });
+
+    return true;
+  }
 }
 
 export const db = new DatabaseService();
+
 
