@@ -155,7 +155,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#1C1917]">
-              Hi, {firstName} 👋
+              Hi, {firstName}
             </h1>
             <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
               {user?.role?.replace('_', ' ')}
@@ -405,13 +405,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
                 <div className="p-4 rounded-xl bg-[#FAF7F2]/60 border border-[#EDE7DD] text-xs text-[#78716C]">
                   {!todayAttendance?.clockIn ? (
-                    <span>💡 You haven't clocked in yet. Use the <strong>Mark Present</strong> button on the left to start your shift.</span>
+                    <span>You have not clocked in yet. Use the <strong>Mark Attendance</strong> button on the left to start your shift.</span>
                   ) : todayAttendance?.clockOut ? (
-                    <span>✅ Your shift has ended today. Total logged working time: <strong>{Math.floor(todayAttendance.effectiveWorkingMinutes / 60)}h {todayAttendance.effectiveWorkingMinutes % 60}m</strong>.</span>
+                    <span>Shift concluded for today. Total logged working time: <strong>{Math.floor(todayAttendance.effectiveWorkingMinutes / 60)}h {todayAttendance.effectiveWorkingMinutes % 60}m</strong>.</span>
                   ) : todayAttendance?.activeBreak ? (
-                    <span>☕ You are currently on break. Click <strong>End Lunch Break</strong> on the left when you're back.</span>
+                    <span>Break in progress. Click <strong>End Lunch Break</strong> on the left when resuming work.</span>
                   ) : (
-                    <span>⏱️ Your shift is active. You can start a break or mark exit directly from the Quick Actions menu.</span>
+                    <span>Shift active. You can record a break or record exit directly from the Quick Actions menu.</span>
                   )}
                 </div>
               </div>

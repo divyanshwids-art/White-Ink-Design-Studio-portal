@@ -6,13 +6,13 @@ import {
   CheckSquare,
   Plus,
   Coffee,
-  DoorOpen,
+  LogOut,
   Bell,
   AlertTriangle,
   Loader2,
   CheckCircle2,
-  Sparkles,
   Clock,
+  Zap,
 } from 'lucide-react';
 
 interface QuickActionsCardProps {
@@ -94,10 +94,10 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
     setActionError(null);
     try {
       await api.clockIn();
-      showToast('Marked Present! Attendance recorded for today. ✅');
+      showToast('Attendance recorded for today.');
       onAttendanceChange();
     } catch (err: any) {
-      setActionError(err.message || 'Failed to mark present.');
+      setActionError(err.message || 'Failed to record attendance.');
     } finally {
       setIsProcessing(false);
     }
@@ -106,7 +106,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   // Lunch Break Toggle
   const handleBreakToggle = async () => {
     if (!isClockedIn) {
-      setActionError('Please mark present first before taking a break.');
+      setActionError('Please record attendance before taking a break.');
       return;
     }
     if (isClockedOut) {
@@ -119,10 +119,10 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
     try {
       if (isOnBreak) {
         await api.endBreak();
-        showToast('Resumed from break! Welcome back. ☕');
+        showToast('Resumed from break.');
       } else {
         await api.startBreak();
-        showToast('Lunch break started. Enjoy your break! ☕');
+        showToast('Lunch break recorded.');
       }
       onAttendanceChange();
     } catch (err: any) {
@@ -158,7 +158,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
     setActionError(null);
     try {
       await api.clockOut();
-      showToast('Shift completed and clocked out successfully! 🚪');
+      showToast('Shift completed and clocked out successfully.');
       onAttendanceChange();
     } catch (err: any) {
       setActionError(err.message || 'Failed to clock out.');
@@ -180,7 +180,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
       await api.clockOut({ earlyClockOutReason: trimmed });
       setShowEarlyClockOutModal(false);
       setEarlyReason('');
-      showToast('Early exit recorded successfully. Have a good day! 🚪');
+      showToast('Early exit recorded successfully.');
       onAttendanceChange();
     } catch (err: any) {
       setActionError(err.message || 'Failed to clock out.');
@@ -196,22 +196,22 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
         if (Notification.permission !== 'granted') {
           const granted = await requestPushPermission();
           if (!granted) {
-            showToast('🔔 Browser notification permission was denied or dismissed.');
+            showToast('Browser notification permission was not granted.');
             return;
           }
         }
         triggerLocalNotification('White Ink Design Studio', {
-          body: '🔔 Test Notification: Your studio alerts are working perfectly!',
+          body: 'System Notification Test: Alerts are functioning properly.',
           icon: '/favicon.ico',
         });
       }
-      showToast('🔔 Notification test triggered successfully!');
+      showToast('Notification test triggered successfully.');
     } catch (e) {
-      showToast('🔔 Notification test completed.');
+      showToast('Notification test completed.');
     }
   };
 
-  // Format today's date matching the reference image: "11 Sept 2026"
+  // Format today's date: "11 Sept 2026"
   const formattedDate = new Date().toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -219,166 +219,169 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   });
 
   return (
-    <div className="bg-white rounded-2xl border border-[#EDE7DD] p-6 shadow-xs relative">
-      {/* Header */}
-      <div className="mb-5">
-        <h2 className="text-2xl font-serif font-bold text-[#1C1917] tracking-tight">
-          Quick Actions
-        </h2>
-        <p className="text-xs text-[#78716C] font-medium mt-0.5">
-          {formattedDate}
-        </p>
-      </div>
-
-      {/* Toast message inside card */}
-      {toastMessage && (
-        <div className="mb-4 p-3 rounded-xl bg-[#FAF4EC] border border-[#EAE0D0] text-[#BA954F] text-xs font-semibold flex items-center gap-2 animate-gold-fade-in shadow-2xs">
-          <Sparkles className="h-4 w-4 shrink-0 text-[#BA954F]" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* Error alert inside card */}
-      {actionError && (
-        <div className="mb-4 p-3 rounded-xl bg-[#FDF2F0] border border-[#F5D5D0] text-[#B91C1C] text-xs font-medium flex items-center justify-between gap-2 animate-gold-fade-in">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{actionError}</span>
+    <div className="bg-white rounded-2xl border border-[#EDE7DD] p-6 shadow-xs flex flex-col justify-between h-full">
+      <div>
+        {/* Header - Styled consistently with Dashboard Cards */}
+        <div className="flex items-center gap-3 pb-4 mb-4 border-b border-[#EDE7DD]">
+          <div className="p-2.5 bg-[#FAF4EC] text-[#BA954F] rounded-xl border border-[#EDE3D4] shadow-2xs shrink-0">
+            <Zap className="h-5 w-5 stroke-[1.75]" />
           </div>
-          <button
-            type="button"
-            onClick={() => setActionError(null)}
-            className="text-[11px] underline font-bold cursor-pointer"
-          >
-            Dismiss
-          </button>
+          <div>
+            <h3 className="text-base font-serif font-bold text-[#1C1917]">
+              Quick Actions
+            </h3>
+            <p className="text-xs text-[#78716C] font-normal mt-0.5">
+              {formattedDate}
+            </p>
+          </div>
         </div>
-      )}
 
-      {/* Stacked Quick Action Buttons */}
-      <div className="space-y-3">
-        {/* 1. Present / Mark Attendance Button */}
-        {!isClockedIn ? (
-          <button
-            type="button"
-            id="btn-mark-attendance"
-            onClick={handleMarkPresent}
-            disabled={isProcessing}
-            className="w-full py-3.5 px-4 rounded-2xl bg-[#EAF5EC] hover:bg-[#DDF0E0] border border-[#CDE9D4] text-[#1E7444] font-semibold text-sm transition-all duration-200 flex items-center gap-3 cursor-pointer shadow-2xs hover:shadow-xs group"
-          >
-            <div className="w-6 h-6 rounded-md bg-[#D2ECD9] text-[#1E7444] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <CheckSquare className="h-4 w-4 stroke-[2.2]" />
-            </div>
-            <span className="flex-1 text-left">
-              {isProcessing ? 'Recording Attendance...' : 'Mark Attendance'}
-            </span>
-            <span className="text-[11px] font-normal text-[#2D6A4F]/80">
-              Tap to clock in
-            </span>
-          </button>
-        ) : (
-          <div className="w-full py-3.5 px-4 rounded-2xl bg-[#EAF5EC] border border-[#CDE9D4] text-[#1E7444] font-semibold text-sm flex items-center justify-between gap-3 shadow-2xs">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-6 h-6 rounded-md bg-[#227547] text-white flex items-center justify-center shrink-0">
-                <CheckSquare className="h-3.5 w-3.5 stroke-[2.5]" />
-              </div>
-              <span className="truncate">
-                {isClockedOut
-                  ? `Present · Shift Ended (${formatShortTime(attendance.clockOut)})`
-                  : `Present · Arrived ${formatShortTime(attendance.clockIn)}`}
-              </span>
-            </div>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#D7EFE0] text-[#196639] font-bold shrink-0">
-              {isClockedOut ? 'Done' : 'Active'}
-            </span>
+        {/* Toast message inside card */}
+        {toastMessage && (
+          <div className="mb-3 p-2.5 rounded-xl bg-[#FAF4EC] border border-[#EAE0D0] text-[#BA954F] text-xs font-medium flex items-center gap-2 animate-gold-fade-in shadow-2xs">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#BA954F]" />
+            <span>{toastMessage}</span>
           </div>
         )}
 
-        {/* 2. + Add Today's Task */}
-        <button
-          type="button"
-          onClick={() => {
-            if (isAdmin) {
-              onOpenNewTask();
-            } else if (onOpenNewTodo) {
-              onOpenNewTodo();
-            } else {
-              onOpenNewTask();
-            }
-          }}
-          className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#DFD5C6] text-[#1C1917] font-medium text-sm transition-all duration-200 flex items-center gap-3 cursor-pointer shadow-2xs hover:shadow-xs group"
-        >
-          <span className="text-base font-bold text-[#78716C] group-hover:text-[#BA954F] transition-colors leading-none w-5 text-center">
-            +
-          </span>
-          <span className="flex-1 text-left font-semibold text-[#292524]">
-            Add Today's Task
-          </span>
-        </button>
+        {/* Error alert inside card */}
+        {actionError && (
+          <div className="mb-3 p-2.5 rounded-xl bg-[#FDF2F0] border border-[#F5D5D0] text-[#B91C1C] text-xs font-medium flex items-center justify-between gap-2 animate-gold-fade-in">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>{actionError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="text-[11px] underline font-bold cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
-        {/* 3. Log Lunch Break */}
-        <button
-          type="button"
-          onClick={handleBreakToggle}
-          disabled={isProcessing || !isClockedIn || isClockedOut}
-          className={`w-full py-3.5 px-4 rounded-2xl border text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer shadow-2xs ${
-            !isClockedIn || isClockedOut
-              ? 'bg-[#FAF7F2]/60 border-[#EDE7DD] text-[#A8A29E] cursor-not-allowed opacity-60'
-              : isOnBreak
-              ? 'bg-[#FAF4EC] hover:bg-[#F5ECE0] border-[#E8DCC8] text-[#946B2D] animate-pulse'
-              : 'bg-white hover:bg-[#FAF7F2] border-[#EDE7DD] hover:border-[#DFD5C6] text-[#292524] hover:shadow-xs'
-          }`}
-        >
-          <span className="text-base leading-none w-5 text-center">
-            ☕
-          </span>
-          <span className="flex-1 text-left">
-            {isOnBreak ? 'End Lunch Break & Resume' : 'Log Lunch Break'}
-          </span>
-          {isOnBreak && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#EAE0D0] text-[#7A5620] font-bold">
-              On Break
-            </span>
+        {/* Stacked Quick Action Buttons */}
+        <div className="space-y-2.5">
+          {/* 1. Mark Attendance / Present Button */}
+          {!isClockedIn ? (
+            <button
+              type="button"
+              id="btn-mark-attendance"
+              onClick={handleMarkPresent}
+              disabled={isProcessing}
+              className="w-full py-3 px-3.5 rounded-xl bg-[#EAF5EC] hover:bg-[#DDF0E0] border border-[#CDE9D4] text-[#1E7444] text-xs font-semibold transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs hover:shadow-xs group"
+            >
+              <span className="w-4 h-4 flex items-center justify-center shrink-0">
+                <CheckSquare className="h-4 w-4 stroke-[2] text-[#1E7444]" />
+              </span>
+              <span className="flex-1 text-left">
+                {isProcessing ? 'Recording Attendance...' : 'Mark Attendance'}
+              </span>
+            </button>
+          ) : (
+            <div className="w-full py-3 px-3.5 rounded-xl bg-[#EAF5EC] border border-[#CDE9D4] text-[#1E7444] text-xs font-semibold flex items-center justify-between gap-2.5 shadow-2xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-4 h-4 flex items-center justify-center shrink-0">
+                  <CheckSquare className="h-4 w-4 stroke-[2] text-[#1E7444]" />
+                </span>
+                <span className="truncate">
+                  {isClockedOut
+                    ? `Present · Shift Ended (${formatShortTime(attendance.clockOut)})`
+                    : `Present · Arrived ${formatShortTime(attendance.clockIn)}`}
+                </span>
+              </div>
+            </div>
           )}
-        </button>
 
-        {/* 4. Mark Exit */}
-        <button
-          type="button"
-          onClick={handleInitiateClockOut}
-          disabled={isProcessing || !isClockedIn || isClockedOut}
-          className={`w-full py-3.5 px-4 rounded-2xl border text-sm font-semibold transition-all duration-200 flex items-center gap-3 cursor-pointer shadow-2xs ${
-            !isClockedIn || isClockedOut
-              ? 'bg-[#FAF7F2]/60 border-[#EDE7DD] text-[#A8A29E] cursor-not-allowed opacity-60'
-              : 'bg-white hover:bg-[#FAF7F2] border-[#EDE7DD] hover:border-[#DFD5C6] text-[#292524] hover:shadow-xs'
-          }`}
-        >
-          <span className="text-base leading-none w-5 text-center">
-            🚪
-          </span>
-          <span className="flex-1 text-left">
-            Mark Exit
-          </span>
-          {isClockedOut && (
-            <span className="text-[11px] text-[#78716C] font-normal">
-              Clocked Out
+          {/* 2. Add Today's Task */}
+          <button
+            type="button"
+            onClick={() => {
+              if (isAdmin) {
+                onOpenNewTask();
+              } else if (onOpenNewTodo) {
+                onOpenNewTodo();
+              } else {
+                onOpenNewTask();
+              }
+            }}
+            className="w-full py-3 px-3.5 rounded-xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#DFD5C6] text-xs font-semibold text-[#1C1917] transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs hover:shadow-xs group"
+          >
+            <span className="w-4 h-4 flex items-center justify-center shrink-0 text-[#78716C] group-hover:text-[#BA954F] transition-colors">
+              <Plus className="h-4 w-4 stroke-[2]" />
             </span>
-          )}
-        </button>
+            <span className="flex-1 text-left">
+              Add Today's Task
+            </span>
+          </button>
 
-        {/* 5. Test Notification */}
-        <button
-          type="button"
-          onClick={handleTestNotification}
-          className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#DFD5C6] text-[#1C1917] font-semibold text-sm transition-all duration-200 flex items-center gap-3 cursor-pointer shadow-2xs hover:shadow-xs"
-        >
-          <span className="text-base leading-none w-5 text-center">
-            🔔
-          </span>
-          <span className="flex-1 text-left text-[#292524]">
-            Test Notification
-          </span>
-        </button>
+          {/* 3. Log Lunch Break */}
+          <button
+            type="button"
+            onClick={handleBreakToggle}
+            disabled={isProcessing || !isClockedIn || isClockedOut}
+            className={`w-full py-3 px-3.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs ${
+              !isClockedIn || isClockedOut
+                ? 'bg-[#FAF7F2]/60 border-[#EDE7DD] text-[#A8A29E] cursor-not-allowed opacity-60'
+                : isOnBreak
+                ? 'bg-[#FAF4EC] hover:bg-[#F5ECE0] border-[#E8DCC8] text-[#946B2D]'
+                : 'bg-white hover:bg-[#FAF7F2] border-[#EDE7DD] hover:border-[#DFD5C6] text-[#1C1917] hover:shadow-xs'
+            }`}
+          >
+            <span className="w-4 h-4 flex items-center justify-center shrink-0">
+              <Coffee className={`h-4 w-4 stroke-[1.75] ${
+                !isClockedIn || isClockedOut ? 'text-[#A8A29E]' : isOnBreak ? 'text-[#946B2D]' : 'text-[#78716C]'
+              }`} />
+            </span>
+            <span className={`flex-1 text-left ${
+              !isClockedIn || isClockedOut
+                ? 'text-[#A8A29E]'
+                : isOnBreak
+                ? 'text-[#946B2D]'
+                : 'text-[#1C1917]'
+            }`}>
+              {isOnBreak ? 'End Lunch Break' : 'Log Lunch Break'}
+            </span>
+          </button>
+
+          {/* 4. Mark Exit */}
+          <button
+            type="button"
+            onClick={handleInitiateClockOut}
+            disabled={isProcessing || !isClockedIn || isClockedOut}
+            className={`w-full py-3 px-3.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs ${
+              !isClockedIn || isClockedOut
+                ? 'bg-[#FAF7F2]/60 border-[#EDE7DD] text-[#A8A29E] cursor-not-allowed opacity-60'
+                : 'bg-white hover:bg-[#FAF7F2] border-[#EDE7DD] hover:border-[#DFD5C6] text-[#1C1917] hover:shadow-xs'
+            }`}
+          >
+            <span className="w-4 h-4 flex items-center justify-center shrink-0">
+              <LogOut className={`h-4 w-4 stroke-[1.75] ${
+                !isClockedIn || isClockedOut ? 'text-[#A8A29E]' : 'text-[#78716C]'
+              }`} />
+            </span>
+            <span className={`flex-1 text-left ${
+              !isClockedIn || isClockedOut ? 'text-[#A8A29E]' : 'text-[#1C1917]'
+            }`}>
+              Mark Exit
+            </span>
+          </button>
+
+          {/* 5. Test Notification */}
+          <button
+            type="button"
+            onClick={handleTestNotification}
+            className="w-full py-3 px-3.5 rounded-xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#DFD5C6] text-xs font-semibold text-[#1C1917] transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs hover:shadow-xs group"
+          >
+            <span className="w-4 h-4 flex items-center justify-center shrink-0 text-[#78716C] group-hover:text-[#BA954F] transition-colors">
+              <Bell className="h-4 w-4 stroke-[1.75]" />
+            </span>
+            <span className="flex-1 text-left">
+              Test Notification
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Normal Clock Out Confirmation Modal */}
