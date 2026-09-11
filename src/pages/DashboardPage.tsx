@@ -30,14 +30,15 @@ import {
   ArrowRight,
   Plus,
   RotateCw,
-  Play,
-  Coffee,
   Flag,
   FileCheck,
   ListTodo,
   Check,
   Calendar,
   UserCheck,
+  MessageSquare,
+  Sparkles,
+  Layers,
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -141,37 +142,39 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   };
 
   if (isLoading && !stats) {
-    return <LoadingSpinner message="Calculating workspace analytics..." size="lg" />;
+    return <LoadingSpinner message="Loading studio workspace..." size="lg" />;
   }
 
+  const firstName = user?.name ? user.name.split(' ')[0] : 'there';
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 sm:p-6 rounded-xl border border-gold-300 shadow-sm">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-gold-fade-in">
+      {/* Header Banner - White Ink Style */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white/95 backdrop-blur-xs p-5 sm:p-6 rounded-2xl border border-[#EDE7DD] shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-extrabold tracking-tight text-black">
-              Welcome back, {user?.name.split(' ')[0]}
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#1C1917]">
+              Hi, {firstName} 👋
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-gold-100 text-black border border-gold-400">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
               {user?.role?.replace('_', ' ')}
             </span>
           </div>
-          <p className="text-sm text-black/70 font-medium">
+          <p className="text-xs sm:text-sm text-[#78716C] font-normal">
             {isClient
-              ? 'Real-time overview of your contracted projects and deliverable progress'
-              : 'Workspace operations, active deliverables, and cross-team project tracking'}
+              ? "Here's what's happening with your brand and active projects today."
+              : "Here's what's on your studio plate today."}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={loadDashboardData}
-            className="p-2 text-black hover:bg-gold-100 rounded-lg border border-gold-300 transition-colors cursor-pointer"
+            className="p-2.5 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-xl border border-[#EDE7DD] transition-colors cursor-pointer"
             title="Refresh statistics"
           >
-            <RotateCw className="h-4 w-4" />
+            <RotateCw className="h-4 w-4 stroke-[1.75]" />
           </button>
 
           {isSuperAdminOrAdmin && (
@@ -179,17 +182,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <button
                 type="button"
                 onClick={onOpenNewTask}
-                className="px-3.5 py-2 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] border border-[#DFD5C6] rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
-                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                <Plus className="h-3.5 w-3.5 stroke-[2]" />
                 Add Task
               </button>
               <button
                 type="button"
                 onClick={onOpenNewProject}
-                className="px-4 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg shadow-sm border border-gold-600 transition-colors inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
               >
-                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                <Plus className="h-3.5 w-3.5 stroke-[2]" />
                 New Project
               </button>
             </>
@@ -199,112 +202,120 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <button
               type="button"
               onClick={onOpenClientProject}
-              className="px-4 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg shadow-sm border border-gold-600 transition-colors inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
             >
-              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-              Create New Project
+              <Plus className="h-3.5 w-3.5 stroke-[2]" />
+              New Requirement
             </button>
           )}
         </div>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-gold-100 border border-gold-400 text-black text-sm flex items-center gap-2 font-medium">
-          <AlertCircle className="h-5 w-5 text-gold-700 shrink-0" />
+        <div className="p-4 rounded-xl bg-[#FDF2F0] border border-[#F5D5D0] text-[#B91C1C] text-xs flex items-center gap-2 font-medium">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Stats Grid */}
+      {/* Summary Metrics Grid - White Ink Style */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total Projects */}
-          <div className="bg-white p-5 rounded-xl border border-gold-300 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-black mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-black/75">Projects</span>
-              <div className="p-2 bg-gold-100 text-black border border-gold-300 rounded-lg">
-                <FolderKanban className="h-4 w-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-extrabold text-black tracking-tight">
-                {stats.totalProjects}
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-xs text-black/70 font-medium">
-                <span className="text-black font-bold">{stats.activeProjects} active</span>
-                <span>•</span>
-                <span className="text-black/75">{stats.completedProjects} done</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Tasks */}
-          <div className="bg-white p-5 rounded-xl border border-gold-300 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-black mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-black/75">Total Tasks</span>
-              <div className="p-2 bg-gold-100 text-black border border-gold-300 rounded-lg">
-                <CheckCircle2 className="h-4 w-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-extrabold text-black tracking-tight">
-                {stats.totalTasks}
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-xs text-black/70 font-medium">
-                <span className="text-black font-bold">{stats.inProgressTasks} in progress</span>
-                <span>•</span>
-                <span className="text-black/75">{stats.completedTasks} done</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Pending / Review Tasks */}
-          <div className="bg-white p-5 rounded-xl border border-gold-300 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-black mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-black/75">Backlog & Review</span>
-              <div className="p-2 bg-gold-100 text-black border border-gold-300 rounded-lg">
-                <Clock className="h-4 w-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-extrabold text-black tracking-tight">
-                {stats.pendingTasks + stats.reviewTasks}
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-xs text-black/70 font-medium">
-                <span className="text-black font-bold">{stats.pendingTasks} to do</span>
-                <span>•</span>
-                <span className="text-black/75">{stats.reviewTasks} in review</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Clients or Team Members */}
-          <div className="bg-white p-5 rounded-xl border border-gold-300 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between text-black mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-black/75">
-                {isClient ? 'Avg. Progress' : 'Clients & Team'}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Active Projects */}
+          <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col justify-between card-hover-lift">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+                Active Projects
               </span>
-              <div className="p-2 bg-gold-100 text-black border border-gold-300 rounded-lg">
-                {isClient ? <TrendingUp className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+              <div className="p-2 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shadow-2xs">
+                <FolderKanban className="h-4 w-4 stroke-[1.75]" />
+              </div>
+            </div>
+            <div>
+              <div className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917] tracking-tight">
+                {stats.activeProjects}
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-[#78716C]">
+                <span>{stats.totalProjects} total</span>
+                <span>•</span>
+                <span className="text-[#2D6A4F] font-medium">{stats.completedProjects} done</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Tasks / In Progress */}
+          <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col justify-between card-hover-lift">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+                In Progress Tasks
+              </span>
+              <div className="p-2 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shadow-2xs">
+                <CheckCircle2 className="h-4 w-4 stroke-[1.75]" />
+              </div>
+            </div>
+            <div>
+              <div className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917] tracking-tight">
+                {stats.inProgressTasks}
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-[#78716C]">
+                <span>{stats.pendingTasks} to do</span>
+                <span>•</span>
+                <span className="text-[#2D6A4F] font-medium">{stats.completedTasks} done</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pending Approvals */}
+          <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col justify-between card-hover-lift">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+                Pending Approvals
+              </span>
+              <div className="p-2 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shadow-2xs">
+                <FileCheck className="h-4 w-4 stroke-[1.75]" />
+              </div>
+            </div>
+            <div>
+              <div className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917] tracking-tight">
+                {pendingApprovals.length}
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-[#78716C]">
+                <span>{stats.reviewTasks} deliverables in review</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Avg Progress / Team Members */}
+          <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col justify-between card-hover-lift">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+                {isClient ? 'Avg. Progress' : 'Studio Team'}
+              </span>
+              <div className="p-2 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shadow-2xs">
+                {isClient ? (
+                  <TrendingUp className="h-4 w-4 stroke-[1.75]" />
+                ) : (
+                  <Users className="h-4 w-4 stroke-[1.75]" />
+                )}
               </div>
             </div>
             <div>
               {isClient ? (
                 <div>
-                  <div className="text-2xl font-extrabold text-black tracking-tight">
+                  <div className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917] tracking-tight">
                     {stats.averageProjectProgress}%
                   </div>
-                  <div className="mt-1">
+                  <div className="mt-1.5">
                     <ProgressBar progress={stats.averageProjectProgress} size="sm" showLabel={false} />
                   </div>
                 </div>
               ) : (
                 <div>
-                  <div className="text-2xl font-extrabold text-black tracking-tight">
-                    {stats.totalClients} <span className="text-sm font-normal text-black/70">clients</span>
+                  <div className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917] tracking-tight">
+                    {stats.totalTeamMembers}
                   </div>
-                  <div className="text-xs text-black/70 font-medium mt-1">
-                    {stats.totalTeamMembers} active team members
+                  <div className="text-xs text-[#78716C] mt-1">
+                    {stats.totalClients} client accounts managed
                   </div>
                 </div>
               )}
@@ -313,26 +324,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       )}
 
-      {/* Attendance Quick Punch & Status Bar (Internal Team & Admins) */}
+      {/* Attendance Quick Punch & Status Bar (Internal Staff & Admins) */}
       {isInternalStaff && (
-        <div className="bg-gold-50/80 rounded-xl border border-gold-300 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-black text-gold-400 rounded-xl shadow-xs border border-gold-500">
-              <Clock className="h-5 w-5" />
+        <div className="bg-white/90 rounded-2xl border border-[#EDE7DD] p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 bg-[#FAF4EC] text-[#BA954F] rounded-2xl border border-[#EDE3D4] shadow-2xs">
+              <Clock className="h-5 w-5 stroke-[1.75]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-extrabold text-black">Today's Attendance</h3>
+                <h3 className="text-sm font-serif font-bold text-[#1C1917]">Today's Studio Attendance</h3>
                 {todayAttendance?.status && (
                   <AttendanceStatusBadge status={todayAttendance.status} size="xs" />
                 )}
                 {todayAttendance?.activeBreak && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-200 text-black border border-gold-400 animate-pulse">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0] animate-pulse">
                     On Break
                   </span>
                 )}
               </div>
-              <p className="text-xs text-black/70 mt-0.5 font-medium">
+              <p className="text-xs text-[#78716C] mt-0.5 font-normal">
                 {!todayAttendance?.clockIn
                   ? "You haven't clocked in for today yet."
                   : todayAttendance.clockOut
@@ -344,15 +355,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
           <div className="flex items-center gap-3">
             {attendanceStats && (
-              <div className="hidden lg:flex items-center gap-4 text-xs text-black font-semibold pr-4 border-r border-gold-300">
+              <div className="hidden lg:flex items-center gap-4 text-xs text-[#57534E] font-medium pr-4 border-r border-[#EDE7DD]">
                 <div>
-                  <span className="font-extrabold text-black">{attendanceStats.presentToday}</span> Present
+                  <span className="font-bold text-[#1C1917]">{attendanceStats.presentToday}</span> Present
                 </div>
                 <div>
-                  <span className="font-extrabold text-black">{attendanceStats.currentlyWorking}</span> Working
+                  <span className="font-bold text-[#1C1917]">{attendanceStats.currentlyWorking}</span> Working
                 </div>
                 <div>
-                  <span className="font-extrabold text-black">{attendanceStats.onBreak}</span> On Break
+                  <span className="font-bold text-[#1C1917]">{attendanceStats.onBreak}</span> On Break
                 </div>
               </div>
             )}
@@ -360,10 +371,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('/attendance')}
-              className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg shadow-sm border border-gold-600 transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap btn-hover-lift"
+              className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap btn-hover-lift"
             >
               <span>Manage Attendance</span>
-              <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+              <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
             </button>
           </div>
         </div>
@@ -373,75 +384,81 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       {isSuperAdminOrAdmin && stats && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Overall Project Completion Gauge */}
-          <div className="bg-white p-6 rounded-xl border border-gold-300 shadow-sm flex flex-col justify-between">
+          <div className="bg-white p-6 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold text-black">Project Completion</h3>
-                <span className="text-xs font-extrabold text-black">{stats.averageProjectProgress}%</span>
+                <h3 className="text-sm font-serif font-bold text-[#1C1917]">Project Completion</h3>
+                <span className="text-xs font-bold font-mono text-[#BA954F]">
+                  {stats.averageProjectProgress}%
+                </span>
               </div>
-              <p className="text-xs text-black/70 font-medium mb-4">
-                Average deliverable completion across all active and completed project pipelines
+              <p className="text-xs text-[#78716C] font-normal mb-4">
+                Average deliverable completion across all active studio pipelines
               </p>
               <ProgressBar progress={stats.averageProjectProgress} size="lg" />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-6 pt-4 border-t border-gold-200 text-xs">
-              <div className="p-3 bg-gold-50 rounded-lg border border-gold-200">
-                <div className="text-black/70 font-medium">Planning</div>
-                <div className="text-base font-extrabold text-black">{stats.planningProjects}</div>
+            <div className="grid grid-cols-2 gap-2.5 mt-6 pt-4 border-t border-[#EDE7DD] text-xs">
+              <div className="p-3 bg-[#FAF7F2] rounded-xl border border-[#EDE7DD]">
+                <div className="text-[#78716C] font-normal">Planning</div>
+                <div className="text-base font-serif font-bold text-[#1C1917]">
+                  {stats.planningProjects}
+                </div>
               </div>
-              <div className="p-3 bg-gold-100 rounded-lg border border-gold-300">
-                <div className="text-black font-semibold">Active</div>
-                <div className="text-base font-extrabold text-black">{stats.activeProjects}</div>
+              <div className="p-3 bg-[#FAF4EC] rounded-xl border border-[#EDE3D4]">
+                <div className="text-[#BA954F] font-medium">Active</div>
+                <div className="text-base font-serif font-bold text-[#1C1917]">
+                  {stats.activeProjects}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Task Status Breakdown */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gold-300 shadow-sm">
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#EDE7DD] shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-bold text-black">Task Lifecycle Distribution</h3>
-                <p className="text-xs text-black/70 font-medium">Breakdown of current task deliverables</p>
+                <h3 className="text-sm font-serif font-bold text-[#1C1917]">Task Lifecycle Distribution</h3>
+                <p className="text-xs text-[#78716C] font-normal">Breakdown of current deliverable stages</p>
               </div>
               <button
                 type="button"
                 onClick={() => onNavigate('/kanban')}
-                className="text-xs font-bold text-black hover:text-gold-700 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] flex items-center gap-1 cursor-pointer"
               >
-                Open Kanban <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+                Open Kanban <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
               </button>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3.5 rounded-lg border border-gold-200 bg-white">
-                <div className="text-xs font-bold text-black/75">To Do</div>
-                <div className="text-xl font-extrabold text-black mt-1">{stats.pendingTasks}</div>
-                <div className="text-[10px] text-black/60 mt-0.5 font-medium">
+              <div className="p-3.5 rounded-xl border border-[#EDE7DD] bg-[#FAF7F2]">
+                <div className="text-xs font-semibold text-[#78716C]">To Do</div>
+                <div className="text-xl font-serif font-bold text-[#1C1917] mt-1">{stats.pendingTasks}</div>
+                <div className="text-[10px] text-[#A8A29E] mt-0.5 font-mono">
                   {stats.totalTasks ? Math.round((stats.pendingTasks / stats.totalTasks) * 100) : 0}% of tasks
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-lg border border-gold-300 bg-gold-50">
-                <div className="text-xs font-bold text-black">In Progress</div>
-                <div className="text-xl font-extrabold text-black mt-1">{stats.inProgressTasks}</div>
-                <div className="text-[10px] text-black/70 mt-0.5 font-medium">
+              <div className="p-3.5 rounded-xl border border-[#EDE3D4] bg-[#FAF4EC]">
+                <div className="text-xs font-semibold text-[#BA954F]">In Progress</div>
+                <div className="text-xl font-serif font-bold text-[#1C1917] mt-1">{stats.inProgressTasks}</div>
+                <div className="text-[10px] text-[#BA954F]/80 mt-0.5 font-mono">
                   {stats.totalTasks ? Math.round((stats.inProgressTasks / stats.totalTasks) * 100) : 0}% of tasks
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-lg border border-gold-400 bg-gold-100">
-                <div className="text-xs font-bold text-black">In Review</div>
-                <div className="text-xl font-extrabold text-black mt-1">{stats.reviewTasks}</div>
-                <div className="text-[10px] text-black/70 mt-0.5 font-medium">
+              <div className="p-3.5 rounded-xl border border-[#E8DCC8] bg-[#FAF2E6]">
+                <div className="text-xs font-semibold text-[#946B2D]">In Review</div>
+                <div className="text-xl font-serif font-bold text-[#1C1917] mt-1">{stats.reviewTasks}</div>
+                <div className="text-[10px] text-[#946B2D]/80 mt-0.5 font-mono">
                   {stats.totalTasks ? Math.round((stats.reviewTasks / stats.totalTasks) * 100) : 0}% of tasks
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-lg border border-gold-500 bg-gold-200">
-                <div className="text-xs font-bold text-black">Completed</div>
-                <div className="text-xl font-extrabold text-black mt-1">{stats.completedTasks}</div>
-                <div className="text-[10px] text-black/75 mt-0.5 font-medium">
+              <div className="p-3.5 rounded-xl border border-[#D1E7DD] bg-[#F0F7F2]">
+                <div className="text-xs font-semibold text-[#2D6A4F]">Completed</div>
+                <div className="text-xl font-serif font-bold text-[#1C1917] mt-1">{stats.completedTasks}</div>
+                <div className="text-[10px] text-[#2D6A4F]/80 mt-0.5 font-mono">
                   {stats.totalTasks ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0}% of tasks
                 </div>
               </div>
@@ -453,18 +470,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       {/* Milestones and Pending Approvals Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Approvals Widget */}
-        <div className="bg-white rounded-xl border border-gold-300 shadow-sm overflow-hidden flex flex-col justify-between">
+        <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between p-4 border-b border-gold-200 bg-gold-50/70">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-gold-100 text-black border border-gold-300 rounded-lg">
-                  <FileCheck className="h-4 w-4" />
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#EDE7DD] bg-[#FAF7F2]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl">
+                  <FileCheck className="h-4 w-4 stroke-[1.75]" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-black">
+                  <h3 className="text-sm font-serif font-bold text-[#1C1917]">
                     {isClient ? 'Deliverables Awaiting Your Review' : 'Client Approval Requests'}
                   </h3>
-                  <p className="text-[11px] text-black/70 font-medium">
+                  <p className="text-[11px] text-[#78716C] font-normal">
                     {pendingApprovals.length} pending client sign-off
                   </p>
                 </div>
@@ -472,16 +489,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('/approvals')}
-                className="text-xs font-bold text-black hover:text-gold-700 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] flex items-center gap-1 cursor-pointer"
               >
-                View all <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+                View all <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
               </button>
             </div>
 
-            <div className="divide-y divide-gold-100">
+            <div className="divide-y divide-[#F5EFE6]">
               {pendingApprovals.length === 0 ? (
-                <div className="p-6 text-center text-xs text-black/60 font-medium">
-                  <CheckCircle2 className="h-6 w-6 mx-auto text-gold-600 mb-1" />
+                <div className="p-8 text-center text-xs text-[#78716C] font-normal">
+                  <CheckCircle2 className="h-6 w-6 mx-auto text-[#2D6A4F] mb-1.5" />
                   All deliverables have been reviewed and approved.
                 </div>
               ) : (
@@ -489,15 +506,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   <div
                     key={appr.id}
                     onClick={() => onNavigate('/approvals')}
-                    className="p-3.5 hover:bg-gold-50/70 cursor-pointer transition-colors flex items-center justify-between gap-3"
+                    className="p-4 hover:bg-[#FAF7F2] cursor-pointer transition-colors flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
-                      <div className="text-xs font-bold text-black truncate">{appr.title}</div>
-                      <div className="text-[11px] text-black/70 mt-0.5 truncate font-medium">
+                      <div className="text-xs font-bold text-[#1C1917] truncate">{appr.title}</div>
+                      <div className="text-[11px] text-[#78716C] mt-0.5 truncate font-normal">
                         {appr.project?.name} • Submitted {new Date(appr.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold-100 text-black border border-gold-300">
+                    <span className="shrink-0 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
                       Pending Review
                     </span>
                   </div>
@@ -508,31 +525,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Milestones Widget */}
-        <div className="bg-white rounded-xl border border-gold-300 shadow-sm overflow-hidden flex flex-col justify-between">
+        <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between p-4 border-b border-gold-200 bg-gold-50/70">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-gold-100 text-black border border-gold-300 rounded-lg">
-                  <Flag className="h-4 w-4" />
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#EDE7DD] bg-[#FAF7F2]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl">
+                  <Flag className="h-4 w-4 stroke-[1.75]" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-black">Key Milestones</h3>
-                  <p className="text-[11px] text-black/70 font-medium">Major target dates and completion goals</p>
+                  <h3 className="text-sm font-serif font-bold text-[#1C1917]">Key Milestones</h3>
+                  <p className="text-[11px] text-[#78716C] font-normal">Major target dates and completion goals</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => onNavigate('/milestones')}
-                className="text-xs font-bold text-black hover:text-gold-700 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] flex items-center gap-1 cursor-pointer"
               >
-                View all <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+                View all <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
               </button>
             </div>
 
-            <div className="divide-y divide-gold-100">
+            <div className="divide-y divide-[#F5EFE6]">
               {upcomingMilestones.length === 0 ? (
-                <div className="p-6 text-center text-xs text-black/60 font-medium">
-                  <Flag className="h-6 w-6 mx-auto text-gold-400 mb-1" />
+                <div className="p-8 text-center text-xs text-[#78716C] font-normal">
+                  <Flag className="h-6 w-6 mx-auto text-[#B58E4E] mb-1.5" />
                   No upcoming milestones configured yet.
                 </div>
               ) : (
@@ -540,26 +557,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   <div
                     key={m.id}
                     onClick={() => onNavigate('/milestones')}
-                    className="p-3.5 hover:bg-gold-50/70 cursor-pointer transition-colors space-y-1.5"
+                    className="p-4 hover:bg-[#FAF7F2] cursor-pointer transition-colors space-y-1.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-black truncate">{m.name}</span>
+                      <span className="text-xs font-bold text-[#1C1917] truncate">{m.name}</span>
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                           m.status === 'COMPLETED'
-                            ? 'bg-gold-200 text-black border-gold-400'
+                            ? 'bg-[#F0F7F2] text-[#2D6A4F] border-[#D1E7DD]'
                             : m.status === 'DELAYED'
-                            ? 'bg-white text-black border-gold-400 font-extrabold'
-                            : 'bg-gold-100 text-black border-gold-300'
+                            ? 'bg-[#FDF2F0] text-[#B91C1C] border-[#F5D5D0]'
+                            : 'bg-[#FAF4EC] text-[#BA954F] border-[#EAE0D0]'
                         }`}
                       >
                         {m.status.replace('_', ' ')}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-black/70 font-medium">
-                      <span className="truncate max-w-[160px]">{m.project?.name}</span>
-                      <span>
+                    <div className="flex items-center justify-between text-[11px] text-[#78716C] font-normal">
+                      <span className="truncate max-w-[180px]">{m.project?.name}</span>
+                      <span className="font-mono">
                         {m.dueDate ? `Target: ${new Date(m.dueDate).toLocaleDateString()}` : 'No date'}
                       </span>
                     </div>
@@ -573,25 +590,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* My Personal Todo Widget (Internal staff only) */}
       {isInternalStaff && (
-        <div className="bg-white rounded-xl border border-gold-300 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-gold-200 bg-gold-50/70">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-gold-100 text-black border border-gold-300 rounded-lg">
-                <ListTodo className="h-4 w-4 text-gold-700" />
+        <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs overflow-hidden">
+          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[#EDE7DD] bg-[#FAF7F2]">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl">
+                <ListTodo className="h-4 w-4 stroke-[1.75]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-black">My Todo List</h3>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gold-200 text-black border border-gold-400">
+                  <h3 className="text-sm font-serif font-bold text-[#1C1917]">My Todo List</h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
                     {todos.filter((t) => !t.completed).length} pending
                   </span>
                   {todos.filter((t) => t.completed).length > 0 && (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white text-black/70 border border-gold-200 hidden sm:inline-block">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white text-[#78716C] border border-[#EDE7DD] hidden sm:inline-block">
                       {todos.filter((t) => t.completed).length} completed
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-black/70 font-medium">
+                <p className="text-[11px] text-[#78716C] font-normal">
                   Your active checklists, daily priorities, and delegated tasks
                 </p>
               </div>
@@ -601,33 +618,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <button
                 type="button"
                 onClick={() => setIsTodoModalOpen(true)}
-                className="px-2.5 py-1 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] border border-[#DFD5C6] rounded-xl transition-colors inline-flex items-center gap-1 cursor-pointer shadow-2xs"
               >
-                <Plus className="h-3 w-3 stroke-[2.5]" />
+                <Plus className="h-3.5 w-3.5 stroke-[2]" />
                 <span>Add Todo</span>
               </button>
               <button
                 type="button"
                 onClick={() => onNavigate('/todos')}
-                className="text-xs font-bold text-black hover:text-gold-700 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] flex items-center gap-1 cursor-pointer"
               >
-                View all <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+                View all <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
               </button>
             </div>
           </div>
 
-          <div className="divide-y divide-gold-100">
+          <div className="divide-y divide-[#F5EFE6]">
             {todos.length === 0 ? (
-              <div className="p-6 text-center text-xs text-black/60 font-medium">
-                <CheckCircle2 className="h-6 w-6 mx-auto text-gold-400 mb-1" />
-                <p className="font-bold text-black mb-0.5">No todos found</p>
+              <div className="p-8 text-center text-xs text-[#78716C] font-normal">
+                <CheckCircle2 className="h-6 w-6 mx-auto text-[#B58E4E] mb-1.5" />
+                <p className="font-semibold text-[#1C1917] mb-0.5">No todos found</p>
                 <p>You have no personal todos right now.</p>
                 <button
                   type="button"
                   onClick={() => setIsTodoModalOpen(true)}
-                  className="mt-2.5 px-3 py-1 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg border border-gold-600 inline-flex items-center gap-1 cursor-pointer btn-hover-lift"
+                  className="mt-3 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
                 >
-                  <Plus className="h-3 w-3 stroke-[2.5]" />
+                  <Plus className="h-3.5 w-3.5 stroke-[2]" />
                   <span>Create First Todo</span>
                 </button>
               </div>
@@ -645,34 +662,34 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   return (
                     <div
                       key={todo.id}
-                      className="p-3.5 hover:bg-gold-50/70 transition-colors flex items-center justify-between gap-3"
+                      className="p-4 hover:bg-[#FAF7F2] transition-colors flex items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <button
                           type="button"
                           onClick={() => handleQuickTodoToggle(todo)}
-                          className="shrink-0 w-4.5 h-4.5 rounded border border-gold-400 hover:border-gold-600 bg-white hover:bg-gold-100 flex items-center justify-center cursor-pointer transition-colors"
+                          className="shrink-0 w-5 h-5 rounded-lg border border-[#DFD5C6] hover:border-[#BA954F] bg-white hover:bg-[#FAF4EC] flex items-center justify-center cursor-pointer transition-colors"
                           title="Mark as completed"
                         >
-                          {todo.completed && <Check className="h-3 w-3 stroke-[3]" />}
+                          {todo.completed && <Check className="h-3.5 w-3.5 stroke-[3] text-[#BA954F]" />}
                         </button>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-black truncate">{todo.title}</p>
-                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-black/60 font-medium">
+                          <p className="text-xs font-bold text-[#1C1917] truncate">{todo.title}</p>
+                          <div className="flex items-center gap-2.5 mt-0.5 text-[11px] text-[#78716C] font-normal">
                             {hasDueDate && (
                               <span
                                 className={`inline-flex items-center gap-1 ${
-                                  isOverdue ? 'text-red-700 font-bold' : ''
+                                  isOverdue ? 'text-[#B91C1C] font-semibold' : ''
                                 }`}
                               >
-                                <Calendar className="h-2.5 w-2.5" />
+                                <Calendar className="h-3 w-3" />
                                 {isOverdue ? 'Overdue: ' : ''}
                                 {dueDateObj?.toLocaleDateString()}
                               </span>
                             )}
                             {todo.assignedTo && (
                               <span className="inline-flex items-center gap-1">
-                                <UserCheck className="h-2.5 w-2.5 text-gold-700" />
+                                <UserCheck className="h-3 w-3 text-[#BA954F]" />
                                 {todo.assignedToId === user?.id ? (
                                   <>From {todo.createdBy?.name || 'Colleague'}</>
                                 ) : (
@@ -687,7 +704,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       <button
                         type="button"
                         onClick={() => handleQuickTodoToggle(todo)}
-                        className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded text-black/70 hover:text-black hover:bg-gold-200 border border-gold-200 transition-colors cursor-pointer"
+                        className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-xl text-[#57534E] hover:text-[#1C1917] hover:bg-[#F5EFE6] border border-[#EDE7DD] transition-colors cursor-pointer"
                       >
                         Done
                       </button>
@@ -697,8 +714,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             )}
 
             {todos.length > 0 && todos.filter((t) => !t.completed).length === 0 && (
-              <div className="p-4 text-center text-xs text-black/70 font-medium bg-gold-50/40">
-                <CheckCircle2 className="h-4 w-4 mx-auto text-gold-600 mb-1" />
+              <div className="p-4 text-center text-xs text-[#78716C] font-normal bg-[#FAF7F2]/40">
+                <CheckCircle2 className="h-4 w-4 mx-auto text-[#2D6A4F] mb-1" />
                 All caught up! All your todos are marked as completed.
               </div>
             )}
@@ -706,36 +723,36 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       )}
 
-      {/* Recent Projects Table & Recent Tasks */}
+      {/* Recent Projects & Recent Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Projects */}
-        <div className="bg-white rounded-xl border border-gold-300 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between p-5 border-b border-gold-200">
+        <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs overflow-hidden">
+          <div className="flex items-center justify-between p-5 border-b border-[#EDE7DD] bg-[#FAF7F2]">
             <div>
-              <h3 className="text-sm font-bold text-black">Recent Projects</h3>
-              <p className="text-xs text-black/70 font-medium">Track latest status and milestones</p>
+              <h3 className="text-sm font-serif font-bold text-[#1C1917]">Recent Projects</h3>
+              <p className="text-xs text-[#78716C] font-normal">Track latest status and deliverables</p>
             </div>
             <button
               type="button"
               onClick={() => onNavigate('/projects')}
-              className="text-xs font-bold text-black hover:text-gold-700 flex items-center gap-1 cursor-pointer"
+              className="text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] flex items-center gap-1 cursor-pointer"
             >
-              View all <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+              View all <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
             </button>
           </div>
 
-          <div className="divide-y divide-gold-200">
+          <div className="divide-y divide-[#F5EFE6]">
             {recentProjects.length === 0 ? (
-              <div className="p-8 text-center text-xs text-black/60 font-medium">
+              <div className="p-8 text-center text-xs text-[#78716C] font-normal">
                 <p>No projects found.</p>
                 {isClient && (
                   <div className="mt-3">
                     <button
                       type="button"
                       onClick={onOpenClientProject}
-                      className="px-3.5 py-1.5 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg shadow-2xs border border-gold-600 transition-colors inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
+                      className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
                     >
-                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                      <Plus className="h-3.5 w-3.5 stroke-[2]" />
                       Create New Project
                     </button>
                   </div>
@@ -746,15 +763,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <div
                   key={project.id}
                   onClick={() => onNavigate(`/projects/${project.id}`)}
-                  className="p-4 hover:bg-gold-50/70 cursor-pointer transition-colors space-y-2.5"
+                  className="p-4 hover:bg-[#FAF7F2] cursor-pointer transition-colors space-y-2.5"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h4 className="text-sm font-bold text-black hover:text-gold-700 transition-colors truncate">
+                      <h4 className="text-sm font-bold text-[#1C1917] hover:text-[#BA954F] transition-colors truncate">
                         {project.name}
                       </h4>
-                      <p className="text-xs text-black/70 flex items-center gap-1.5 mt-0.5 font-medium">
-                        <Building2 className="h-3 w-3 text-gold-600" />
+                      <p className="text-xs text-[#78716C] flex items-center gap-1.5 mt-0.5 font-normal">
+                        <Building2 className="h-3 w-3 text-[#BA954F]" />
                         {project.clientName}
                       </p>
                     </div>
@@ -762,10 +779,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between gap-4 pt-1">
-                    <div className="w-44">
+                    <div className="w-48">
                       <ProgressBar progress={project.progress} size="sm" />
                     </div>
-                    <div className="text-[11px] text-black/60 font-medium shrink-0">
+                    <div className="text-[11px] text-[#A8A29E] font-mono shrink-0">
                       {project.dueDate ? `Due ${new Date(project.dueDate).toLocaleDateString()}` : 'No deadline'}
                     </div>
                   </div>
@@ -776,38 +793,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Recent Tasks */}
-        <div className="bg-white rounded-xl border border-gold-300 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between p-5 border-b border-gold-200">
+        <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs overflow-hidden">
+          <div className="flex items-center justify-between p-5 border-b border-[#EDE7DD] bg-[#FAF7F2]">
             <div>
-              <h3 className="text-sm font-bold text-black">Recent Tasks</h3>
-              <p className="text-xs text-black/70 font-medium">Active tasks and assigned deliverables</p>
+              <h3 className="text-sm font-serif font-bold text-[#1C1917]">Recent Tasks</h3>
+              <p className="text-xs text-[#78716C] font-normal">Active deliverables and assignments</p>
             </div>
             <button
               type="button"
               onClick={() => onNavigate('/tasks')}
-              className="text-xs font-bold text-black hover:text-gold-700 flex items-center gap-1 cursor-pointer"
+              className="text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] flex items-center gap-1 cursor-pointer"
             >
-              View all <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+              View all <ArrowRight className="h-3.5 w-3.5 stroke-[2]" />
             </button>
           </div>
 
-          <div className="divide-y divide-gold-200">
+          <div className="divide-y divide-[#F5EFE6]">
             {recentTasks.length === 0 ? (
-              <div className="p-8 text-center text-xs text-black/60 font-medium">No tasks found.</div>
+              <div className="p-8 text-center text-xs text-[#78716C] font-normal">No tasks found.</div>
             ) : (
               recentTasks.map((task) => (
-                <div key={task.id} className="p-4 hover:bg-gold-50/70 transition-colors flex items-center justify-between gap-3">
+                <div
+                  key={task.id}
+                  className="p-4 hover:bg-[#FAF7F2] transition-colors flex items-center justify-between gap-3"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       {isInternalStaff && <PriorityBadge priority={task.priority} size="sm" />}
-                      <span className="text-xs text-black/70 font-medium truncate">
+                      <span className="text-xs text-[#78716C] font-normal truncate">
                         {task.projectName}
                       </span>
                     </div>
-                    <p className="text-sm font-bold text-black truncate">{task.title}</p>
+                    <p className="text-xs font-bold text-[#1C1917] truncate">{task.title}</p>
                     {task.assignedTo && (
-                      <p className="text-[11px] text-black/70 mt-1 flex items-center gap-1 font-medium">
-                        Assigned to: <span className="font-bold text-black">{task.assignedTo.name}</span>
+                      <p className="text-[11px] text-[#78716C] mt-1 flex items-center gap-1 font-normal">
+                        Assigned to: <span className="font-semibold text-[#1C1917]">{task.assignedTo.name}</span>
                       </p>
                     )}
                   </div>
@@ -817,7 +837,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       <select
                         value={task.status}
                         onChange={(e) => handleQuickTaskStatus(task.id, e.target.value as TaskStatus)}
-                        className="text-xs py-1 px-2.5 border border-gold-300 rounded-lg bg-white font-bold text-black focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer"
+                        className="text-xs py-1.5 px-2.5 border border-[#DFD5C6] rounded-xl bg-white font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
                       >
                         <option value="TODO">To Do</option>
                         <option value="IN_PROGRESS">In Progress</option>
@@ -834,6 +854,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
       </div>
+
       {/* Add Todo Modal for Quick Creation */}
       <TodoModal
         isOpen={isTodoModalOpen}

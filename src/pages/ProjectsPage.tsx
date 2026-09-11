@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Project, Client, User, ProjectStatus, ProjectPriority } from '../types';
+import { Project, Client, User } from '../types';
 import { api } from '../services/api';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { PriorityBadge } from '../components/common/PriorityBadge';
@@ -16,12 +16,9 @@ import {
   Plus,
   Building2,
   Calendar,
-  MoreVertical,
   Edit2,
   Trash2,
   ArrowRight,
-  Filter,
-  CheckCircle2,
 } from 'lucide-react';
 
 interface ProjectsPageProps {
@@ -91,13 +88,15 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-gold-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-black">Projects</h1>
-          <p className="text-sm text-black/70 font-medium">
-            Manage deliverables, assign team members, and monitor progress metrics
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#1C1917]">
+            Projects
+          </h1>
+          <p className="text-xs sm:text-sm text-[#78716C] font-normal">
+            Manage creative deliverables, assign team members, and monitor progress metrics
           </p>
         </div>
 
@@ -108,9 +107,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
               setEditingProject(null);
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-600 border border-gold-600 text-black text-sm font-bold rounded-lg shadow-sm transition-colors shrink-0 cursor-pointer btn-hover-lift"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-all shrink-0 cursor-pointer btn-hover-lift"
           >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <Plus className="h-4 w-4 stroke-[2]" />
             Create Project
           </button>
         )}
@@ -119,34 +118,34 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
           <button
             type="button"
             onClick={() => setIsClientModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-600 border border-gold-600 text-black text-sm font-bold rounded-lg shadow-sm transition-colors shrink-0 cursor-pointer btn-hover-lift"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-all shrink-0 cursor-pointer btn-hover-lift"
           >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <Plus className="h-4 w-4 stroke-[2]" />
             Create New Project
           </button>
         )}
       </div>
 
       {/* Filters Toolbar */}
-      <div className="bg-white p-3.5 rounded-xl border border-gold-300 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <div className="bg-white/95 backdrop-blur-xs p-3.5 sm:p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
         {/* Search */}
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-black/40" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A8A29E]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search projects..."
-            className="w-full pl-9 pr-3.5 py-1.5 text-xs sm:text-sm bg-white border border-gold-300 rounded-lg text-black font-medium placeholder-black/40 focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
+            placeholder="Search projects by name..."
+            className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F]"
           />
         </div>
 
         {/* Status & Priority dropdowns */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-1/2 sm:w-auto px-3 py-1.5 text-xs font-semibold bg-white border border-gold-300 rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer"
+            className="w-1/2 sm:w-auto px-3.5 py-2 text-xs font-semibold bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
           >
             <option value="ALL">All Statuses</option>
             <option value="PENDING">Pending Setup</option>
@@ -160,7 +159,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="w-1/2 sm:w-auto px-3 py-1.5 text-xs font-semibold bg-white border border-gold-300 rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer"
+            className="w-1/2 sm:w-auto px-3.5 py-2 text-xs font-semibold bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
           >
             <option value="ALL">All Priorities</option>
             <option value="URGENT">Urgent</option>
@@ -194,9 +193,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
           {projects.map((project) => (
             <div
               key={project.id}
-              className="bg-white rounded-xl border border-gold-300 shadow-sm hover:border-gold-500 transition-all flex flex-col justify-between overflow-hidden group card-hover-lift"
+              className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs hover:border-[#DFD5C6] transition-all flex flex-col justify-between overflow-hidden group card-hover-lift"
             >
-              <div className="p-5 space-y-4">
+              <div className="p-5 space-y-3.5">
                 {/* Top badges & actions */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
@@ -213,7 +212,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                           setEditingProject(project);
                           setIsModalOpen(true);
                         }}
-                        className="p-1 text-black/60 hover:text-black hover:bg-gold-100 rounded-md transition-colors cursor-pointer"
+                        className="p-1.5 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-lg transition-colors cursor-pointer"
                         title="Edit Project"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
@@ -224,7 +223,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                           e.stopPropagation();
                           setDeletingProject(project);
                         }}
-                        className="p-1 text-black/60 hover:text-rose-700 hover:bg-gold-100 rounded-md transition-colors cursor-pointer"
+                        className="p-1.5 text-[#78716C] hover:text-[#B91C1C] hover:bg-[#FDF2F0] rounded-lg transition-colors cursor-pointer"
                         title="Delete Project"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -237,13 +236,13 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 <div>
                   <h3
                     onClick={() => onNavigateToProject(project.id)}
-                    className="text-base font-bold text-black group-hover:text-gold-700 transition-colors cursor-pointer"
+                    className="text-base font-serif font-bold text-[#1C1917] group-hover:text-[#BA954F] transition-colors cursor-pointer"
                   >
                     {project.name}
                   </h3>
-                  <p className="text-xs text-black/70 flex items-center gap-1.5 mt-1 font-medium">
-                    <Building2 className="h-3.5 w-3.5 text-gold-600" />
-                    <span className="font-semibold text-black">
+                  <p className="text-xs text-[#78716C] flex items-center gap-1.5 mt-1 font-normal">
+                    <Building2 className="h-3.5 w-3.5 text-[#BA954F]" />
+                    <span className="font-semibold text-[#1C1917]">
                       {project.client?.company || project.client?.name || 'Client Org'}
                     </span>
                   </p>
@@ -251,7 +250,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
 
                 {/* Description */}
                 {project.description && (
-                  <p className="text-xs text-black/80 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-[#57534E] line-clamp-2 leading-relaxed font-normal">
                     {project.description}
                   </p>
                 )}
@@ -259,15 +258,15 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 {/* Progress bar */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-black/70 font-semibold">Calculated Progress</span>
-                    <span className="font-extrabold text-black">{project.progress}%</span>
+                    <span className="text-[#78716C] font-medium">Calculated Progress</span>
+                    <span className="font-bold font-mono text-[#BA954F]">{project.progress}%</span>
                   </div>
                   <ProgressBar progress={project.progress} size="md" showLabel={false} />
                 </div>
               </div>
 
               {/* Card Footer */}
-              <div className="px-5 py-3 bg-gold-50/70 border-t border-gold-200 flex items-center justify-between gap-3 text-xs">
+              <div className="px-5 py-3.5 bg-[#FAF7F2] border-t border-[#EDE7DD] flex items-center justify-between gap-3 text-xs">
                 {/* Team avatar stack */}
                 <div className="flex items-center -space-x-1.5 overflow-hidden">
                   {project.members && project.members.length > 0 ? (
@@ -282,14 +281,14 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                         }
                         alt={member.name}
                         title={`${member.name} (${member.role})`}
-                        className="inline-block h-6 w-6 rounded-full ring-2 ring-white object-cover"
+                        className="inline-block h-6 w-6 rounded-full ring-2 ring-white object-cover shadow-2xs"
                       />
                     ))
                   ) : (
-                    <span className="text-[11px] text-black/50 font-medium">No members</span>
+                    <span className="text-[11px] text-[#A8A29E] font-normal">No members</span>
                   )}
                   {project.members && project.members.length > 4 && (
-                    <span className="h-6 w-6 rounded-full bg-gold-200 text-black font-bold text-[10px] flex items-center justify-center ring-2 ring-white">
+                    <span className="h-6 w-6 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0] font-bold text-[10px] flex items-center justify-center ring-2 ring-white">
                       +{project.members.length - 4}
                     </span>
                   )}
@@ -298,18 +297,18 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 {/* Due Date & Open link */}
                 <div className="flex items-center gap-3">
                   {project.dueDate && (
-                    <span className="text-black/70 text-[11px] font-semibold flex items-center gap-1">
-                      <Calendar className="h-3 w-3 text-gold-600" />
+                    <span className="text-[#78716C] text-[11px] font-mono flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-[#BA954F]" />
                       {new Date(project.dueDate).toLocaleDateString()}
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={() => onNavigateToProject(project.id)}
-                    className="p-1 text-black hover:text-gold-700 font-bold cursor-pointer"
+                    className="p-1 text-[#78716C] hover:text-[#BA954F] font-bold cursor-pointer"
                     title="View Project Details"
                   >
-                    <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+                    <ArrowRight className="h-4 w-4 stroke-[2]" />
                   </button>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Project, Task, Comment, User, Client, TaskStatus, Milestone, ClientApproval } from '../types';
+import { Project, Task, Comment, User, Client, TaskStatus } from '../types';
 import { api } from '../services/api';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { PriorityBadge } from '../components/common/PriorityBadge';
@@ -27,16 +27,15 @@ import {
   UserMinus,
   Flag,
   FileCheck,
-  CheckCircle2,
   ExternalLink,
   Sparkles,
   Video,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { FinalHandoverView } from '../components/projects/FinalHandoverView';
 import { SubmitTaskModal } from '../components/tasks/SubmitTaskModal';
 import { ImportTasksModal } from '../components/tasks/ImportTasksModal';
 import { ProjectMeetingsView } from '../components/projects/ProjectMeetingsView';
-import { FileSpreadsheet } from 'lucide-react';
 
 interface ProjectDetailPageProps {
   projectId: string;
@@ -47,7 +46,6 @@ interface ProjectDetailPageProps {
 export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   projectId,
   onBack,
-  onNavigateToKanban,
 }) => {
   const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
@@ -55,14 +53,18 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'milestones' | 'approvals' | 'meetings' | 'team' | 'comments'>('tasks');
+  const [activeTab, setActiveTab] = useState<
+    'tasks' | 'milestones' | 'approvals' | 'meetings' | 'team' | 'comments'
+  >('tasks');
   const [viewMode, setViewMode] = useState<'handover' | 'workspace' | null>(null);
 
-  const isFullyCompleted = project?.handoverEligibility?.eligible ?? project?.handoverEligible ?? false;
+  const isFullyCompleted =
+    project?.handoverEligibility?.eligible ?? project?.handoverEligible ?? false;
 
   useEffect(() => {
     if (project) {
-      const isComplete = project.handoverEligibility?.eligible ?? project.handoverEligible ?? false;
+      const isComplete =
+        project.handoverEligibility?.eligible ?? project.handoverEligible ?? false;
       if (viewMode === null) {
         setViewMode(isComplete ? 'handover' : 'workspace');
       } else if (!isComplete && viewMode === 'handover') {
@@ -181,7 +183,9 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
   const handleQuickTaskStatus = async (taskId: string, status: TaskStatus) => {
     if (user?.role === 'TEAM_MEMBER' && (status === 'COMPLETED' || status === 'REVIEW')) {
-      alert('Team members cannot directly mark tasks as In Review or Completed. Please submit for client review at 100% progress.');
+      alert(
+        'Team members cannot directly mark tasks as In Review or Completed. Please submit for client review at 100% progress.'
+      );
       return;
     }
     try {
@@ -218,24 +222,24 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   );
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-gold-fade-in">
       {/* Top Breadcrumb & Nav */}
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-bold text-black hover:text-gold-700 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#57534E] hover:text-[#1C1917] transition-colors cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4 stroke-[2.5]" />
+          <ArrowLeft className="h-4 w-4 stroke-[2]" />
           Back to Projects
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {isFullyCompleted && (
             <button
               type="button"
               onClick={() => setViewMode('handover')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#8C6D23] bg-[#FAF6ED] hover:bg-[#F5EDD6] border border-[#DFCE9F] rounded-lg transition-colors cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#BA954F] bg-[#FAF4EC] hover:bg-[#F5EFE6] border border-[#EAE0D0] rounded-xl transition-colors cursor-pointer shadow-2xs"
             >
               <Sparkles className="h-3.5 w-3.5" />
               Final Handover View
@@ -247,7 +251,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               <button
                 type="button"
                 onClick={() => setIsEditProjectOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] border border-[#DFD5C6] rounded-xl transition-colors cursor-pointer shadow-2xs"
               >
                 <Edit2 className="h-3.5 w-3.5" />
                 Edit Project
@@ -258,9 +262,9 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   setEditingTask(null);
                   setIsTaskModalOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg shadow-sm transition-colors cursor-pointer btn-hover-lift"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-colors cursor-pointer btn-hover-lift"
               >
-                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                <Plus className="h-3.5 w-3.5 stroke-[2]" />
                 Add Task
               </button>
             </>
@@ -270,14 +274,16 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
       {/* Completion Banner when viewing workspace */}
       {isFullyCompleted && (
-        <div className="bg-[#FAF6ED] border border-[#DFCE9F] p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#F5EDD6] border border-[#DFCE9F] flex items-center justify-center text-[#8C6D23] shrink-0">
+        <div className="bg-[#FAF4EC] border border-[#EDE3D4] p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white border border-[#EDE3D4] flex items-center justify-center text-[#BA954F] shrink-0 shadow-2xs">
               <Sparkles className="h-4 w-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-[#1E1B18]">100% Mandatory Tasks Complete</h4>
-              <p className="text-[11px] text-[#7A7162]">
+              <h4 className="text-xs font-serif font-bold text-[#1C1917]">
+                100% Mandatory Tasks Complete
+              </h4>
+              <p className="text-[11px] text-[#78716C] font-normal">
                 This project has reached final handover readiness. All deliverable requirements are signed off.
               </p>
             </div>
@@ -285,7 +291,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           <button
             type="button"
             onClick={() => setViewMode('handover')}
-            className="px-3.5 py-1.5 bg-[#8C6D23] hover:bg-[#7A5F1E] text-white text-xs font-bold rounded-lg transition-colors shadow-2xs shrink-0 cursor-pointer"
+            className="px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl transition-colors shadow-xs shrink-0 cursor-pointer btn-hover-lift"
           >
             Switch to Handover View
           </button>
@@ -293,30 +299,30 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       )}
 
       {/* Project Banner Card */}
-      <div className="bg-white rounded-xl border border-gold-300 shadow-sm p-6 sm:p-7 space-y-5">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div className="space-y-2">
+      <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs p-6 sm:p-7 space-y-5">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div className="space-y-2.5">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={project.status} />
               {!isClient && <PriorityBadge priority={project.priority} />}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-black">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#1C1917]">
               {project.name}
             </h1>
-            <div className="flex flex-wrap items-center gap-4 text-xs text-black/70 pt-1 font-medium">
-              <span className="flex items-center gap-1.5 font-bold text-black">
-                <Building2 className="h-4 w-4 text-gold-600" />
+            <div className="flex flex-wrap items-center gap-4 text-xs text-[#78716C] pt-1">
+              <span className="flex items-center gap-1.5 font-semibold text-[#1C1917]">
+                <Building2 className="h-4 w-4 text-[#BA954F]" />
                 {project.client?.company || project.client?.name || 'Client Org'}
               </span>
               {project.startDate && (
-                <span className="flex items-center gap-1.5 font-semibold">
-                  <Calendar className="h-4 w-4 text-gold-600" />
+                <span className="flex items-center gap-1.5 font-mono">
+                  <Calendar className="h-4 w-4 text-[#BA954F]" />
                   Started {new Date(project.startDate).toLocaleDateString()}
                 </span>
               )}
               {project.dueDate && (
-                <span className="flex items-center gap-1.5 text-black font-bold">
-                  <Clock className="h-4 w-4 text-gold-600" />
+                <span className="flex items-center gap-1.5 font-mono text-[#1C1917] font-semibold">
+                  <Clock className="h-4 w-4 text-[#BA954F]" />
                   Due {new Date(project.dueDate).toLocaleDateString()}
                 </span>
               )}
@@ -324,110 +330,117 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           </div>
 
           {/* Progress Gauge */}
-          <div className="w-full lg:w-72 bg-gold-50/70 p-4 rounded-lg border border-gold-200 space-y-2">
+          <div className="w-full lg:w-72 bg-[#FAF7F2] p-4 rounded-xl border border-[#EDE7DD] space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-black">Deliverable Progress</span>
-              <span className="font-extrabold text-black text-sm">{project.progress}%</span>
+              <span className="font-semibold text-[#1C1917]">Deliverable Progress</span>
+              <span className="font-bold font-mono text-[#BA954F] text-sm">{project.progress}%</span>
             </div>
             <ProgressBar progress={project.progress} size="md" showLabel={false} />
-            <div className="flex justify-between text-[11px] text-black/70 font-semibold pt-1">
-              <span>{project.completedTaskCount || 0} of {project.taskCount || 0} tasks done</span>
+            <div className="flex justify-between text-[11px] text-[#78716C] font-normal pt-1">
+              <span>
+                {project.completedTaskCount || 0} of {project.taskCount || 0} tasks done
+              </span>
               {!isClient && (
-                <span>{project.taskCount ? Math.round(((project.completedTaskCount || 0) / project.taskCount) * 100) : 0}%</span>
+                <span className="font-mono">
+                  {project.taskCount
+                    ? Math.round(((project.completedTaskCount || 0) / project.taskCount) * 100)
+                    : 0}
+                  %
+                </span>
               )}
             </div>
           </div>
         </div>
 
         {project.description && (
-          <div className="pt-3 border-t border-gold-200">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-black mb-1">
+          <div className="pt-3 border-t border-[#EDE7DD]">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8C7E72] mb-1">
               Scope & Objectives
             </h3>
-            <p className="text-sm text-black/80 leading-relaxed whitespace-pre-line">
+            <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed whitespace-pre-line font-normal">
               {project.description}
             </p>
           </div>
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-gold-300 pb-px overflow-x-auto">
+      {/* Tabs - White Ink Underline / Pill Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#EDE7DD] pb-px overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab('tasks')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'tasks'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-[#BA954F] bg-[#FAF4EC]/60 rounded-t-xl'
+              : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
-          <CheckSquare className="h-4 w-4 text-gold-600" />
+          <CheckSquare className="h-4 w-4" />
           Tasks ({project.tasks?.length || 0})
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('milestones')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'milestones'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-[#BA954F] bg-[#FAF4EC]/60 rounded-t-xl'
+              : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
-          <Flag className="h-4 w-4 text-gold-600" />
+          <Flag className="h-4 w-4" />
           Milestones ({project.milestones?.length || 0})
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('approvals')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'approvals'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-[#BA954F] bg-[#FAF4EC]/60 rounded-t-xl'
+              : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
-          <FileCheck className="h-4 w-4 text-gold-600" />
+          <FileCheck className="h-4 w-4" />
           Approvals ({project.approvals?.length || 0})
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('meetings')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'meetings'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-[#BA954F] bg-[#FAF4EC]/60 rounded-t-xl'
+              : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
-          <Video className="h-4 w-4 text-gold-600" />
+          <Video className="h-4 w-4" />
           Meetings
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('team')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'team'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-[#BA954F] bg-[#FAF4EC]/60 rounded-t-xl'
+              : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
-          <Users className="h-4 w-4 text-gold-600" />
-          Team Members ({project.members?.length || 0})
+          <Users className="h-4 w-4" />
+          Team ({project.members?.length || 0})
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('comments')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'comments'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-[#BA954F] bg-[#FAF4EC]/60 rounded-t-xl'
+              : 'border-transparent text-[#78716C] hover:text-[#1C1917]'
           }`}
         >
-          <MessageSquare className="h-4 w-4 text-gold-600" />
+          <MessageSquare className="h-4 w-4" />
           Discussion ({comments.length})
         </button>
       </div>
@@ -436,16 +449,16 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       {activeTab === 'tasks' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-black">Project Deliverables & Tasks</h3>
+            <h3 className="text-sm font-serif font-bold text-[#1C1917]">Project Deliverables & Tasks</h3>
             {canManage && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setIsImportModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors cursor-pointer shadow-xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] border border-[#DFD5C6] rounded-xl transition-colors cursor-pointer shadow-2xs"
                   title="Import multiple tasks from Excel file"
                 >
-                  <FileSpreadsheet className="h-3.5 w-3.5 text-gold-700" />
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-[#BA954F]" />
                   Import from Excel
                 </button>
                 <button
@@ -454,18 +467,18 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     setEditingTask(null);
                     setIsTaskModalOpen(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg transition-colors cursor-pointer btn-hover-lift"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl transition-colors cursor-pointer shadow-xs btn-hover-lift"
                 >
-                  <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                  <Plus className="h-3.5 w-3.5 stroke-[2]" />
                   Add Task
                 </button>
               </div>
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-gold-300 shadow-sm divide-y divide-gold-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs divide-y divide-[#F5EFE6] overflow-hidden">
             {!project.tasks || project.tasks.length === 0 ? (
-              <div className="p-12 text-center text-sm text-black/50 font-medium">
+              <div className="p-12 text-center text-xs text-[#78716C] font-normal">
                 No tasks created for this project yet.
               </div>
             ) : (
@@ -473,24 +486,26 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 <div
                   key={task.id}
                   onClick={isClient ? () => setClientViewTask(task) : undefined}
-                  className={`p-4 sm:p-5 hover:bg-gold-50/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4${isClient ? ' cursor-pointer' : ''}`}
+                  className={`p-4 sm:p-5 hover:bg-[#FAF7F2] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4${
+                    isClient ? ' cursor-pointer' : ''
+                  }`}
                 >
                   <div className="space-y-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <PriorityBadge priority={task.priority} size="sm" />
-                      <span className="text-sm font-bold text-black">{task.title}</span>
+                      <span className="text-xs sm:text-sm font-bold text-[#1C1917]">{task.title}</span>
                       {task.status === 'REVISION_REQUESTED' && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0]">
                           Revision Requested
                         </span>
                       )}
                     </div>
                     {task.description && (
-                      <p className="text-xs text-black/70 line-clamp-1">{task.description}</p>
+                      <p className="text-xs text-[#78716C] line-clamp-1 font-normal">{task.description}</p>
                     )}
-                    <div className="flex items-center gap-3 text-xs text-black/70 pt-0.5 font-medium">
+                    <div className="flex items-center gap-3 text-xs text-[#78716C] pt-0.5 font-normal">
                       {task.assignedTo ? (
-                        <span className="flex items-center gap-1 font-semibold text-black">
+                        <span className="flex items-center gap-1 font-semibold text-[#1C1917]">
                           <img
                             src={
                               task.assignedTo.profileImage ||
@@ -499,15 +514,15 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                               )}`
                             }
                             alt={task.assignedTo.name}
-                            className="h-4 w-4 rounded-full ring-1 ring-gold-400"
+                            className="h-4 w-4 rounded-full ring-1 ring-[#DFD5C6]"
                           />
                           {task.assignedTo.name}
                         </span>
                       ) : (
-                        <span className="text-black/40">Unassigned</span>
+                        <span className="text-[#A8A29E]">Unassigned</span>
                       )}
                       {task.dueDate && (
-                        <span>Due {new Date(task.dueDate).toLocaleDateString()}</span>
+                        <span className="font-mono">Due {new Date(task.dueDate).toLocaleDateString()}</span>
                       )}
                     </div>
                   </div>
@@ -518,25 +533,30 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                       <StatusBadge status={task.status} size="sm" />
                     ) : user?.role === 'TEAM_MEMBER' ? (
                       <div className="flex items-center gap-2">
-                        {task.status !== 'REVIEW' && task.status !== 'COMPLETED' && task.assignedToId === user?.id && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setSubmitTask(task); }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg cursor-pointer shadow-xs btn-hover-lift"
-                          >
-                            <Send className="h-3 w-3" />
-                            Submit for Client Approval
-                          </button>
-                        )}
+                        {task.status !== 'REVIEW' &&
+                          task.status !== 'COMPLETED' &&
+                          task.assignedToId === user?.id && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSubmitTask(task);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl cursor-pointer shadow-xs btn-hover-lift"
+                            >
+                              <Send className="h-3 w-3" />
+                              Submit for Client Approval
+                            </button>
+                          )}
 
                         {task.status === 'REVIEW' && task.clientApprovalStatus === 'PENDING' && (
-                          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-lg px-2.5 py-1.5 whitespace-nowrap">
+                          <span className="text-[11px] font-semibold text-[#946B2D] bg-[#FAF2E6] border border-[#E8DCC8] rounded-xl px-2.5 py-1.5 whitespace-nowrap">
                             Awaiting Client Approval
                           </span>
                         )}
 
                         {task.clientApprovalStatus === 'APPROVED' && (
-                          <span className="text-[11px] font-bold text-black bg-gold-200 border border-gold-400 rounded-lg px-2.5 py-1.5 whitespace-nowrap">
+                          <span className="text-[11px] font-semibold text-[#2D6A4F] bg-[#F0F7F2] border border-[#D1E7DD] rounded-xl px-2.5 py-1.5 whitespace-nowrap">
                             Client Approved
                           </span>
                         )}
@@ -546,25 +566,27 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                           onChange={(e) => handleQuickTaskStatus(task.id, e.target.value as TaskStatus)}
                           onClick={(e) => e.stopPropagation()}
                           disabled={task.status === 'REVIEW' || task.status === 'COMPLETED'}
-                          className="text-xs font-bold py-1.5 px-2.5 rounded-lg border border-gold-300 bg-white text-black cursor-pointer focus:ring-1 focus:ring-gold-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-[#DFD5C6] bg-white text-[#1C1917] cursor-pointer focus:ring-1 focus:ring-[#BA954F] disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
                         >
                           <option value="TODO">To Do</option>
                           <option value="IN_PROGRESS">In Progress</option>
                           {task.status === 'REVIEW' && <option value="REVIEW" disabled>Review</option>}
                           {task.status === 'COMPLETED' && <option value="COMPLETED" disabled>Completed</option>}
-                          {task.status === 'REVISION_REQUESTED' && <option value="REVISION_REQUESTED">Revision Requested</option>}
+                          {task.status === 'REVISION_REQUESTED' && (
+                            <option value="REVISION_REQUESTED">Revision Requested</option>
+                          )}
                         </select>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         {task.status === 'REVIEW' && task.clientApprovalStatus === 'PENDING' && (
-                          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-lg px-2.5 py-1.5 whitespace-nowrap">
+                          <span className="text-[11px] font-semibold text-[#946B2D] bg-[#FAF2E6] border border-[#E8DCC8] rounded-xl px-2.5 py-1.5 whitespace-nowrap">
                             Awaiting Client Approval
                           </span>
                         )}
 
                         {task.clientApprovalStatus === 'APPROVED' && (
-                          <span className="text-[11px] font-bold text-black bg-gold-200 border border-gold-400 rounded-lg px-2.5 py-1.5 whitespace-nowrap">
+                          <span className="text-[11px] font-semibold text-[#2D6A4F] bg-[#F0F7F2] border border-[#D1E7DD] rounded-xl px-2.5 py-1.5 whitespace-nowrap">
                             Client Approved
                           </span>
                         )}
@@ -573,7 +595,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                           value={task.status}
                           onChange={(e) => handleQuickTaskStatus(task.id, e.target.value as TaskStatus)}
                           onClick={(e) => e.stopPropagation()}
-                          className="text-xs font-bold py-1.5 px-2.5 rounded-lg border border-gold-300 bg-white text-black cursor-pointer focus:ring-1 focus:ring-gold-500"
+                          className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-[#DFD5C6] bg-white text-[#1C1917] cursor-pointer focus:ring-1 focus:ring-[#BA954F] shadow-2xs"
                         >
                           <option value="TODO">To Do</option>
                           <option value="IN_PROGRESS">In Progress</option>
@@ -593,7 +615,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                             setEditingTask(task);
                             setIsTaskModalOpen(true);
                           }}
-                          className="p-1 text-black/60 hover:text-black hover:bg-gold-100 rounded-md transition-colors cursor-pointer"
+                          className="p-1.5 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-lg transition-colors cursor-pointer"
                         >
                           <Edit2 className="h-3.5 w-3.5" />
                         </button>
@@ -603,7 +625,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                             e.stopPropagation();
                             setDeletingTask(task);
                           }}
-                          className="p-1 text-black/60 hover:text-rose-700 hover:bg-gold-100 rounded-md transition-colors cursor-pointer"
+                          className="p-1.5 text-[#78716C] hover:text-[#B91C1C] hover:bg-[#FDF2F0] rounded-lg transition-colors cursor-pointer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -621,35 +643,36 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       {activeTab === 'milestones' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-black">Key Deliverable Milestones</h3>
-            <span className="text-xs text-black/70 font-semibold">
-              {project.milestones?.filter((m) => m.status === 'COMPLETED').length || 0} of {project.milestones?.length || 0} achieved
+            <h3 className="text-sm font-serif font-bold text-[#1C1917]">Key Deliverable Milestones</h3>
+            <span className="text-xs text-[#78716C] font-mono">
+              {project.milestones?.filter((m) => m.status === 'COMPLETED').length || 0} of{' '}
+              {project.milestones?.length || 0} achieved
             </span>
           </div>
 
-          <div className="bg-white rounded-xl border border-gold-300 shadow-sm divide-y divide-gold-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs divide-y divide-[#F5EFE6] overflow-hidden">
             {!project.milestones || project.milestones.length === 0 ? (
-              <div className="p-12 text-center text-sm text-black/50 font-medium">
-                <Flag className="h-8 w-8 text-gold-400 mx-auto mb-2" />
+              <div className="p-12 text-center text-xs text-[#78716C] font-normal">
+                <Flag className="h-7 w-7 text-[#B58E4E] mx-auto mb-2" />
                 No milestones recorded for this project.
               </div>
             ) : (
               project.milestones.map((m) => (
-                <div key={m.id} className="p-4 sm:p-5 hover:bg-gold-50/40 transition-colors space-y-2">
+                <div key={m.id} className="p-4 sm:p-5 hover:bg-[#FAF7F2] transition-colors space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h4 className="text-sm font-bold text-black">{m.name}</h4>
+                      <h4 className="text-xs sm:text-sm font-bold text-[#1C1917]">{m.name}</h4>
                       {m.description && (
-                        <p className="text-xs text-black/70 mt-0.5">{m.description}</p>
+                        <p className="text-xs text-[#78716C] mt-0.5 font-normal">{m.description}</p>
                       )}
                     </div>
                     <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                      className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
                         m.status === 'COMPLETED'
-                          ? 'bg-gold-200 text-black border-gold-400'
+                          ? 'bg-[#F0F7F2] text-[#2D6A4F] border-[#D1E7DD]'
                           : m.status === 'DELAYED'
-                          ? 'bg-rose-50 text-rose-800 border-rose-300'
-                          : 'bg-gold-100 text-black border-gold-400'
+                          ? 'bg-[#FDF2F0] text-[#B91C1C] border-[#F5D5D0]'
+                          : 'bg-[#FAF4EC] text-[#BA954F] border-[#EAE0D0]'
                       }`}
                     >
                       {m.status.replace('_', ' ')}
@@ -660,7 +683,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     <div className="w-48">
                       <ProgressBar progress={m.progress} size="sm" />
                     </div>
-                    <span className="text-xs text-black/70 font-semibold">
+                    <span className="text-xs text-[#78716C] font-mono">
                       {m.dueDate ? `Target: ${new Date(m.dueDate).toLocaleDateString()}` : 'No target date'}
                     </span>
                   </div>
@@ -675,53 +698,61 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       {activeTab === 'approvals' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-black">Client Sign-Off & Deliverables</h3>
-            <span className="text-xs text-black/70 font-semibold">
+            <h3 className="text-sm font-serif font-bold text-[#1C1917]">Client Sign-Off & Deliverables</h3>
+            <span className="text-xs text-[#78716C] font-mono">
               {project.approvals?.filter((a) => a.status === 'APPROVED').length || 0} approved
             </span>
           </div>
 
-          <div className="bg-white rounded-xl border border-gold-300 shadow-sm divide-y divide-gold-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs divide-y divide-[#F5EFE6] overflow-hidden">
             {!project.approvals || project.approvals.length === 0 ? (
-              <div className="p-12 text-center text-sm text-black/50 font-medium">
-                <FileCheck className="h-8 w-8 text-gold-400 mx-auto mb-2" />
+              <div className="p-12 text-center text-xs text-[#78716C] font-normal">
+                <FileCheck className="h-7 w-7 text-[#B58E4E] mx-auto mb-2" />
                 No deliverable sign-offs requested for this project yet.
               </div>
             ) : (
               project.approvals.map((a) => (
-                <div key={a.id} className="p-4 sm:p-5 hover:bg-gold-50/40 transition-colors space-y-2">
+                <div key={a.id} className="p-4 sm:p-5 hover:bg-[#FAF7F2] transition-colors space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h4 className="text-sm font-bold text-black">{a.title}</h4>
+                      <h4 className="text-xs sm:text-sm font-bold text-[#1C1917]">{a.title}</h4>
                       {a.description && (
-                        <p className="text-xs text-black/70 mt-0.5">{a.description}</p>
+                        <p className="text-xs text-[#78716C] mt-0.5 font-normal">{a.description}</p>
                       )}
                       {a.deliverableUrl && (
                         <a
-                          href={a.deliverableUrl.startsWith('http') ? a.deliverableUrl : `https://${a.deliverableUrl}`}
+                          href={
+                            a.deliverableUrl.startsWith('http')
+                              ? a.deliverableUrl
+                              : `https://${a.deliverableUrl}`
+                          }
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-black font-bold hover:text-gold-700 underline mt-1"
+                          className="inline-flex items-center gap-1 text-xs text-[#BA954F] font-semibold hover:underline mt-1"
                         >
-                          <ExternalLink className="h-3 w-3 text-gold-600" /> View Asset
+                          <ExternalLink className="h-3 w-3" /> View Asset
                         </a>
                       )}
                     </div>
                     <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                      className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
                         a.status === 'APPROVED'
-                          ? 'bg-gold-200 text-black border-gold-400'
+                          ? 'bg-[#F0F7F2] text-[#2D6A4F] border-[#D1E7DD]'
                           : a.status === 'REJECTED'
-                          ? 'bg-rose-50 text-rose-800 border-rose-300'
-                          : 'bg-gold-100 text-black border-gold-400'
+                          ? 'bg-[#FDF2F0] text-[#B91C1C] border-[#F5D5D0]'
+                          : 'bg-[#FAF4EC] text-[#BA954F] border-[#EAE0D0]'
                       }`}
                     >
-                      {a.status === 'PENDING' ? 'Pending Review' : a.status === 'APPROVED' ? 'Approved' : 'Needs Revisions'}
+                      {a.status === 'PENDING'
+                        ? 'Pending Review'
+                        : a.status === 'APPROVED'
+                        ? 'Approved'
+                        : 'Needs Revisions'}
                     </span>
                   </div>
 
                   {a.comments && (
-                    <div className="p-2.5 bg-gold-50 rounded-lg text-xs text-black/80 font-medium italic border border-gold-200">
+                    <div className="p-3 bg-[#FAF7F2] rounded-xl text-xs text-[#57534E] italic border border-[#EDE7DD]">
                       Client feedback: "{a.comments}"
                     </div>
                   )}
@@ -747,14 +778,14 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       {activeTab === 'team' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-black">Project Staffing</h3>
+            <h3 className="text-sm font-serif font-bold text-[#1C1917]">Project Staffing</h3>
             {canManage && (
               <button
                 type="button"
                 onClick={() => setIsAddMemberOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg transition-colors cursor-pointer btn-hover-lift"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl transition-colors cursor-pointer shadow-xs btn-hover-lift"
               >
-                <UserPlus className="h-3.5 w-3.5 stroke-[2.5]" />
+                <UserPlus className="h-3.5 w-3.5 stroke-[2]" />
                 Assign Member
               </button>
             )}
@@ -762,14 +793,14 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {!project.members || project.members.length === 0 ? (
-              <div className="col-span-full p-8 text-center text-sm text-black/50 bg-white rounded-xl border border-gold-300">
+              <div className="col-span-full p-8 text-center text-xs text-[#78716C] bg-white rounded-2xl border border-[#EDE7DD]">
                 No team members assigned yet.
               </div>
             ) : (
               project.members.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-white p-4 rounded-xl border border-gold-300 shadow-sm flex items-center justify-between gap-3 card-hover-lift"
+                  className="bg-white p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center justify-between gap-3 card-hover-lift"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <img
@@ -780,12 +811,12 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                         )}`
                       }
                       alt={member.name}
-                      className="h-10 w-10 rounded-lg border border-gold-300 object-cover"
+                      className="h-10 w-10 rounded-xl border border-[#DFD5C6] object-cover shadow-2xs"
                     />
                     <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-black truncate">{member.name}</h4>
-                      <p className="text-xs text-black/70 font-medium truncate">{member.email}</p>
-                      <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded bg-gold-100 text-black border border-gold-300">
+                      <h4 className="text-xs sm:text-sm font-bold text-[#1C1917] truncate">{member.name}</h4>
+                      <p className="text-xs text-[#78716C] truncate font-normal">{member.email}</p>
+                      <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
                         {member.role.replace('_', ' ')}
                       </span>
                     </div>
@@ -795,7 +826,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveMember(member.id)}
-                      className="p-1.5 text-black/60 hover:text-rose-700 hover:bg-gold-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-[#78716C] hover:text-[#B91C1C] hover:bg-[#FDF2F0] rounded-xl transition-colors cursor-pointer"
                       title="Remove from project"
                     >
                       <UserMinus className="h-4 w-4" />
@@ -811,8 +842,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
       {/* Tab 3: Comments & Discussion */}
       {activeTab === 'comments' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl border border-gold-300 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-black">Project Discussion Feed</h3>
+          <div className="bg-white p-6 rounded-2xl border border-[#EDE7DD] shadow-xs space-y-4">
+            <h3 className="text-sm font-serif font-bold text-[#1C1917]">Project Discussion Feed</h3>
 
             {/* Post Comment */}
             <form onSubmit={handleAddComment} className="flex gap-3 items-start">
@@ -824,7 +855,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   )}`
                 }
                 alt={user?.name}
-                className="h-9 w-9 rounded-lg border border-gold-300 object-cover shrink-0"
+                className="h-9 w-9 rounded-xl border border-[#DFD5C6] object-cover shrink-0 shadow-2xs"
               />
               <div className="flex-1 space-y-2">
                 <textarea
@@ -832,24 +863,24 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   required
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Share a milestone update, feedback, or note..."
-                  className="w-full px-3.5 py-2 text-sm bg-white border border-gold-300 rounded-lg text-black font-medium placeholder-black/40 focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
+                  placeholder="Share a milestone update, feedback, or creative note..."
+                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F]"
                 />
                 <button
                   type="submit"
                   disabled={isPostingComment || !commentText.trim()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg shadow-sm transition-colors disabled:opacity-50 cursor-pointer btn-hover-lift"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer btn-hover-lift"
                 >
-                  <Send className="h-3.5 w-3.5 stroke-[2.5]" />
+                  <Send className="h-3.5 w-3.5 stroke-[2]" />
                   {isPostingComment ? 'Posting...' : 'Post Comment'}
                 </button>
               </div>
             </form>
 
             {/* Comments List */}
-            <div className="space-y-3 pt-4 border-t border-gold-200">
+            <div className="space-y-3 pt-4 border-t border-[#EDE7DD]">
               {comments.length === 0 ? (
-                <div className="p-8 text-center text-xs text-black/50 font-medium">
+                <div className="p-8 text-center text-xs text-[#78716C] font-normal">
                   No discussion comments yet. Start the conversation!
                 </div>
               ) : (
@@ -860,7 +891,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   return (
                     <div
                       key={comment.id}
-                      className="p-4 rounded-lg bg-gold-50/60 border border-gold-200 space-y-2"
+                      className="p-4 rounded-xl bg-[#FAF7F2] border border-[#EDE7DD] space-y-2"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2.5">
@@ -872,18 +903,18 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                               )}`
                             }
                             alt={comment.user?.name}
-                            className="h-7 w-7 rounded-md border border-gold-300 object-cover"
+                            className="h-7 w-7 rounded-lg border border-[#DFD5C6] object-cover shadow-2xs"
                           />
                           <div>
-                            <span className="text-xs font-bold text-black">
+                            <span className="text-xs font-bold text-[#1C1917]">
                               {comment.user?.name}
                             </span>
                             {comment.user?.role && (
-                              <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-gold-200 text-black font-bold">
+                              <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-[#FAF4EC] text-[#BA954F] font-semibold border border-[#EDE3D4]">
                                 {comment.user.role}
                               </span>
                             )}
-                            <span className="ml-2 text-[11px] text-black/60 font-semibold">
+                            <span className="ml-2 text-[11px] text-[#A8A29E] font-mono">
                               {new Date(comment.createdAt).toLocaleString()}
                             </span>
                           </div>
@@ -893,7 +924,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="text-black/60 hover:text-rose-700 p-1 rounded transition-colors cursor-pointer"
+                            className="text-[#78716C] hover:text-[#B91C1C] p-1 rounded transition-colors cursor-pointer"
                             title="Delete comment"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -901,7 +932,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                         )}
                       </div>
 
-                      <p className="text-xs text-black/90 pl-9 whitespace-pre-line leading-relaxed font-medium">
+                      <p className="text-xs text-[#57534E] pl-9 whitespace-pre-line leading-relaxed font-normal">
                         {comment.content}
                       </p>
                     </div>
@@ -949,23 +980,28 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         <SubmitTaskModal
           task={submitTask}
           onClose={() => setSubmitTask(null)}
-          onSubmitted={() => { setSubmitTask(null); loadProjectDetails(); }}
+          onSubmitted={() => {
+            setSubmitTask(null);
+            loadProjectDetails();
+          }}
         />
       )}
 
       {/* Add Member Simple Modal */}
       {isAddMemberOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-gold-300 space-y-4">
-            <h3 className="text-base font-extrabold text-black">Assign Member to {project.name}</h3>
-            <p className="text-xs text-black/70 font-medium">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#EDE7DD] space-y-4">
+            <h3 className="text-base font-serif font-bold text-[#1C1917]">
+              Assign Member to {project.name}
+            </h3>
+            <p className="text-xs text-[#78716C] font-normal">
               Select a team member to add to this project.
             </p>
 
             <select
               value={selectedNewMemberId}
               onChange={(e) => setSelectedNewMemberId(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-gold-300 rounded-lg text-black font-semibold focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer"
+              className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] font-medium focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
             >
               <option value="">Select Team Member</option>
               {availableUsersToAdd.map((u) => (
@@ -975,11 +1011,11 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               ))}
             </select>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => setIsAddMemberOpen(false)}
-                className="px-3.5 py-2 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors cursor-pointer"
+                className="px-3.5 py-2 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] border border-[#DFD5C6] rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -987,7 +1023,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                 type="button"
                 onClick={handleAddMember}
                 disabled={!selectedNewMemberId}
-                className="px-4 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg transition-colors disabled:opacity-50 cursor-pointer btn-hover-lift"
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl transition-colors disabled:opacity-50 cursor-pointer btn-hover-lift"
               >
                 Assign
               </button>

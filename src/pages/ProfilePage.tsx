@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Shield, Mail, CheckCircle2, FolderKanban, CheckSquare, Key, Eye, EyeOff, AlertCircle, Loader2, User } from 'lucide-react';
+import { Shield, Mail, CheckCircle2, FolderKanban, CheckSquare, Key, Eye, EyeOff, AlertCircle, Loader2, User, Sparkles, Lock } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -128,6 +128,13 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return 'WI';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return parts[0].substring(0, 2).toUpperCase();
+  };
+
   const permissionsList = [
     { name: 'View Dashboard & Analytics', allowed: true },
     { name: 'Create & Manage Projects', allowed: user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' },
@@ -139,75 +146,81 @@ export const ProfilePage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-8 max-w-4xl mx-auto pb-16">
       {/* Header */}
       <div>
-        <h1 className="section-heading text-heading">User Profile</h1>
-        <p className="muted mt-1">
-          Account credentials, studio role permissions, and active workspace deliverables
+        <span className="text-xs font-semibold tracking-widest uppercase text-[#BA954F]">
+          Account & Preferences
+        </span>
+        <h1 className="font-serif text-3xl font-bold text-neutral-900 tracking-tight mt-1">User Profile</h1>
+        <p className="text-sm text-neutral-500 mt-1">
+          Personal credentials, studio role permissions, and active workspace metrics
         </p>
       </div>
 
-      {/* Main Profile Card */}
-      <div className="bg-card rounded-xl border border-gold-200 shadow-xs p-6 sm:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-          <img
-            src={
-              user?.profileImage ||
-              `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                user?.name || 'User'
-              )}`
-            }
-            alt={user?.name}
-            className="h-16 w-16 rounded-xl border border-gold-300 object-cover shadow-xs"
-          />
+      {/* Main Profile Hero Card (Reference Screen 10 Replica) */}
+      <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] p-6 sm:p-8 space-y-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          {/* Avatar Monogram Badge */}
+          {user?.profileImage ? (
+            <img
+              src={user.profileImage}
+              alt={user?.name}
+              className="h-24 w-24 rounded-full border-2 border-[#BA954F]/30 object-cover shadow-sm ring-4 ring-[#FAF7F2]"
+            />
+          ) : (
+            <div className="h-24 w-24 rounded-full bg-[#FAF7F2] border-2 border-[#BA954F]/30 flex items-center justify-center text-2xl font-serif font-bold text-[#BA954F] ring-4 ring-[#FAF7F2] shadow-inner">
+              {getInitials(user?.name)}
+            </div>
+          )}
 
-          <div className="text-center sm:text-left space-y-1 flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <h2 className="text-xl font-bold text-heading">{user?.name}</h2>
-              <span className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full bg-gold-200 text-black border border-gold-400">
+          <div className="text-center sm:text-left space-y-2 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+              <h2 className="font-serif text-2xl font-bold text-neutral-900 tracking-tight">{user?.name}</h2>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-0.5 rounded-full bg-[#FAF7F2] text-[#BA954F] border border-[#EDE7DD]">
+                <Sparkles className="h-3 w-3" />
                 {user?.role?.replace('_', ' ')}
               </span>
             </div>
-            <p className="muted flex items-center justify-center sm:justify-start gap-1.5 pt-1 text-xs">
-              <Mail className="h-3.5 w-3.5 text-gold-700" />
+            <p className="text-xs text-neutral-500 flex items-center justify-center sm:justify-start gap-1.5">
+              <Mail className="h-3.5 w-3.5 text-[#BA954F]" />
               {user?.email}
             </p>
-            <p className="text-xs text-gold-900/80 pt-2 leading-relaxed max-w-xl">
+            <p className="text-xs text-neutral-600 pt-1 leading-relaxed max-w-xl">
               {getRoleDescription()}
             </p>
           </div>
         </div>
 
-        {/* User Workspace Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gold-200">
-          <div className="bg-gold-50/60 p-4 rounded-xl border border-gold-200 flex items-center gap-3">
-            <div className="p-2.5 bg-gold-200 text-black border border-gold-300 rounded-lg">
+        {/* User Workspace Metrics Bento */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-[#EDE7DD]">
+          <div className="bg-[#FAF7F2] p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5">
+            <div className="p-2.5 bg-white text-[#BA954F] border border-[#EDE7DD] rounded-xl shadow-xs">
               <FolderKanban className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-lg font-extrabold text-heading">{assignedProjectsCount}</div>
-              <div className="text-xs text-gold-800">Accessible Projects</div>
+              <div className="text-xl font-bold font-serif text-neutral-900">{assignedProjectsCount}</div>
+              <div className="text-xs font-medium text-neutral-500">Accessible Projects</div>
             </div>
           </div>
 
-          <div className="bg-gold-50/60 p-4 rounded-xl border border-gold-200 flex items-center gap-3">
-            <div className="p-2.5 bg-gold-100 text-gold-800 border border-gold-300 rounded-lg">
+          <div className="bg-[#FAF7F2] p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5">
+            <div className="p-2.5 bg-white text-[#BA954F] border border-[#EDE7DD] rounded-xl shadow-xs">
               <CheckSquare className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-lg font-extrabold text-heading">{assignedTasksCount}</div>
-              <div className="text-xs text-gold-800">Assigned Tasks</div>
+              <div className="text-xl font-bold font-serif text-neutral-900">{assignedTasksCount}</div>
+              <div className="text-xs font-medium text-neutral-500">Assigned Tasks</div>
             </div>
           </div>
 
-          <div className="bg-gold-50/60 p-4 rounded-xl border border-gold-200 flex items-center gap-3">
-            <div className="p-2.5 bg-gold-200 text-black border border-gold-300 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-gold-800" />
+          <div className="bg-[#FAF7F2] p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5">
+            <div className="p-2.5 bg-white text-[#BA954F] border border-[#EDE7DD] rounded-xl shadow-xs">
+              <CheckCircle2 className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-lg font-extrabold text-heading">{completedTasksCount}</div>
-              <div className="text-xs text-gold-800">Completed Tasks</div>
+              <div className="text-xl font-bold font-serif text-neutral-900">{completedTasksCount}</div>
+              <div className="text-xs font-medium text-neutral-500">Completed Tasks</div>
             </div>
           </div>
         </div>
@@ -215,25 +228,25 @@ export const ProfilePage: React.FC = () => {
 
       {/* Role Permissions Matrix */}
       {user?.role !== 'CLIENT' && user?.role !== 'CLIENT_ADMIN' && (
-        <div className="bg-card rounded-xl border border-gold-200 shadow-xs p-6 space-y-4">
-          <h3 className="text-sm font-bold text-heading flex items-center gap-2">
-            <Shield className="h-4 w-4 text-gold-600" />
-            Role Permissions Matrix
+        <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] p-6 space-y-4">
+          <h3 className="font-serif text-base font-bold text-neutral-900 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-[#BA954F]" />
+            Studio Role Permissions
           </h3>
 
-          <div className="divide-y divide-gold-100">
+          <div className="divide-y divide-[#F3EDE2]">
             {permissionsList.map((perm) => (
               <div
                 key={perm.name}
-                className="py-3 flex items-center justify-between text-xs text-heading font-medium"
+                className="py-3 flex items-center justify-between text-xs text-neutral-800 font-medium"
               >
                 <span>{perm.name}</span>
                 {perm.allowed ? (
-                  <span className="px-2.5 py-0.5 rounded-full bg-gold-200 text-black font-bold border border-gold-400">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D6A4F] font-semibold border border-[#D1E7D8] text-[11px]">
                     Granted
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full bg-gold-50 text-gold-700/60 font-medium border border-gold-200">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] text-neutral-400 font-medium border border-[#EDE7DD] text-[11px]">
                     Restricted
                   </span>
                 )}
@@ -244,44 +257,45 @@ export const ProfilePage: React.FC = () => {
       )}
 
       {/* Edit Profile Card */}
-      <div className="bg-card rounded-xl border border-gold-200 shadow-xs">
-        <div className="px-6 py-4 border-b border-gold-200">
-          <h2 className="text-sm font-bold text-black flex items-center gap-2">
-            <User className="h-4 w-4 text-gold-600 stroke-[2.5]" />
-            Edit Profile
+      <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#EDE7DD] bg-[#FAF7F2]/50">
+          <h2 className="font-serif text-base font-bold text-neutral-900 flex items-center gap-2">
+            <User className="h-4 w-4 text-[#BA954F]" />
+            Edit Profile Information
           </h2>
-          <p className="text-xs text-neutral-600 mt-0.5">
-            Update your display name and profile picture
+          <p className="text-xs text-neutral-500 mt-0.5">
+            Update your public display name and avatar photo URL
           </p>
         </div>
 
-        <form onSubmit={handleProfileUpdate} className="p-6 space-y-4">
+        <form onSubmit={handleProfileUpdate} className="p-6 space-y-5">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-2">
-            <img
-              src={
-                profileImageUrl.trim() ||
-                `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                  profileName.trim() || 'User'
-                )}`
-              }
-              alt="Profile Preview"
-              className="h-14 w-14 rounded-xl border border-gold-300 object-cover shadow-xs"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                  profileName.trim() || 'User'
-                )}`;
-              }}
-            />
-            <div className="text-xs text-neutral-600 flex-1">
-              <span className="font-semibold text-black block mb-0.5">Avatar Preview</span>
+            {profileImageUrl.trim() ? (
+              <img
+                src={profileImageUrl.trim()}
+                alt="Profile Preview"
+                className="h-14 w-14 rounded-full border border-[#EDE7DD] object-cover shadow-xs"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                    profileName.trim() || 'User'
+                  )}`;
+                }}
+              />
+            ) : (
+              <div className="h-14 w-14 rounded-full bg-[#FAF7F2] border border-[#EDE7DD] flex items-center justify-center font-serif font-bold text-[#BA954F]">
+                {getInitials(profileName || user?.name)}
+              </div>
+            )}
+            <div className="text-xs text-neutral-500 flex-1 text-center sm:text-left">
+              <span className="font-semibold text-neutral-900 block mb-0.5">Avatar Preview</span>
               <span>Displays in the top navigation bar, sidebar, project comments, and team activity.</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
-                Full Name <span className="text-rose-500">*</span>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
+                Full Name <span className="text-[#BA954F]">*</span>
               </label>
               <input
                 type="text"
@@ -289,12 +303,12 @@ export const ProfilePage: React.FC = () => {
                 value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
                 placeholder="e.g. Alex Vance"
-                className="w-full pl-3.5 pr-3.5 py-2 text-sm bg-gold-50/30 border border-gold-300 rounded-lg text-black focus:outline-none focus:bg-white focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
                 Profile Image URL (optional)
               </label>
               <input
@@ -302,33 +316,33 @@ export const ProfilePage: React.FC = () => {
                 value={profileImageUrl}
                 onChange={(e) => setProfileImageUrl(e.target.value)}
                 placeholder="https://images.unsplash.com/..."
-                className="w-full pl-3.5 pr-3.5 py-2 text-sm bg-gold-50/30 border border-gold-300 rounded-lg text-black focus:outline-none focus:bg-white focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
+                className="w-full px-3.5 py-2.5 text-sm bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] transition-all"
               />
             </div>
           </div>
 
           {/* Feedback */}
           {profileSuccess && (
-            <div className="flex items-center gap-2 p-3 text-sm text-black bg-gold-50 border border-gold-300 font-medium rounded-lg">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-gold-700" />
+            <div className="flex items-center gap-2 p-3 text-sm text-[#2D6A4F] bg-[#EBF3ED] border border-[#D1E7D8] font-medium rounded-xl">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2D6A4F]" />
               {profileSuccess}
             </div>
           )}
           {profileError && (
-            <div className="flex items-center gap-2 p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+            <div className="flex items-center gap-2 p-3 text-sm text-[#9E2A2B] bg-[#FDF0ED] border border-[#F5D0C5] rounded-xl">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {profileError}
             </div>
           )}
 
-          <div className="flex justify-end pt-1">
+          <div className="flex justify-end pt-2">
             <button
               type="submit"
               disabled={profileLoading}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-lg bg-gold-500 hover:bg-gold-600 text-black border border-gold-600 disabled:opacity-60 shadow-xs cursor-pointer btn-hover-lift"
+              className="btn-gold-primary px-6 py-2.5 text-sm font-semibold inline-flex items-center gap-2"
             >
               {profileLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {profileLoading ? 'Saving...' : 'Save Profile'}
+              {profileLoading ? 'Saving...' : 'Save Profile Changes'}
             </button>
           </div>
         </form>
@@ -336,121 +350,131 @@ export const ProfilePage: React.FC = () => {
 
       {/* Change Password Card */}
       {user?.role !== 'CLIENT' && user?.role !== 'CLIENT_ADMIN' && (
-      <div className="bg-card rounded-xl border border-gold-200 shadow-xs">
-        <div className="px-6 py-4 border-b border-gold-200">
-          <h2 className="text-sm font-bold text-black flex items-center gap-2">
-            <Key className="h-4 w-4 text-gold-600 stroke-[2.5]" />
-            Change Password
-          </h2>
-          <p className="text-xs text-neutral-600 mt-0.5">
-            Confirm your current password before setting a new one
-          </p>
-        </div>
+        <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#EDE7DD] bg-[#FAF7F2]/50">
+            <h2 className="font-serif text-base font-bold text-neutral-900 flex items-center gap-2">
+              <Lock className="h-4 w-4 text-[#BA954F]" />
+              Security & Password
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Confirm your current password before setting a new one
+            </p>
+          </div>
 
-        <form onSubmit={handlePasswordChange} className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
-              Current Password <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={showCurrentPassword ? 'text' : 'password'}
-                required
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="current-password"
-                className="w-full pl-3.5 pr-10 py-2 text-sm bg-gold-50/30 border border-gold-300 rounded-lg text-black focus:outline-none focus:bg-white focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
-              />
+          <form onSubmit={handlePasswordChange} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
+                Current Password <span className="text-[#BA954F]">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 p-0.5 cursor-pointer"
+                  title={showCurrentPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
+                  New Password <span className="text-[#BA954F]">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimum 6 characters"
+                    autoComplete="new-password"
+                    className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 p-0.5 cursor-pointer"
+                    title={showNewPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
+                  Confirm New Password <span className="text-[#BA954F]">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat new password"
+                    autoComplete="new-password"
+                    className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 p-0.5 cursor-pointer"
+                    title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback */}
+            {passwordSuccess && (
+              <div className="flex items-center gap-2 p-3 text-sm text-[#2D6A4F] bg-[#EBF3ED] border border-[#D1E7D8] font-medium rounded-xl">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2D6A4F]" />
+                {passwordSuccess}
+              </div>
+            )}
+            {passwordError && (
+              <div className="flex items-center gap-2 p-3 text-sm text-[#9E2A2B] bg-[#FDF0ED] border border-[#F5D0C5] rounded-xl">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {passwordError}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
               <button
-                type="button"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-black p-0.5 cursor-pointer"
-                title={showCurrentPassword ? 'Hide password' : 'Show password'}
+                type="submit"
+                disabled={passwordLoading}
+                className="btn-gold-primary px-6 py-2.5 text-sm font-semibold inline-flex items-center gap-2"
               >
-                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {passwordLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {passwordLoading ? 'Updating...' : 'Update Password'}
               </button>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
-                New Password <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
-                  autoComplete="new-password"
-                  className="w-full pl-3.5 pr-10 py-2 text-sm bg-gold-50/30 border border-gold-300 rounded-lg text-black focus:outline-none focus:bg-white focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-black p-0.5 cursor-pointer"
-                  title={showNewPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
-                Confirm New Password <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repeat new password"
-                  autoComplete="new-password"
-                  className="w-full pl-3.5 pr-10 py-2 text-sm bg-gold-50/30 border border-gold-300 rounded-lg text-black focus:outline-none focus:bg-white focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-black p-0.5 cursor-pointer"
-                  title={showConfirmPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Feedback */}
-          {passwordSuccess && (
-            <div className="flex items-center gap-2 p-3 text-sm text-black bg-gold-50 border border-gold-300 font-medium rounded-lg">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-gold-700" />
-              {passwordSuccess}
-            </div>
-          )}
-          {passwordError && (
-            <div className="flex items-center gap-2 p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              {passwordError}
-            </div>
-          )}
-
-          <div className="flex justify-end pt-1">
-            <button
-              type="submit"
-              disabled={passwordLoading}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-lg bg-gold-500 hover:bg-gold-600 text-black border border-gold-600 disabled:opacity-60 shadow-xs cursor-pointer btn-hover-lift"
-            >
-              {passwordLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {passwordLoading ? 'Updating...' : 'Update Password'}
-            </button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
       )}
+
+      {/* Signature & Appreciation Note from Reference Screen 10 */}
+      <div className="text-center py-8 border-t border-[#EDE7DD] mt-12 space-y-1.5">
+        <p className="font-serif italic text-lg text-neutral-800">
+          "Thank you for being a part of our journey."
+        </p>
+        <p className="font-script text-3xl text-[#BA954F]">
+          White Ink Design Studio
+        </p>
+      </div>
     </div>
   );
 };

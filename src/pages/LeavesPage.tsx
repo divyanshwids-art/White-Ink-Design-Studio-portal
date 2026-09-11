@@ -18,6 +18,7 @@ import {
   X,
   Briefcase,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 
 interface LeavesPageProps {
@@ -241,20 +242,20 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
     switch (status) {
       case 'APPROVED':
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-gold-200 text-black border border-gold-400">
-            <CheckCircle2 className="h-3.5 w-3.5 text-gold-800" /> Approved
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-0.5 rounded-full bg-[#EBF3ED] text-[#2D6A4F] border border-[#D1E7D8]">
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#2D6A4F]" /> Approved
           </span>
         );
       case 'REJECTED':
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-0.5 rounded-full bg-[#FDF0ED] text-[#9E2A2B] border border-[#F5D0C5]">
             <XCircle className="h-3.5 w-3.5" /> Rejected
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-gold-50 text-gold-800 border border-gold-300">
-            <Clock className="h-3.5 w-3.5 text-gold-600" /> Pending Review
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-0.5 rounded-full bg-[#FDF6E9] text-[#B45309] border border-[#F9E2AF]">
+            <Clock className="h-3.5 w-3.5 text-[#B45309]" /> Pending Review
           </span>
         );
     }
@@ -262,120 +263,123 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
 
   const getLeaveTypeBadge = (type: LeaveType) => {
     const map: Record<string, { label: string; color: string }> = {
-      CASUAL: { label: 'Casual Leave', color: 'bg-gold-100 text-black border-gold-300 font-semibold' },
-      SICK: { label: 'Sick / Medical', color: 'bg-gold-200 text-black border-gold-400 font-bold' },
-      ANNUAL: { label: 'Annual Vacation', color: 'bg-gold-300 text-black border-gold-500 font-bold' },
-      UNPAID: { label: 'Unpaid Leave', color: 'bg-gold-50 text-gold-800 border-gold-200 font-medium' },
-      EMERGENCY: { label: 'Emergency', color: 'bg-rose-50 text-rose-700 border-rose-200 font-bold' },
-      MATERNITY_PATERNITY: { label: 'Parental', color: 'bg-gold-100 text-gold-900 border-gold-300 font-semibold' },
-      OTHER: { label: 'Other', color: 'bg-gold-50 text-heading border-gold-200 font-medium' },
+      CASUAL: { label: 'Casual Leave', color: 'bg-[#FAF7F2] text-[#BA954F] border-[#EDE7DD] font-semibold' },
+      SICK: { label: 'Sick / Medical', color: 'bg-[#FDF6E9] text-[#B45309] border-[#F9E2AF] font-semibold' },
+      ANNUAL: { label: 'Annual Vacation', color: 'bg-[#EBF3ED] text-[#2D6A4F] border-[#D1E7D8] font-semibold' },
+      UNPAID: { label: 'Unpaid Leave', color: 'bg-[#FAF7F2] text-neutral-600 border-[#EDE7DD] font-medium' },
+      EMERGENCY: { label: 'Emergency', color: 'bg-[#FDF0ED] text-[#9E2A2B] border-[#F5D0C5] font-semibold' },
+      MATERNITY_PATERNITY: { label: 'Parental', color: 'bg-[#FAF7F2] text-[#BA954F] border-[#EDE7DD] font-semibold' },
+      OTHER: { label: 'Other', color: 'bg-[#FAF7F2] text-neutral-600 border-[#EDE7DD] font-medium' },
     };
-    const item = map[type] || { label: type, color: 'bg-gold-50 text-heading border-gold-200' };
+    const item = map[type] || { label: type, color: 'bg-[#FAF7F2] text-neutral-600 border-[#EDE7DD]' };
     return (
-      <span className={`text-[11px] px-2 py-0.5 rounded border ${item.color}`}>
+      <span className={`text-[11px] px-2.5 py-0.5 rounded-full border ${item.color}`}>
         {item.label}
       </span>
     );
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="section-heading text-heading flex items-center gap-2.5">
-            <CalendarDays className="h-6 w-6 text-gold-600" />
+          <span className="text-xs font-semibold tracking-widest uppercase text-[#BA954F]">
+            Absence & Vacation Administration
+          </span>
+          <h1 className="font-serif text-3xl font-bold text-neutral-900 tracking-tight mt-1 flex items-center gap-2.5">
+            <CalendarDays className="h-7 w-7 text-[#BA954F]" />
             Time Off & Leave Management
           </h1>
-          <p className="muted mt-1">
+          <p className="text-sm text-neutral-500 mt-1">
             Apply for studio leave, monitor approvals, and synchronize time-off records directly with daily attendance.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gold-50 text-heading text-sm font-semibold rounded-lg border border-gold-300 shadow-2xs transition-colors cursor-pointer"
+            className="btn-gold-secondary px-4 py-2 text-xs font-semibold inline-flex items-center gap-2"
           >
-            <Download className="h-4 w-4 text-gold-700" />
-            Export CSV
+            <Download className="h-3.5 w-3.5 text-[#BA954F]" />
+            <span>Export CSV</span>
           </button>
           <button
             type="button"
             onClick={handleOpenApply}
-            className="btn-primary btn-hover-lift inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+            className="btn-gold-primary px-4 py-2 text-xs font-semibold inline-flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            Apply for Leave
+            <span>Apply for Leave</span>
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex items-center gap-3 card-hover-lift">
-          <div className="p-2.5 bg-gold-100 text-gold-800 rounded-lg shrink-0 border border-gold-300">
+        <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex items-center gap-4">
+          <div className="p-3 bg-[#FAF7F2] text-[#BA954F] rounded-xl border border-[#EDE7DD] shrink-0">
             <CalendarDays className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xs font-bold text-gold-700">Total Applications</div>
-            <div className="text-xl font-extrabold text-heading">{totalCount}</div>
+            <div className="text-xs font-medium text-neutral-500">Total Applications</div>
+            <div className="text-2xl font-bold font-serif text-neutral-900 mt-0.5">{totalCount}</div>
           </div>
         </div>
 
-        <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex items-center gap-3 card-hover-lift">
-          <div className="p-2.5 bg-gold-200 text-black rounded-lg shrink-0 border border-gold-400">
+        <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex items-center gap-4">
+          <div className="p-3 bg-[#FDF6E9] text-[#B45309] rounded-xl border border-[#F9E2AF] shrink-0">
             <Clock className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xs font-bold text-gold-700">Pending Review</div>
-            <div className="text-xl font-extrabold text-black">{pendingCount}</div>
+            <div className="text-xs font-medium text-neutral-500">Pending Review</div>
+            <div className="text-2xl font-bold font-serif text-neutral-900 mt-0.5">{pendingCount}</div>
           </div>
         </div>
 
-        <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex items-center gap-3 card-hover-lift">
-          <div className="p-2.5 bg-gold-300 text-black rounded-lg shrink-0 border border-gold-400">
+        <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex items-center gap-4">
+          <div className="p-3 bg-[#EBF3ED] text-[#2D6A4F] rounded-xl border border-[#D1E7D8] shrink-0">
             <CheckCircle2 className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xs font-bold text-gold-700">Approved Leaves</div>
-            <div className="text-xl font-extrabold text-black">{approvedCount}</div>
+            <div className="text-xs font-medium text-neutral-500">Approved Leaves</div>
+            <div className="text-2xl font-bold font-serif text-neutral-900 mt-0.5">{approvedCount}</div>
           </div>
         </div>
 
-        <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex items-center gap-3 card-hover-lift">
-          <div className="p-2.5 bg-gold-100 text-gold-800 rounded-lg shrink-0 border border-gold-300">
+        <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex items-center gap-4">
+          <div className="p-3 bg-[#FAF7F2] text-[#BA954F] rounded-xl border border-[#EDE7DD] shrink-0">
             <Briefcase className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xs font-bold text-gold-700">Total Approved Days</div>
-            <div className="text-xl font-extrabold text-black">{totalDaysTaken} Days</div>
+            <div className="text-xs font-medium text-neutral-500">Total Approved Days</div>
+            <div className="text-2xl font-bold font-serif text-neutral-900 mt-0.5">{totalDaysTaken} Days</div>
           </div>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gold-700" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
           <input
             type="text"
             placeholder="Search reasons, employees..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:outline-hidden focus:bg-white focus:ring-2 focus:ring-gold-500"
+            className="w-full pl-9 pr-4 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F]"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {isAdminOrManager && (
             <div className="flex items-center gap-2">
-              <UserIcon className="h-4 w-4 text-gold-700" />
+              <UserIcon className="h-4 w-4 text-[#BA954F]" />
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                className="text-xs font-medium py-2 px-3 bg-gold-50/40 border border-gold-300 rounded-lg focus:outline-hidden focus:bg-white focus:ring-2 focus:ring-gold-500 text-heading cursor-pointer"
+                className="text-xs font-medium py-2 px-3 bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-neutral-900 cursor-pointer"
               >
                 <option value="ALL">All Employees</option>
                 {users.map((u) => (
@@ -390,7 +394,7 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="text-xs font-medium py-2 px-3 bg-gold-50/40 border border-gold-300 rounded-lg focus:outline-hidden focus:bg-white focus:ring-2 focus:ring-gold-500 text-heading cursor-pointer"
+            className="text-xs font-medium py-2 px-3 bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-neutral-900 cursor-pointer"
           >
             <option value="ALL">All Leave Types</option>
             <option value="CASUAL">Casual Leave</option>
@@ -405,7 +409,7 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="text-xs font-medium py-2 px-3 bg-gold-50/40 border border-gold-300 rounded-lg focus:outline-hidden focus:bg-white focus:ring-2 focus:ring-gold-500 text-heading cursor-pointer"
+            className="text-xs font-medium py-2 px-3 bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-neutral-900 cursor-pointer"
           >
             <option value="ALL">All Statuses</option>
             <option value="PENDING">Pending Review</option>
@@ -417,15 +421,15 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
 
       {/* Leaves List */}
       {loading ? (
-        <div className="p-12 text-center text-gold-700 bg-card rounded-xl border border-gold-200">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gold-500 border-t-transparent mb-3" />
+        <div className="p-12 text-center text-neutral-500 bg-white rounded-2xl border border-[#EDE7DD]">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#BA954F] border-t-transparent mb-3" />
           <p className="text-sm font-medium">Loading leave records...</p>
         </div>
       ) : filteredLeaves.length === 0 ? (
-        <div className="p-12 text-center text-gold-700 bg-card rounded-xl border border-gold-200">
-          <CalendarDays className="h-10 w-10 text-gold-400 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-heading">No leave requests found</h3>
-          <p className="text-xs text-gold-700 mt-1 max-w-sm mx-auto">
+        <div className="p-12 text-center text-neutral-500 bg-white rounded-2xl border border-[#EDE7DD]">
+          <CalendarDays className="h-10 w-10 text-[#BA954F] mx-auto mb-3 opacity-60" />
+          <h3 className="font-serif text-base font-bold text-neutral-900">No leave requests found</h3>
+          <p className="text-xs text-neutral-400 mt-1 max-w-sm mx-auto">
             {search || selectedStatus !== 'ALL' || selectedType !== 'ALL'
               ? 'No records match the active filter criteria.'
               : 'Submitted leave requests and time-off tracking records will appear here.'}
@@ -433,7 +437,7 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
           <button
             type="button"
             onClick={handleOpenApply}
-            className="btn-primary btn-hover-lift mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+            className="btn-gold-primary mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl"
           >
             <Plus className="h-3.5 w-3.5" />
             Apply for Leave
@@ -448,59 +452,59 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
             return (
               <div
                 key={item.id}
-                className="bg-card rounded-xl border border-gold-200 p-5 shadow-xs hover:border-gold-400 card-hover-lift transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
+                className="bg-white rounded-2xl border border-[#EDE7DD] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:border-[#BA954F]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5"
               >
                 {/* Left details */}
-                <div className="space-y-2 flex-1 min-w-0">
+                <div className="space-y-2.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2.5 flex-wrap">
                     {getStatusBadge(item.status)}
                     {getLeaveTypeBadge(item.leaveType)}
                     {item.isBackdated && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gold-800 bg-gold-100 px-2 py-0.5 rounded border border-gold-300">
-                        <AlertTriangle className="h-3 w-3 text-gold-700" /> Retroactive / Backdated
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B45309] bg-[#FDF6E9] px-2.5 py-0.5 rounded-full border border-[#F9E2AF]">
+                        <AlertTriangle className="h-3 w-3" /> Retroactive / Backdated
                       </span>
                     )}
-                    <span className="text-xs text-gold-700 flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
+                    <span className="text-xs text-neutral-500 flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-[#BA954F]" />
                       Applied on {new Date(item.createdAt).toLocaleDateString()}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <span className="text-base font-bold text-heading">
+                    <span className="font-serif text-lg font-bold text-neutral-900">
                       {item.startDate === item.endDate
                         ? item.startDate
                         : `${item.startDate} to ${item.endDate}`}
                     </span>
-                    <span className="text-xs font-extrabold text-black bg-gold-200 px-2 py-0.5 rounded border border-gold-400">
+                    <span className="text-xs font-semibold text-[#BA954F] bg-[#FAF7F2] px-2.5 py-0.5 rounded-full border border-[#EDE7DD]">
                       {item.totalDays} {item.totalDays === 1 ? 'Day' : 'Days'}
                     </span>
                   </div>
 
-                  <p className="text-sm text-heading leading-relaxed max-w-2xl bg-gold-50/50 p-2.5 rounded-lg border border-gold-200">
+                  <p className="text-sm text-neutral-700 leading-relaxed max-w-2xl bg-[#FAF7F2]/60 p-3 rounded-xl border border-[#EDE7DD]">
                     "{item.reason}"
                   </p>
 
                   {/* Metadata & Rejection note */}
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-gold-700 pt-1">
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 pt-1">
                     {item.user && (
-                      <span className="flex items-center gap-1">
-                        <UserIcon className="h-3.5 w-3.5 text-gold-600" />
-                        Employee: <span className="font-semibold text-heading">{item.user.name}</span>
-                        <span className="text-gold-700">({item.user.email})</span>
+                      <span className="flex items-center gap-1.5">
+                        <UserIcon className="h-3.5 w-3.5 text-[#BA954F]" />
+                        Staff: <span className="font-semibold text-neutral-900">{item.user.name}</span>
+                        <span className="text-neutral-400">({item.user.email})</span>
                       </span>
                     )}
                     {item.approvedBy && (
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-gold-700" />
-                        Reviewed by: <span className="font-semibold text-heading">{item.approvedBy.name}</span>
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#2D6A4F]" />
+                        Reviewed by: <span className="font-semibold text-neutral-900">{item.approvedBy.name}</span>
                       </span>
                     )}
                   </div>
 
                   {item.rejectionReason && (
-                    <div className="p-3 bg-rose-50 rounded-lg border border-rose-200 text-xs text-rose-800 flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+                    <div className="p-3 bg-[#FDF0ED] rounded-xl border border-[#F5D0C5] text-xs text-[#9E2A2B] flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-[#9E2A2B] mt-0.5" />
                       <div>
                         <span className="font-semibold">Rejection Note: </span>
                         {item.rejectionReason}
@@ -510,14 +514,14 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Right Actions */}
-                <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-gold-100">
+                <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#EDE7DD]">
                   {canApprove && (
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         disabled={actionLoading}
                         onClick={() => handleApprove(item.id)}
-                        className="btn-primary btn-hover-lift inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+                        className="btn-gold-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Approve Leave
@@ -526,7 +530,7 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
                         type="button"
                         disabled={actionLoading}
                         onClick={() => handleOpenReject(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#FDF0ED] hover:bg-[#FBE5E0] text-[#9E2A2B] border border-[#F5D0C5] text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                       >
                         <XCircle className="h-3.5 w-3.5" />
                         Reject
@@ -538,7 +542,7 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
                     <button
                       type="button"
                       onClick={() => handleDelete(item.id)}
-                      className="p-2 text-black/40 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      className="p-2 text-neutral-400 hover:text-[#9E2A2B] hover:bg-[#FDF0ED] rounded-xl transition-colors cursor-pointer"
                       title="Delete Leave Application"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -553,24 +557,24 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
 
       {/* Apply Leave Modal */}
       {isApplyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-card rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gold-300 space-y-4">
-            <div className="flex items-center justify-between border-b border-gold-200 pb-3">
-              <h2 className="text-lg font-bold text-heading flex items-center gap-2">
-                <CalendarDays className="h-5 w-5 text-gold-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#EDE7DD] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#EDE7DD] pb-3">
+              <h2 className="font-serif text-lg font-bold text-neutral-900 flex items-center gap-2">
+                <CalendarDays className="h-5 w-5 text-[#BA954F]" />
                 Apply for Leave / Time Off
               </h2>
               <button
                 type="button"
                 onClick={() => setIsApplyModalOpen(false)}
-                className="p-1 text-black/50 hover:text-black rounded-lg cursor-pointer"
+                className="p-1 text-neutral-400 hover:text-neutral-700 rounded-lg cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {applyError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
+              <div className="p-3 bg-[#FDF0ED] border border-[#F5D0C5] text-[#9E2A2B] text-xs rounded-xl">
                 {applyError}
               </div>
             )}
@@ -578,13 +582,13 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
             <form onSubmit={handleSubmitApply} className="space-y-4">
               {isAdminOrManager && users.length > 0 && (
                 <div>
-                  <label className="form-label block mb-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
                     Employee Account
                   </label>
                   <select
                     value={applyForm.userId}
                     onChange={(e) => setApplyForm({ ...applyForm, userId: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden cursor-pointer"
+                    className="w-full px-3.5 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer"
                   >
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>
@@ -596,14 +600,14 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
               )}
 
               <div>
-                <label className="form-label block mb-1">
-                  Leave Category *
+                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+                  Leave Category <span className="text-[#BA954F]">*</span>
                 </label>
                 <select
                   required
                   value={applyForm.leaveType}
                   onChange={(e) => setApplyForm({ ...applyForm, leaveType: e.target.value as LeaveType })}
-                  className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden cursor-pointer"
+                  className="w-full px-3.5 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer"
                 >
                   <option value="CASUAL">Casual Leave</option>
                   <option value="SICK">Sick / Medical Leave</option>
@@ -617,20 +621,20 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="form-label block mb-1">
-                    Start Date *
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+                    Start Date <span className="text-[#BA954F]">*</span>
                   </label>
                   <input
                     type="date"
                     required
                     value={applyForm.startDate}
                     onChange={(e) => setApplyForm({ ...applyForm, startDate: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden"
+                    className="w-full px-3.5 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F]"
                   />
                 </div>
                 <div>
-                  <label className="form-label block mb-1">
-                    End Date *
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+                    End Date <span className="text-[#BA954F]">*</span>
                   </label>
                   <input
                     type="date"
@@ -638,14 +642,14 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
                     min={applyForm.startDate}
                     value={applyForm.endDate}
                     onChange={(e) => setApplyForm({ ...applyForm, endDate: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden"
+                    className="w-full px-3.5 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F]"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-gold-50/70 rounded-lg border border-gold-200">
-                <span className="text-xs text-gold-800 font-medium">Calculated Duration:</span>
-                <span className="text-sm font-bold text-heading">
+              <div className="flex items-center justify-between p-3 bg-[#FAF7F2] rounded-xl border border-[#EDE7DD]">
+                <span className="text-xs text-neutral-600 font-medium">Calculated Duration:</span>
+                <span className="text-sm font-bold font-serif text-neutral-900">
                   {handleCalculateDays(applyForm.startDate, applyForm.endDate)} Working Day(s)
                 </span>
               </div>
@@ -656,16 +660,16 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
                   id="backdated"
                   checked={applyForm.isBackdated}
                   onChange={(e) => setApplyForm({ ...applyForm, isBackdated: e.target.checked })}
-                  className="rounded border-gold-300 text-gold-600 focus:ring-gold-500"
+                  className="rounded border-[#EDE7DD] text-[#BA954F] focus:ring-[#BA954F]"
                 />
-                <label htmlFor="backdated" className="text-xs text-heading select-none font-medium">
+                <label htmlFor="backdated" className="text-xs text-neutral-700 select-none font-medium">
                   Retroactive / Backdated Leave (Already taken due to emergency or medical reason)
                 </label>
               </div>
 
               <div>
-                <label className="form-label block mb-1">
-                  Reason & Notes *
+                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+                  Reason & Notes <span className="text-[#BA954F]">*</span>
                 </label>
                 <textarea
                   rows={3}
@@ -673,22 +677,22 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
                   placeholder="Explain the purpose or reason for the requested time off..."
                   value={applyForm.reason}
                   onChange={(e) => setApplyForm({ ...applyForm, reason: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gold-200">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#EDE7DD]">
                 <button
                   type="button"
                   onClick={() => setIsApplyModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-heading bg-white hover:bg-gold-50 border border-gold-300 rounded-lg transition-colors cursor-pointer"
+                  className="btn-gold-secondary px-4 py-2 text-xs font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={applyLoading}
-                  className="btn-primary btn-hover-lift px-4 py-2 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                  className="btn-gold-primary px-4 py-2 text-xs font-semibold disabled:opacity-50"
                 >
                   {applyLoading ? 'Submitting...' : 'Submit Application'}
                 </button>
@@ -700,17 +704,17 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
 
       {/* Reject Reason Modal */}
       {isRejectModalOpen && rejectingLeave && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-card rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gold-300 space-y-4">
-            <div className="flex items-center justify-between border-b border-gold-200 pb-3">
-              <h2 className="text-lg font-bold text-heading flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-rose-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#EDE7DD] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#EDE7DD] pb-3">
+              <h2 className="font-serif text-lg font-bold text-neutral-900 flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-[#9E2A2B]" />
                 Reject Leave Request
               </h2>
               <button
                 type="button"
                 onClick={() => setIsRejectModalOpen(false)}
-                className="p-1 text-black/50 hover:text-black rounded-lg cursor-pointer"
+                className="p-1 text-neutral-400 hover:text-neutral-700 rounded-lg cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -718,8 +722,8 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
 
             <form onSubmit={handleConfirmReject} className="space-y-4">
               <div>
-                <label className="form-label block mb-1">
-                  Reason for Rejection *
+                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+                  Reason for Rejection <span className="text-[#9E2A2B]">*</span>
                 </label>
                 <textarea
                   rows={3}
@@ -727,22 +731,22 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
                   placeholder="Provide clarity on why the leave request could not be approved..."
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-rose-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#9E2A2B]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gold-200">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#EDE7DD]">
                 <button
                   type="button"
                   onClick={() => setIsRejectModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-heading bg-white hover:bg-gold-50 border border-gold-300 rounded-lg transition-colors cursor-pointer"
+                  className="btn-gold-secondary px-4 py-2 text-xs font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#9E2A2B] hover:bg-[#831F20] rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {actionLoading ? 'Rejecting...' : 'Confirm Rejection'}
                 </button>

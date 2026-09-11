@@ -1,66 +1,68 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { BrandLogo } from '../components/common/BrandLogo';
-import { Sparkles, Layers, ShieldCheck } from 'lucide-react';
+import { Sparkles, Layers, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, FileCheck, BarChart3 } from 'lucide-react';
 
-export const LandingPage: React.FC<{ onLogin: () => void }> = ({
-  onLogin,
-}) => {
+export const LandingPage: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
   const features = [
     {
       icon: Layers,
-      title: 'Architectural Project Pipelines',
-      desc: 'Stage-gated workflows from schematic concept to turnkey execution and site handover.',
+      title: 'Studio Project Workspaces',
+      desc: 'Seamless collaborative pipelines from creative concept to review, approvals, and final handover.',
     },
     {
-      icon: ShieldCheck,
-      title: 'Client & Deliverable Clearances',
-      desc: 'Structured approvals, real-time client feedback, revision loops, and milestone sign-offs.',
+      icon: FileCheck,
+      title: 'Direct Client Approvals',
+      desc: 'Structured approvals, real-time feedback loops, revision requests, and deliverable sign-offs.',
     },
     {
-      icon: Sparkles,
-      title: 'Studio Resource & Time Management',
-      desc: 'Precision attendance, team task boards, SOPs, and cross-project performance insights.',
+      icon: MessageSquare,
+      title: 'Real-Time Communication',
+      desc: 'Direct in-app messaging, active team chat, project discussions, and instant notification updates.',
+    },
+    {
+      icon: BarChart3,
+      title: 'Studio Performance & Insights',
+      desc: 'Precision attendance, timesheets, daily priorities, SOP documentation, and progress analytics.',
     },
   ];
 
   return (
-    <div className="relative min-h-screen bg-page flex flex-col justify-between overflow-hidden selection:bg-gold-200 selection:text-black">
-      {/* Dynamic Animated Gold Gradient Backdrop */}
-      <motion.div
-        className="absolute inset-0 pointer-events-none"
-        animate={{
-          backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
-        }}
-        transition={{
-          repeat: Infinity,
-          duration: 18,
-          ease: 'easeInOut',
-        }}
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 15% 20%, rgba(212, 175, 55, 0.18) 0%, transparent 45%), radial-gradient(circle at 85% 75%, rgba(201, 162, 39, 0.15) 0%, transparent 40%), linear-gradient(135deg, #FBF8EE 0%, #F5EECD 50%, #F8F4E5 100%)',
-          backgroundSize: '200% 200%',
-        }}
-      />
-
-      {/* Floating subtle ambient rings */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full border border-gold-300/40 pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full border border-gold-300/30 pointer-events-none" />
+    <div className="relative min-h-screen bg-[#FAF7F2] text-[#1C1917] flex flex-col justify-between overflow-hidden selection:bg-[#EAE0D0] selection:text-[#1C1917]">
+      {/* Decorative Subtle Liquid Silk Curves Backdrop */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <svg
+          className="absolute -top-32 -left-32 w-[600px] h-[600px] text-[#EDE4D4]/30"
+          viewBox="0 0 100 100"
+          fill="currentColor"
+        >
+          <path d="M0,50 Q25,0 50,50 T100,50 L100,100 L0,100 Z" />
+        </svg>
+        <svg
+          className="absolute -bottom-40 -right-40 w-[700px] h-[700px] text-[#EFE7D8]/40"
+          viewBox="0 0 100 100"
+          fill="currentColor"
+        >
+          <path d="M0,50 Q25,100 50,50 T100,50 L100,100 L0,100 Z" />
+        </svg>
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-[#FAF4EC] to-transparent blur-3xl pointer-events-none" />
+      </div>
 
       {/* Top Header */}
       <header className="relative z-10 max-w-7xl mx-auto w-full px-6 py-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <BrandLogo className="h-10 w-auto" />
-          <div className="hidden sm:flex flex-col">
-            <span className="text-xs uppercase tracking-[0.25em] text-gold-700 font-semibold">Design Studio</span>
-            <span className="text-sm font-bold tracking-tight text-heading">Management Portal</span>
+          <BrandLogo className="h-10 w-auto max-w-[9.5rem] object-contain" />
+          <div className="hidden sm:flex flex-col border-l border-[#EDE7DD] pl-3">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#8C7E72] font-semibold">
+              Design Studio
+            </span>
+            <span className="text-xs font-bold text-[#1C1917]">Business Portal</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={onLogin}
-            className="primary-cta px-4 py-2 text-sm font-medium rounded-lg shadow-xs hover:bg-gold-600 transition-all cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all cursor-pointer btn-hover-lift"
           >
             Sign In
           </button>
@@ -68,46 +70,62 @@ export const LandingPage: React.FC<{ onLogin: () => void }> = ({
       </header>
 
       {/* Hero Section */}
-      <main className="relative z-10 max-w-5xl mx-auto px-6 py-12 lg:py-20 flex flex-col items-center text-center">
+      <main className="relative z-10 max-w-5xl mx-auto px-6 py-12 lg:py-16 flex flex-col items-center text-center">
         <motion.div
-          initial={{ opacity: 0, y: 25 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
           className="flex flex-col items-center"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gold-300 bg-white/80 backdrop-blur-xs text-xs font-semibold text-gold-800 mb-6 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-gold-500 animate-pulse" />
-            White Ink Design Studio & Architecture Workspace
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#EDE3D4] bg-white/80 backdrop-blur-xs text-xs font-semibold text-[#BA954F] mb-6 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-[#BA954F] animate-pulse" />
+            From Ideas to Impact Together
           </div>
 
-          <h1 className="title max-w-4xl text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-heading leading-[1.15]">
-            Precision Management for Extraordinary Architecture & Spaces
+          <h1 className="font-serif max-w-3xl text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#1C1917] leading-[1.15]">
+            The White Ink App
           </h1>
 
-          <p className="muted max-w-2xl mt-6 text-base sm:text-lg text-gold-800/90 leading-relaxed">
-            Unify client deliverables, project phases, multi-disciplinary teams, and creative milestones under one cohesive, gold-standard studio platform.
+          <p className="font-brand-script text-2xl sm:text-3xl text-[#BA954F] mt-2">
+            Closer Ideas. Stronger Brands.
           </p>
+
+          <p className="max-w-2xl mt-4 text-sm sm:text-base text-[#78716C] leading-relaxed font-normal">
+            A simpler, elegant way for clients and our creative team to collaborate, manage projects, give approvals, and grow together.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <button
+              onClick={onLogin}
+              className="px-6 py-3 text-sm font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer btn-hover-lift"
+            >
+              <span>Get Started</span>
+              <ArrowRight className="h-4 w-4 stroke-[2]" />
+            </button>
+          </div>
         </motion.div>
 
         {/* Feature Cards Grid */}
         <motion.div
-          initial={{ opacity: 0, y: 35 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
-          className="mt-16 sm:mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 w-full text-left"
+          transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
+          className="mt-14 sm:mt-18 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 w-full text-left"
         >
           {features.map((feat, idx) => {
             const Icon = feat.icon;
             return (
               <div
                 key={idx}
-                className="bg-card/90 backdrop-blur-sm p-6 rounded-2xl border border-gold-200 shadow-sm card-hover-lift flex flex-col"
+                className="bg-white/95 backdrop-blur-xs p-5 rounded-2xl border border-[#EDE7DD] shadow-xs card-hover-lift flex flex-col justify-between"
               >
-                <div className="w-12 h-12 rounded-xl bg-gold-100 border border-gold-300 flex items-center justify-center text-gold-700 mb-4">
-                  <Icon className="w-6 h-6" />
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF4EC] border border-[#EDE3D4] flex items-center justify-center text-[#BA954F] mb-3.5 shadow-2xs">
+                    <Icon className="w-5 h-5 stroke-[1.75]" />
+                  </div>
+                  <h3 className="text-sm font-serif font-bold text-[#1C1917] mb-1.5">{feat.title}</h3>
+                  <p className="text-xs text-[#78716C] leading-relaxed font-normal">{feat.desc}</p>
                 </div>
-                <h3 className="text-base font-bold text-heading mb-2">{feat.title}</h3>
-                <p className="text-sm text-gold-800/80 leading-normal">{feat.desc}</p>
               </div>
             );
           })}
@@ -115,12 +133,14 @@ export const LandingPage: React.FC<{ onLogin: () => void }> = ({
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 max-w-7xl mx-auto w-full px-6 py-8 border-t border-gold-200/80 flex flex-col sm:flex-row items-center justify-between text-xs text-gold-700 gap-4">
+      <footer className="relative z-10 max-w-7xl mx-auto w-full px-6 py-8 border-t border-[#EDE7DD] flex flex-col sm:flex-row items-center justify-between text-xs text-[#78716C] gap-4">
         <p>© {new Date().getFullYear()} White Ink Design Studio. All rights reserved.</p>
-        <div className="flex items-center gap-6">
-          <span>Confidential Internal & Client Portal</span>
-          <span className="w-1 h-1 rounded-full bg-gold-400" />
-          <span>V1.0</span>
+        <div className="flex items-center gap-4">
+          <span className="font-brand-script text-lg text-[#BA954F]">
+            Your Brand, Our Priority
+          </span>
+          <span className="w-1 h-1 rounded-full bg-[#DFD5C6]" />
+          <span>Internal & Client Portal</span>
         </div>
       </footer>
     </div>

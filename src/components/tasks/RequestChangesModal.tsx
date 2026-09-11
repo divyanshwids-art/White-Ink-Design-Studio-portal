@@ -152,7 +152,7 @@ export const RequestChangesModal: React.FC<RequestChangesModalProps> = ({
                     onClick={() => setPriority(level)}
                     className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                       priority === level
-                        ? 'bg-[#8B7355] text-white border-[#7a6347] shadow-sm'
+                        ? 'bg-[#BA954F] text-white border-[#A17B2F] shadow-sm'
                         : 'bg-white text-black border-gold-300 hover:bg-gold-50'
                     }`}
                   >
@@ -254,7 +254,7 @@ export const RequestChangesModal: React.FC<RequestChangesModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !feedback.trim()}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold bg-[#8B7355] hover:bg-[#7a6347] text-white border border-[#7a6347] shadow-sm transition-all disabled:opacity-50 cursor-pointer btn-hover-lift"
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold bg-[#BA954F] hover:bg-[#A17B2F] text-white border border-[#A17B2F] shadow-sm transition-all disabled:opacity-50 cursor-pointer btn-hover-lift"
             >
               <Send className="h-4 w-4 shrink-0" />
               {isSubmitting ? 'Submitting...' : 'Submit Revision Request'}

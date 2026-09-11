@@ -18,57 +18,49 @@ export const AttendanceStatusBadge: React.FC<AttendanceStatusBadgeProps> = ({
       case 'PRESENT':
         return {
           label: 'Present',
-          bg: 'bg-gold-200 text-black border-gold-400 font-bold',
-          dot: 'bg-gold-600',
+          bg: 'bg-[#EBF3ED] text-[#2D6A4F] border-[#D1E7D8] font-semibold',
           Icon: CheckCircle2,
         };
       case 'LATE':
         return {
           label: 'Late',
-          bg: 'bg-gold-100 text-black border-gold-300 font-semibold',
-          dot: 'bg-gold-500',
+          bg: 'bg-[#FDF6E9] text-[#B45309] border-[#F9E2AF] font-semibold',
           Icon: Clock,
         };
       case 'HALF_DAY':
         return {
           label: 'Half Day',
-          bg: 'bg-white text-black/80 border-gold-300 font-semibold',
-          dot: 'bg-gold-400',
+          bg: 'bg-[#FAF7F2] text-[#BA954F] border-[#EDE7DD] font-medium',
           Icon: AlertCircle,
         };
       case 'ON_LEAVE':
         return {
           label: 'On Leave',
-          bg: 'bg-gold-100 text-black border-gold-300 font-medium',
-          dot: 'bg-gold-500',
+          bg: 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0] font-medium',
           Icon: CalendarX,
         };
       case 'ABSENT':
         return {
           label: 'Absent',
-          bg: 'bg-white text-black/70 border-gold-200 font-medium',
-          dot: 'bg-gold-300',
+          bg: 'bg-[#FDF0ED] text-[#9E2A2B] border-[#F5D0C5] font-medium',
           Icon: AlertCircle,
         };
       case 'WORKING':
         return {
           label: 'Working Now',
-          bg: 'bg-gold-300 text-black border-gold-500 font-extrabold animate-pulse',
-          dot: 'bg-gold-700',
+          bg: 'bg-[#FAF7F2] text-[#BA954F] border-[#BA954F]/40 font-bold animate-pulse',
           Icon: PlayCircle,
         };
       case 'ON_BREAK':
         return {
           label: 'On Break',
-          bg: 'bg-gold-100 text-black border-gold-400 font-bold animate-pulse',
-          dot: 'bg-gold-600',
+          bg: 'bg-[#FDF6E9] text-[#B45309] border-[#F9E2AF] font-bold animate-pulse',
           Icon: Coffee,
         };
       default:
         return {
           label: status,
-          bg: 'bg-white text-black border-gold-200 font-medium',
-          dot: 'bg-gold-400',
+          bg: 'bg-[#FAF7F2] text-neutral-700 border-[#EDE7DD] font-medium',
           Icon: CheckCircle2,
         };
     }
@@ -78,10 +70,10 @@ export const AttendanceStatusBadge: React.FC<AttendanceStatusBadgeProps> = ({
   const Icon = config.Icon;
 
   const sizeClasses = {
-    xs: 'text-[10px] px-1.5 py-0.5 gap-1',
-    sm: 'text-xs px-2 py-0.5 gap-1.5',
-    md: 'text-sm px-2.5 py-1 gap-1.5',
-    lg: 'text-base px-3.5 py-1.5 gap-2 font-semibold',
+    xs: 'text-[10px] px-2 py-0.5 gap-1',
+    sm: 'text-xs px-2.5 py-0.5 gap-1.5',
+    md: 'text-sm px-3 py-1 gap-1.5',
+    lg: 'text-base px-4 py-1.5 gap-2 font-semibold',
   };
 
   const iconSizes = {
@@ -93,10 +85,11 @@ export const AttendanceStatusBadge: React.FC<AttendanceStatusBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center rounded-md font-medium border ${config.bg} ${sizeClasses[size]} whitespace-nowrap shadow-2xs`}
+      className={`inline-flex items-center rounded-full font-medium border ${config.bg} ${sizeClasses[size]} whitespace-nowrap shadow-xs`}
     >
       {showIcon && <Icon className={`${iconSizes[size]} shrink-0`} />}
       <span>{config.label}</span>
     </span>
   );
 };
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Task, Project, User, TaskStatus, TaskPriority } from '../types';
+import { Task, Project, User, TaskStatus } from '../types';
 import { api } from '../services/api';
 import { PriorityBadge } from '../components/common/PriorityBadge';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
@@ -10,7 +10,6 @@ import {
   Columns3,
   Plus,
   Calendar,
-  User as UserIcon,
   ChevronLeft,
   ChevronRight,
   Edit2,
@@ -67,11 +66,27 @@ export const KanbanPage: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const columns: { id: TaskStatus; title: string; color: string; badgeBg: string }[] = [
-    { id: 'TODO', title: 'To Do', color: 'border-gold-300', badgeBg: 'bg-gold-100 text-black border border-gold-300' },
-    { id: 'IN_PROGRESS', title: 'In Progress', color: 'border-gold-400', badgeBg: 'bg-gold-200 text-black border border-gold-400' },
-    { id: 'REVIEW', title: 'Review', color: 'border-gold-500', badgeBg: 'bg-gold-300 text-black border border-gold-500' },
-    { id: 'COMPLETED', title: 'Completed', color: 'border-gold-400', badgeBg: 'bg-gold-200 text-black border border-gold-400 font-bold' },
+  const columns: { id: TaskStatus; title: string; badgeBg: string }[] = [
+    {
+      id: 'TODO',
+      title: 'To Do',
+      badgeBg: 'bg-[#FAF7F2] text-[#78716C] border border-[#EDE7DD]',
+    },
+    {
+      id: 'IN_PROGRESS',
+      title: 'In Progress',
+      badgeBg: 'bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0] font-semibold',
+    },
+    {
+      id: 'REVIEW',
+      title: 'In Review',
+      badgeBg: 'bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8] font-semibold',
+    },
+    {
+      id: 'COMPLETED',
+      title: 'Completed',
+      badgeBg: 'bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD] font-semibold',
+    },
   ];
 
   const handleStatusUpdate = async (taskId: string, newStatus: TaskStatus) => {
@@ -133,16 +148,16 @@ export const KanbanPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-gold-fade-in">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-black flex items-center gap-2">
-            <Columns3 className="h-6 w-6 text-gold-600 stroke-[2.5]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#1C1917] flex items-center gap-2.5">
+            <Columns3 className="h-6 w-6 text-[#BA954F] stroke-[2]" />
             Kanban Task Board
           </h1>
-          <p className="text-sm text-black/70 font-medium">
-            Drag and drop tasks across lifecycle stages to advance project completion
+          <p className="text-xs sm:text-sm text-[#78716C] font-normal">
+            Drag and drop deliverables across studio stages to advance project pipelines
           </p>
         </div>
 
@@ -154,25 +169,25 @@ export const KanbanPage: React.FC = () => {
               setDefaultColumnStatus('TODO');
               setIsTaskModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gold-500 hover:bg-gold-600 text-black text-sm font-bold rounded-lg border border-gold-600 shadow-sm transition-colors shrink-0 cursor-pointer btn-hover-lift"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer btn-hover-lift"
           >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <Plus className="h-4 w-4 stroke-[2]" />
             Add Task
           </button>
         )}
       </div>
 
       {/* Filters Toolbar */}
-      <div className="bg-white p-3.5 rounded-xl border border-gold-300 shadow-sm flex flex-wrap gap-3 items-center">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-black mr-2">
-          <Filter className="h-4 w-4 text-gold-600" />
+      <div className="bg-white/95 backdrop-blur-xs p-3.5 sm:p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-wrap gap-3 items-center">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-[#8C7E72] mr-2">
+          <Filter className="h-4 w-4 text-[#BA954F]" />
           Filter Board:
         </div>
 
         <select
           value={selectedProjectId}
           onChange={(e) => setSelectedProjectId(e.target.value)}
-          className="px-3 py-1.5 text-xs font-semibold bg-white border border-gold-300 rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer"
+          className="px-3.5 py-2 text-xs font-semibold bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
         >
           <option value="ALL">All Projects</option>
           {projects.map((p) => (
@@ -185,7 +200,7 @@ export const KanbanPage: React.FC = () => {
         <select
           value={selectedAssigneeId}
           onChange={(e) => setSelectedAssigneeId(e.target.value)}
-          className="px-3 py-1.5 text-xs font-semibold bg-white border border-gold-300 rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer"
+          className="px-3.5 py-2 text-xs font-semibold bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
         >
           <option value="ALL">All Assignees</option>
           {users
@@ -211,16 +226,16 @@ export const KanbanPage: React.FC = () => {
                 key={col.id}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(col.id)}
-                className="bg-gold-50/50 border border-gold-300 rounded-xl flex flex-col max-h-[82vh] overflow-hidden"
+                className="bg-[#FAF7F2]/80 border border-[#EDE7DD] rounded-2xl flex flex-col max-h-[82vh] overflow-hidden shadow-2xs"
               >
                 {/* Column Header */}
-                <div className="p-3 bg-white border-b border-gold-300 flex items-center justify-between">
+                <div className="p-3.5 bg-white border-b border-[#EDE7DD] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-black">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#1C1917]">
                       {col.title}
                     </span>
                     <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${col.badgeBg}`}
+                      className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${col.badgeBg}`}
                     >
                       {colTasks.length}
                     </span>
@@ -234,10 +249,10 @@ export const KanbanPage: React.FC = () => {
                         setDefaultColumnStatus(col.id);
                         setIsTaskModalOpen(true);
                       }}
-                      className="p-1 text-black/60 hover:text-black hover:bg-gold-100 rounded-md transition-colors cursor-pointer"
+                      className="p-1 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-lg transition-colors cursor-pointer"
                       title={`Add task to ${col.title}`}
                     >
-                      <Plus className="h-4 w-4 stroke-[2.5]" />
+                      <Plus className="h-4 w-4 stroke-[2]" />
                     </button>
                   )}
                 </div>
@@ -245,7 +260,7 @@ export const KanbanPage: React.FC = () => {
                 {/* Tasks Container */}
                 <div className="p-3 space-y-3 overflow-y-auto flex-1">
                   {colTasks.length === 0 ? (
-                    <div className="py-8 text-center border-2 border-dashed border-gold-300 rounded-lg text-xs font-semibold text-black/50">
+                    <div className="py-8 text-center border border-dashed border-[#DFD5C6] rounded-xl text-xs font-medium text-[#A8A29E]">
                       Drag tasks here
                     </div>
                   ) : (
@@ -258,7 +273,7 @@ export const KanbanPage: React.FC = () => {
                           key={task.id}
                           draggable={canManage}
                           onDragStart={() => canManage && handleDragStart(task.id)}
-                          className={`bg-white p-3.5 rounded-lg border border-gold-300 shadow-sm hover:border-gold-400 transition-all ${
+                          className={`bg-white p-3.5 rounded-xl border border-[#EDE7DD] shadow-xs hover:border-[#DFD5C6] transition-all ${
                             canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
                           } space-y-2.5 group card-hover-lift`}
                         >
@@ -277,7 +292,7 @@ export const KanbanPage: React.FC = () => {
                                     setEditingTask(task);
                                     setIsTaskModalOpen(true);
                                   }}
-                                  className="p-1 text-black/60 hover:text-black hover:bg-gold-100 rounded-md cursor-pointer"
+                                  className="p-1 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-md cursor-pointer"
                                   title="Edit Task"
                                 >
                                   <Edit2 className="h-3 w-3" />
@@ -285,7 +300,7 @@ export const KanbanPage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setDeletingTask(task)}
-                                  className="p-1 text-black/60 hover:text-rose-700 hover:bg-gold-100 rounded-md cursor-pointer"
+                                  className="p-1 text-[#78716C] hover:text-[#B91C1C] hover:bg-[#FDF2F0] rounded-md cursor-pointer"
                                   title="Delete Task"
                                 >
                                   <Trash2 className="h-3 w-3" />
@@ -296,22 +311,22 @@ export const KanbanPage: React.FC = () => {
 
                           {/* Task Project & Title */}
                           <div>
-                            <span className="text-[11px] font-bold text-gold-700 truncate block">
+                            <span className="text-[11px] font-semibold text-[#BA954F] truncate block">
                               {task.project?.name || 'Project'}
                             </span>
-                            <h4 className="text-sm font-bold text-black leading-snug mt-0.5">
+                            <h4 className="text-xs sm:text-sm font-bold text-[#1C1917] leading-snug mt-0.5">
                               {task.title}
                             </h4>
                           </div>
 
                           {task.description && (
-                            <p className="text-xs text-black/70 font-medium line-clamp-2 leading-relaxed">
+                            <p className="text-xs text-[#78716C] line-clamp-2 leading-relaxed font-normal">
                               {task.description}
                             </p>
                           )}
 
                           {/* Footer: Assignee, Due Date, Move arrows */}
-                          <div className="flex items-center justify-between pt-2 border-t border-gold-200 text-xs">
+                          <div className="flex items-center justify-between pt-2 border-t border-[#EDE7DD] text-xs">
                             <div className="flex items-center gap-1.5 min-w-0">
                               {task.assignedTo ? (
                                 <img
@@ -323,14 +338,16 @@ export const KanbanPage: React.FC = () => {
                                   }
                                   alt={task.assignedTo.name}
                                   title={task.assignedTo.name}
-                                  className="h-5 w-5 rounded-full ring-1 ring-gold-400 object-cover"
+                                  className="h-5 w-5 rounded-full ring-1 ring-[#DFD5C6] object-cover shadow-2xs"
                                 />
                               ) : (
-                                <span className="text-[10px] text-black/40 font-medium">Unassigned</span>
+                                <span className="text-[10px] text-[#A8A29E] font-normal">
+                                  Unassigned
+                                </span>
                               )}
                               {task.dueDate && (
-                                <span className="text-[10px] text-black/70 font-semibold flex items-center gap-1">
-                                  <Calendar className="h-3 w-3 text-gold-600" />
+                                <span className="text-[10px] text-[#78716C] font-mono flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-[#BA954F]" />
                                   {new Date(task.dueDate).toLocaleDateString(undefined, {
                                     month: 'numeric',
                                     day: 'numeric',
@@ -346,7 +363,7 @@ export const KanbanPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleStatusUpdate(task.id, prev)}
-                                    className="p-1 text-black/60 hover:text-black hover:bg-gold-100 rounded-md cursor-pointer"
+                                    className="p-1 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-md cursor-pointer"
                                     title={`Move to ${prev.replace('_', ' ')}`}
                                   >
                                     <ChevronLeft className="h-3.5 w-3.5" />
@@ -356,7 +373,7 @@ export const KanbanPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleStatusUpdate(task.id, next)}
-                                    className="p-1 text-black/60 hover:text-black hover:bg-gold-100 rounded-md cursor-pointer"
+                                    className="p-1 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-md cursor-pointer"
                                     title={`Move to ${next.replace('_', ' ')}`}
                                   >
                                     <ChevronRight className="h-3.5 w-3.5" />

@@ -192,7 +192,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
     <div className="min-h-screen pb-16 flex flex-col items-center">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 bg-[#2D2418] text-white px-4 py-2.5 rounded-xl shadow-lg border border-[#8C6D23]/50 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+        <div className="fixed top-20 right-6 z-50 bg-[#2D2418] text-white px-4 py-2.5 rounded-xl shadow-lg border border-[#BA954F]/50 text-xs font-semibold flex items-center gap-2 animate-fade-in">
           <Sparkles className="h-4 w-4 text-[#DFCE9F]" />
           <span>{toastMessage}</span>
         </div>
@@ -203,7 +203,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E1B18] hover:text-[#8C6D23] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E1B18] hover:text-[#BA954F] transition-colors cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
           Projects
@@ -214,7 +214,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
             <button
               type="button"
               onClick={() => setIsEditModalOpen(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#8C6D23] bg-white hover:bg-gold-100 border border-[#DFCE9F] rounded-lg transition-colors cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#BA954F] bg-white hover:bg-gold-100 border border-[#DFCE9F] rounded-lg transition-colors cursor-pointer shadow-2xs"
               title="Edit Note & Links"
             >
               <Edit2 className="h-3 w-3" />
@@ -228,7 +228,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#2D2418] bg-[#F5EDD6] hover:bg-[#EBE1C7] border border-[#DFCE9F] rounded-lg transition-colors cursor-pointer shadow-2xs"
             title="Switch to detailed task workspace"
           >
-            <Layers className="h-3 w-3 text-[#8C6D23]" />
+            <Layers className="h-3 w-3 text-[#BA954F]" />
             <span>Workspace</span>
           </button>
         </div>
@@ -240,7 +240,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
         <div className="relative bg-[#FAF6ED] rounded-2xl border border-[#E8DEC8] p-6 pt-5 pb-7 flex flex-col items-center text-center shadow-xs overflow-hidden">
           {/* Project Closure Badge */}
           <div className="w-full flex justify-end mb-2">
-            <span className="text-[11px] font-bold text-[#8C6D23] bg-[#F5EDD6] px-3 py-0.5 rounded-full border border-[#DFCE9F] shadow-2xs tracking-wide">
+            <span className="text-[11px] font-bold text-[#BA954F] bg-[#F5EDD6] px-3 py-0.5 rounded-full border border-[#DFCE9F] shadow-2xs tracking-wide">
               Project Closure
             </span>
           </div>
@@ -363,22 +363,22 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
         <div className="bg-white rounded-xl border border-[#EBE3D3] shadow-xs p-4 sm:p-5 space-y-2.5">
           <div className="flex items-center justify-between text-xs font-bold">
             <div className="flex items-center gap-2 text-[#2D2418]">
-              <Clock className="h-4 w-4 text-[#8C6D23]" />
+              <Clock className="h-4 w-4 text-[#BA954F]" />
               <span>Completion Progress</span>
             </div>
-            <span className="text-[#8C6D23] text-sm font-extrabold">100%</span>
+            <span className="text-[#BA954F] text-sm font-extrabold">100%</span>
           </div>
 
           {/* Solid Gold Progress Bar */}
           <div className="w-full bg-[#EFE9DC] h-2 rounded-full overflow-hidden">
             <div
-              className="bg-[#8C6D23] h-full rounded-full transition-all duration-500"
+              className="bg-[#BA954F] h-full rounded-full transition-all duration-500"
               style={{ width: '100%' }}
             />
           </div>
 
           <div className="flex items-center gap-1.5 text-xs text-[#666158] font-medium pt-0.5">
-            <Info className="h-3.5 w-3.5 text-[#8C6D23] shrink-0" />
+            <Info className="h-3.5 w-3.5 text-[#BA954F] shrink-0" />
             <span>
               {completedCount} of {totalCount} mandatory tasks finished
             </span>
@@ -392,7 +392,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
             <button
               type="button"
               onClick={handleSelectAll}
-              className="text-[11px] font-bold text-[#8C6D23] hover:text-[#6E551B] uppercase tracking-wider cursor-pointer"
+              className="text-[11px] font-bold text-[#BA954F] hover:text-[#6E551B] uppercase tracking-wider cursor-pointer"
             >
               SELECT ALL
             </button>
@@ -411,7 +411,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
                   <div
                     className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors ${
                       item.completed
-                        ? 'bg-[#8C6D23] text-white'
+                        ? 'bg-[#BA954F] text-white'
                         : 'border border-[#B8A682] bg-white'
                     }`}
                   >
@@ -422,7 +422,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
                     <h3
                       className={`text-xs font-bold truncate ${
                         item.completed
-                          ? 'text-[#3E3424] line-through decoration-[#8C6D23]/70'
+                          ? 'text-[#3E3424] line-through decoration-[#BA954F]/70'
                           : 'text-[#1E1B18]'
                       }`}
                     >
@@ -433,7 +433,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
                 </div>
 
                 {/* Right Circular Check Badge */}
-                <div className="shrink-0 text-[#8C6D23]">
+                <div className="shrink-0 text-[#BA954F]">
                   <CheckCircle2
                     className={`h-4 w-4 ${item.completed ? 'opacity-100' : 'opacity-30'}`}
                   />
@@ -449,7 +449,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
           <button
             type="button"
             onClick={() => setIsDocsModalOpen(true)}
-            className="w-full py-3.5 px-4 rounded-xl bg-[#8C6D23] hover:bg-[#7A5F1E] active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-xl bg-[#BA954F] hover:bg-[#A17B2F] active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
           >
             <Send className="h-4 w-4 stroke-[2.2] -rotate-12" />
             <span>Submit Documentation</span>
@@ -465,9 +465,9 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
             type="button"
             disabled={isDownloadingReport}
             onClick={handleDownloadReport}
-            className="w-full py-3 px-4 rounded-xl bg-white hover:bg-gold-50/60 active:scale-[0.99] disabled:opacity-50 text-[#2D2418] border border-[#8C6D23] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl bg-white hover:bg-gold-50/60 active:scale-[0.99] disabled:opacity-50 text-[#2D2418] border border-[#BA954F] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer"
           >
-            <Download className="h-4 w-4 text-[#8C6D23] stroke-[2.2]" />
+            <Download className="h-4 w-4 text-[#BA954F] stroke-[2.2]" />
             <span>{isDownloadingReport ? 'Generating Audit Report...' : 'Download Audit Report'}</span>
           </button>
 
@@ -475,7 +475,7 @@ export const FinalHandoverView: React.FC<FinalHandoverViewProps> = ({
           <button
             type="button"
             onClick={handleDirectLink}
-            className="w-full py-3.5 px-4 rounded-xl bg-[#8C6D23] hover:bg-[#7A5F1E] active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-xl bg-[#BA954F] hover:bg-[#A17B2F] active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
           >
             <Send className="h-4 w-4 stroke-[2.2] -rotate-12" />
             <span>Direct Link of project</span>

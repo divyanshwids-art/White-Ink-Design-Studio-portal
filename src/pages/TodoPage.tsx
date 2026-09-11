@@ -66,14 +66,12 @@ export const TodoPage: React.FC = () => {
   // Handle Toggle
   const handleToggle = async (todo: PersonalTodo) => {
     try {
-      // Optimistic update
       setTodos((prev) =>
         prev.map((t) => (t.id === todo.id ? { ...t, completed: !t.completed } : t))
       );
       await api.toggleTodo(todo.id);
     } catch (err: any) {
       console.error('Failed to toggle todo:', err);
-      // Revert on error
       loadTodos();
     }
   };
@@ -105,13 +103,11 @@ export const TodoPage: React.FC = () => {
   // Filtered Todos
   const filteredTodos = useMemo(() => {
     return todos.filter((todo) => {
-      // Tab filter
       if (activeTab === 'PENDING' && todo.completed) return false;
       if (activeTab === 'COMPLETED' && !todo.completed) return false;
       if (activeTab === 'ASSIGNED_TO_ME' && todo.assignedToId !== user?.id) return false;
       if (activeTab === 'CREATED_BY_ME' && todo.createdById !== user?.id) return false;
 
-      // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesTitle = todo.title.toLowerCase().includes(q);
@@ -140,29 +136,30 @@ export const TodoPage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-gold-fade-in">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 sm:p-6 rounded-xl border border-gold-300 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-extrabold tracking-tight text-black flex items-center gap-2.5">
-              <ListTodo className="h-7 w-7 text-gold-600" />
-              <span>My Todo List</span>
-            </h1>
-          </div>
-          <p className="text-sm text-black/70 font-medium">
-            Manage your daily personal tasks, checklists, and internal assignments
+          <span className="text-xs font-semibold tracking-widest uppercase text-[#BA954F]">
+            Task Lists & Agendas
+          </span>
+          <h1 className="font-serif text-3xl font-bold text-neutral-900 tracking-tight mt-1 flex items-center gap-2.5">
+            <ListTodo className="h-7 w-7 text-[#BA954F]" />
+            <span>Personal Todos</span>
+          </h1>
+          <p className="text-sm text-neutral-500 mt-1">
+            Manage your daily tasks, priority checklists, and internal studio assignments
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           <button
             type="button"
             onClick={loadTodos}
-            className="p-2 text-black hover:bg-gold-100 rounded-lg border border-gold-300 transition-colors cursor-pointer"
+            className="btn-gold-secondary p-2.5 rounded-xl"
             title="Refresh todos"
           >
-            <RotateCw className="h-4 w-4" />
+            <RotateCw className="h-4 w-4 text-[#BA954F]" />
           </button>
           <button
             type="button"
@@ -170,25 +167,25 @@ export const TodoPage: React.FC = () => {
               setEditingTodo(null);
               setIsModalOpen(true);
             }}
-            className="px-4 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg shadow-sm border border-gold-600 transition-colors inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
+            className="btn-gold-primary px-4 py-2 text-xs font-semibold inline-flex items-center gap-2"
           >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
-            <span>Add Todo</span>
+            <Plus className="h-4 w-4" />
+            <span>Create Todo</span>
           </button>
         </div>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-300 text-red-900 rounded-xl text-xs font-bold flex items-center justify-between gap-2">
+        <div className="p-4 bg-[#FDF0ED] border border-[#F5D0C5] text-[#9E2A2B] rounded-2xl text-xs font-medium flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+            <AlertCircle className="h-4 w-4 text-[#9E2A2B] shrink-0" />
             <span>{error}</span>
           </div>
           <button
             type="button"
             onClick={loadTodos}
-            className="underline hover:text-red-700 cursor-pointer"
+            className="underline hover:text-red-900 cursor-pointer font-semibold"
           >
             Retry
           </button>
@@ -196,47 +193,47 @@ export const TodoPage: React.FC = () => {
       )}
 
       {/* Stats Bento */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-4 bg-white rounded-xl border border-gold-300 shadow-2xs">
-          <div className="text-xs font-bold text-black/70">Total Todos</div>
-          <div className="text-2xl font-extrabold text-black mt-1">{stats.total}</div>
-          <div className="text-[11px] text-black/50 font-medium mt-0.5">All active & finished</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-5 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
+          <div className="text-xs font-medium text-neutral-500">Total Todos</div>
+          <div className="text-2xl font-bold font-serif text-neutral-900 mt-1">{stats.total}</div>
+          <div className="text-[11px] text-neutral-400 font-medium mt-0.5">All active & finished</div>
         </div>
 
-        <div className="p-4 bg-gold-50 rounded-xl border border-gold-300 shadow-2xs">
-          <div className="text-xs font-bold text-black flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-gold-700" />
+        <div className="p-5 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
+          <div className="text-xs font-medium text-neutral-500 flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-[#B45309]" />
             <span>Pending</span>
           </div>
-          <div className="text-2xl font-extrabold text-black mt-1">{stats.pending}</div>
-          <div className="text-[11px] text-black/60 font-medium mt-0.5">Needs action</div>
+          <div className="text-2xl font-bold font-serif text-neutral-900 mt-1">{stats.pending}</div>
+          <div className="text-[11px] text-neutral-400 font-medium mt-0.5">Needs action</div>
         </div>
 
-        <div className="p-4 bg-white rounded-xl border border-gold-300 shadow-2xs">
-          <div className="text-xs font-bold text-black flex items-center gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5 text-gold-600" />
+        <div className="p-5 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
+          <div className="text-xs font-medium text-neutral-500 flex items-center gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#2D6A4F]" />
             <span>Completed</span>
           </div>
-          <div className="text-2xl font-extrabold text-black mt-1">{stats.completed}</div>
-          <div className="text-[11px] text-black/50 font-medium mt-0.5">
+          <div className="text-2xl font-bold font-serif text-neutral-900 mt-1">{stats.completed}</div>
+          <div className="text-[11px] text-neutral-400 font-medium mt-0.5">
             {stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}% done
           </div>
         </div>
 
-        <div className="p-4 bg-gold-100 rounded-xl border border-gold-300 shadow-2xs">
-          <div className="text-xs font-bold text-black flex items-center gap-1.5">
-            <UserCheck className="h-3.5 w-3.5 text-black" />
+        <div className="p-5 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
+          <div className="text-xs font-medium text-neutral-500 flex items-center gap-1.5">
+            <UserCheck className="h-3.5 w-3.5 text-[#BA954F]" />
             <span>Assigned to Me</span>
           </div>
-          <div className="text-2xl font-extrabold text-black mt-1">{stats.assignedToMe}</div>
-          <div className="text-[11px] text-black/70 font-medium mt-0.5">From team members</div>
+          <div className="text-2xl font-bold font-serif text-neutral-900 mt-1">{stats.assignedToMe}</div>
+          <div className="text-[11px] text-neutral-400 font-medium mt-0.5">From team members</div>
         </div>
       </div>
 
       {/* Main Section: Search, Tabs & Todo List */}
-      <div className="bg-white rounded-xl border border-gold-300 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
         {/* Controls: Search and Tabs */}
-        <div className="p-4 border-b border-gold-200 bg-gold-50/50 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4">
+        <div className="p-4 sm:p-5 border-b border-[#EDE7DD] bg-[#FAF7F2]/40 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4">
           {/* Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
             {tabs.map((tab) => {
@@ -246,18 +243,18 @@ export const TodoPage: React.FC = () => {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 border ${
                     isActive
-                      ? 'bg-gold-500 text-black shadow-xs border border-gold-600'
-                      : 'text-black/80 hover:bg-gold-200/70 hover:text-black border border-transparent'
+                      ? 'bg-[#BA954F] text-white shadow-xs border-[#BA954F] font-semibold'
+                      : 'bg-white text-neutral-600 hover:bg-[#FAF7F2] hover:text-neutral-900 border-[#EDE7DD]'
                   }`}
                 >
                   <span>{tab.label}</span>
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                       isActive
-                        ? 'bg-white text-black font-extrabold'
-                        : 'bg-gold-200 text-black/80'
+                        ? 'bg-white text-[#BA954F] font-bold'
+                        : 'bg-[#FAF7F2] text-neutral-500'
                     }`}
                   >
                     {tab.count}
@@ -269,28 +266,28 @@ export const TodoPage: React.FC = () => {
 
           {/* Search Bar */}
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-black/50" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search todos..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-gold-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 font-medium text-black placeholder:text-black/40"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-[#EDE7DD] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] font-medium text-neutral-900 placeholder:text-neutral-400"
             />
           </div>
         </div>
 
         {/* Todo List Container */}
-        <div className="p-4 sm:p-5">
+        <div className="p-5 sm:p-6">
           {isLoading ? (
             <div className="py-12 flex justify-center">
               <LoadingSpinner message="Loading your todos..." size="md" />
             </div>
           ) : filteredTodos.length === 0 ? (
-            <div className="py-12 text-center text-xs text-black/60 font-medium">
-              <CheckSquare className="h-8 w-8 mx-auto text-gold-400 mb-2" />
-              <p className="text-sm font-bold text-black mb-1">No todos found</p>
-              <p className="text-black/60">
+            <div className="py-12 text-center text-xs text-neutral-500 font-medium">
+              <CheckSquare className="h-8 w-8 mx-auto text-[#BA954F] mb-2 opacity-60" />
+              <p className="font-serif text-base font-bold text-neutral-900 mb-1">No todos found</p>
+              <p className="text-neutral-400 max-w-sm mx-auto">
                 {searchQuery
                   ? 'No todo items match your search query.'
                   : activeTab === 'COMPLETED'
@@ -308,15 +305,15 @@ export const TodoPage: React.FC = () => {
                     setEditingTodo(null);
                     setIsModalOpen(true);
                   }}
-                  className="mt-3.5 px-4 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg shadow-2xs border border-gold-600 transition-colors inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift"
+                  className="btn-gold-primary mt-4 px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5"
                 >
-                  <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                  <Plus className="h-3.5 w-3.5" />
                   Create First Todo
                 </button>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredTodos.map((todo) => (
                 <TodoCard
                   key={todo.id}
@@ -356,3 +353,4 @@ export const TodoPage: React.FC = () => {
     </div>
   );
 };
+

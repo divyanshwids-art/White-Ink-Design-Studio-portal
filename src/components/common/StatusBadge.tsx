@@ -7,86 +7,89 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' }) => {
-  const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs font-medium';
+  const sizeClasses =
+    size === 'sm'
+      ? 'px-2 py-0.5 text-[11px]'
+      : 'px-2.5 py-1 text-xs font-semibold';
 
   const configMap: Record<string, { bg: string; text: string; dot: string; label: string }> = {
     // Project statuses
     PENDING: {
-      bg: 'bg-gold-100 border-gold-400',
-      text: 'text-gold-900 font-bold',
-      dot: 'bg-gold-600 animate-pulse',
+      bg: 'bg-[#FAF4EC] border-[#EBE1D0]',
+      text: 'text-[#BA954F] font-semibold',
+      dot: 'bg-[#BA954F] animate-pulse',
       label: 'Pending Setup',
     },
     PLANNING: {
-      bg: 'bg-gold-100 border-gold-300',
-      text: 'text-black font-semibold',
-      dot: 'bg-gold-500',
+      bg: 'bg-[#F7F4EE] border-[#E5DDD0]',
+      text: 'text-[#6B5E4F] font-semibold',
+      dot: 'bg-[#B58E4E]',
       label: 'Planning',
     },
     ACTIVE: {
-      bg: 'bg-gold-200 border-gold-400',
-      text: 'text-black font-bold',
-      dot: 'bg-gold-600',
+      bg: 'bg-[#F0F7F2] border-[#D1E7DD]',
+      text: 'text-[#2D6A4F] font-semibold',
+      dot: 'bg-[#2D6A4F]',
       label: 'Active',
     },
     ON_HOLD: {
-      bg: 'bg-white border-gold-300',
-      text: 'text-black/80 font-medium',
-      dot: 'bg-gold-400',
+      bg: 'bg-[#F5F5F4] border-[#E7E5E4]',
+      text: 'text-[#78716C] font-medium',
+      dot: 'bg-[#A8A29E]',
       label: 'On Hold',
     },
     COMPLETED: {
-      bg: 'bg-gold-300 border-gold-500',
-      text: 'text-black font-bold',
-      dot: 'bg-gold-700',
+      bg: 'bg-[#F0F7F2] border-[#D1E7DD]',
+      text: 'text-[#2D6A4F] font-semibold',
+      dot: 'bg-[#2D6A4F]',
       label: 'Completed',
     },
     CANCELLED: {
-      bg: 'bg-white border-gold-200',
-      text: 'text-black/60 font-medium',
-      dot: 'bg-gold-300',
+      bg: 'bg-[#FDF2F0] border-[#F5D5D0]',
+      text: 'text-[#991B1B] font-medium',
+      dot: 'bg-[#DC2626]',
       label: 'Cancelled',
     },
     // Task statuses
     TODO: {
-      bg: 'bg-white border-gold-300',
-      text: 'text-black/80 font-medium',
-      dot: 'bg-gold-400',
+      bg: 'bg-[#FAF7F2] border-[#E5DDD0]',
+      text: 'text-[#78716C] font-medium',
+      dot: 'bg-[#A8A29E]',
       label: 'To Do',
     },
     IN_PROGRESS: {
-      bg: 'bg-gold-200 border-gold-400',
-      text: 'text-black font-bold',
-      dot: 'bg-gold-600',
+      bg: 'bg-[#FAF4EC] border-[#EBE1D0]',
+      text: 'text-[#BA954F] font-semibold',
+      dot: 'bg-[#BA954F]',
       label: 'In Progress',
     },
     REVIEW: {
-      bg: 'bg-gold-100 border-gold-400',
-      text: 'text-black font-semibold',
-      dot: 'bg-gold-500',
+      bg: 'bg-[#FAF2E6] border-[#E8DCC8]',
+      text: 'text-[#946B2D] font-semibold',
+      dot: 'bg-[#946B2D] animate-pulse',
       label: 'In Review',
     },
     REVISION_REQUESTED: {
-      bg: 'bg-amber-100 border-amber-300',
-      text: 'text-amber-800 font-semibold',
-      dot: 'bg-amber-500 animate-pulse',
-      label: 'Revision Requested',
+      bg: 'bg-[#FDF2F0] border-[#F5D5D0]',
+      text: 'text-[#B91C1C] font-semibold',
+      dot: 'bg-[#DC2626] animate-pulse',
+      label: 'Changes Requested',
     },
   };
 
   const current = configMap[status] || {
-    bg: 'bg-white border-gold-300',
-    text: 'text-black font-medium',
-    dot: 'bg-gold-400',
-    label: status,
+    bg: 'bg-[#FAF7F2] border-[#E5DDD0]',
+    text: 'text-[#57534E] font-medium',
+    dot: 'bg-[#BA954F]',
+    label: status.replace(/_/g, ' '),
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border ${current.bg} ${current.text} ${sizeClasses} whitespace-nowrap font-medium transition-colors`}
+      className={`inline-flex items-center gap-1.5 rounded-full border ${current.bg} ${current.text} ${sizeClasses} whitespace-nowrap transition-colors shadow-2xs`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${current.dot}`} />
-      {current.label}
+      <span className={`h-1.5 w-1.5 rounded-full ${current.dot} shrink-0`} />
+      <span>{current.label}</span>
     </span>
   );
 };

@@ -71,3 +71,14 @@ export const FormLabel: React.FC<TypographyProps> = ({
     {children}
   </Component>
 );
+
+export const BrandScript: React.FC<TypographyProps> = ({
+  children,
+  className = '',
+  as: Component = 'span',
+  ...props
+}) => (
+  <Component className={`font-brand-script text-primary text-xl ${className}`} {...props}>
+    {children}
+  </Component>
+);

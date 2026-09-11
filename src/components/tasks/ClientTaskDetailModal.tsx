@@ -268,7 +268,7 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
                         <div
                           className={`px-3.5 py-2.5 rounded-2xl text-xs font-medium leading-relaxed ${
                             isMe
-                              ? 'bg-[#8B7355] text-white rounded-br-sm'
+                              ? 'bg-[#BA954F] text-white rounded-br-sm'
                               : 'bg-gold-100 text-black border border-gold-200 rounded-bl-sm'
                           }`}
                         >

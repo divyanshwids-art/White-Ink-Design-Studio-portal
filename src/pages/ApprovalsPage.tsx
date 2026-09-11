@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { ClientApproval, Project, ApprovalStatus, Task } from '../types';
 import { RequestChangesModal } from '../components/tasks/RequestChangesModal';
 import { ClientTaskDetailModal } from '../components/tasks/ClientTaskDetailModal';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import {
   FileCheck,
   Plus,
@@ -17,10 +18,8 @@ import {
   User,
   MessageSquare,
   Trash2,
-  Edit2,
   Calendar,
   X,
-  AlertCircle,
 } from 'lucide-react';
 
 interface ApprovalsPageProps {
@@ -80,9 +79,13 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
       ]);
       setApprovals(approvalsRes);
       setProjects(projectsRes);
-      setTaskApprovals(tasksRes.filter((task) =>
-        Boolean(task.submittedAt) && ['REVIEW', 'REVISION_REQUESTED', 'COMPLETED'].includes(task.status)
-      ));
+      setTaskApprovals(
+        tasksRes.filter(
+          (task) =>
+            Boolean(task.submittedAt) &&
+            ['REVIEW', 'REVISION_REQUESTED', 'COMPLETED'].includes(task.status)
+        )
+      );
     } catch (err) {
       console.error('Error loading approvals:', err);
     } finally {
@@ -183,7 +186,9 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
       !task.submissionDescription?.trim() ||
       !task.proofDetails?.trim()
     ) {
-      alert('Task must reach 100% completion with submission description and proof details before approval.');
+      alert(
+        'Task must reach 100% completion with submission description and proof details before approval.'
+      );
       return;
     }
     if (!window.confirm(`Approve task "${task.title}"?`)) return;
@@ -207,41 +212,51 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
   const filteredTaskApprovals = taskApprovals.filter((task) => {
     const statusMatches = selectedStatus === 'ALL' || taskStatus(task) === selectedStatus;
     const searchValue = search.toLowerCase();
-    const searchMatches = !searchValue ||
+    const searchMatches =
+      !searchValue ||
       task.title.toLowerCase().includes(searchValue) ||
       (task.description || '').toLowerCase().includes(searchValue);
     return statusMatches && searchMatches;
   });
 
-  const taskApprovalsByProject = filteredTaskApprovals.reduce<Record<string, Task[]>>((groups, task) => {
-    (groups[task.projectId] ||= []).push(task);
-    return groups;
-  }, {});
+  const taskApprovalsByProject = filteredTaskApprovals.reduce<Record<string, Task[]>>(
+    (groups, task) => {
+      (groups[task.projectId] ||= []).push(task);
+      return groups;
+    },
+    {}
+  );
 
   // KPIs
   const totalCount = approvals.length + filteredTaskApprovals.length;
-  const pendingCount = approvals.filter((a) => a.status === 'PENDING').length + filteredTaskApprovals.filter((t) => taskStatus(t) === 'PENDING').length;
-  const approvedCount = approvals.filter((a) => a.status === 'APPROVED').length + filteredTaskApprovals.filter((t) => taskStatus(t) === 'APPROVED').length;
-  const rejectedCount = approvals.filter((a) => a.status === 'REJECTED').length + filteredTaskApprovals.filter((t) => taskStatus(t) === 'REJECTED').length;
+  const pendingCount =
+    approvals.filter((a) => a.status === 'PENDING').length +
+    filteredTaskApprovals.filter((t) => taskStatus(t) === 'PENDING').length;
+  const approvedCount =
+    approvals.filter((a) => a.status === 'APPROVED').length +
+    filteredTaskApprovals.filter((t) => taskStatus(t) === 'APPROVED').length;
+  const rejectedCount =
+    approvals.filter((a) => a.status === 'REJECTED').length +
+    filteredTaskApprovals.filter((t) => taskStatus(t) === 'REJECTED').length;
   const hasApprovalItems = approvals.length > 0 || filteredTaskApprovals.length > 0;
 
   const getStatusPill = (status: ApprovalStatus) => {
     switch (status) {
       case 'APPROVED':
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-gold-200 text-black border border-gold-400">
-            <CheckCircle2 className="h-3.5 w-3.5 text-gold-800" /> Approved
+          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD]">
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#2D6A4F]" /> Approved
           </span>
         );
       case 'REJECTED':
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0]">
             <XCircle className="h-3.5 w-3.5" /> Needs Revisions
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
             <Clock className="h-3.5 w-3.5" /> Pending Client Review
           </span>
         );
@@ -249,18 +264,18 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-gold-fade-in">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-black flex items-center gap-2.5">
-            <FileCheck className="h-6 w-6 text-gold-600 stroke-[2.5]" />
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#1C1917] flex items-center gap-2.5">
+            <FileCheck className="h-6 w-6 text-[#BA954F] stroke-[2]" />
             Client Deliverables & Approvals
           </h1>
-          <p className="text-sm text-black/70 font-medium mt-1">
+          <p className="text-xs sm:text-sm text-[#78716C] font-normal mt-1">
             {isClient
               ? 'Review, provide feedback, and approve deliverables submitted for your projects'
-              : 'Submit milestones, design drafts, and staging builds for client sign-off'}
+              : 'Submit milestones, design drafts, and creative assets for client sign-off'}
           </p>
         </div>
 
@@ -268,9 +283,9 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
           <button
             type="button"
             onClick={handleOpenSubmit}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gold-500 hover:bg-gold-600 text-black text-sm font-bold rounded-lg border border-gold-600 shadow-xs transition-colors cursor-pointer btn-hover-lift"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer btn-hover-lift"
           >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <Plus className="h-4 w-4 stroke-[2]" />
             Submit Deliverable
           </button>
         )}
@@ -278,68 +293,76 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
 
       {/* KPI Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-gold-300 shadow-sm flex items-center gap-3">
-          <div className="p-2.5 bg-gold-100 text-gold-700 border border-gold-300 rounded-lg shrink-0">
-            <FileCheck className="h-5 w-5 stroke-[2.5]" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
+          <div className="p-2.5 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shrink-0 shadow-2xs">
+            <FileCheck className="h-5 w-5 stroke-[1.75]" />
           </div>
           <div>
-            <div className="text-xs font-bold text-black/60">Total Deliverables</div>
-            <div className="text-xl font-extrabold text-black">{totalCount}</div>
+            <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+              Total Deliverables
+            </div>
+            <div className="text-2xl font-serif font-bold text-[#1C1917] mt-0.5">{totalCount}</div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-gold-300 shadow-sm flex items-center gap-3">
-          <div className="p-2.5 bg-gold-100 text-gold-700 border border-gold-300 rounded-lg shrink-0">
-            <Clock className="h-5 w-5 stroke-[2.5]" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
+          <div className="p-2.5 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shrink-0 shadow-2xs">
+            <Clock className="h-5 w-5 stroke-[1.75]" />
           </div>
           <div>
-            <div className="text-xs font-bold text-black/60">Pending Review</div>
-            <div className="text-xl font-extrabold text-amber-700">{pendingCount}</div>
+            <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+              Pending Review
+            </div>
+            <div className="text-2xl font-serif font-bold text-[#BA954F] mt-0.5">{pendingCount}</div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-gold-300 shadow-sm flex items-center gap-3">
-          <div className="p-2.5 bg-gold-100 text-gold-700 border border-gold-300 rounded-lg shrink-0">
-            <CheckCircle2 className="h-5 w-5 text-gold-700 stroke-[2.5]" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
+          <div className="p-2.5 bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD] rounded-xl shrink-0 shadow-2xs">
+            <CheckCircle2 className="h-5 w-5 stroke-[1.75]" />
           </div>
           <div>
-            <div className="text-xs font-bold text-black/60">Approved</div>
-            <div className="text-xl font-extrabold text-black">{approvedCount}</div>
+            <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+              Approved
+            </div>
+            <div className="text-2xl font-serif font-bold text-[#2D6A4F] mt-0.5">{approvedCount}</div>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-gold-300 shadow-sm flex items-center gap-3">
-          <div className="p-2.5 bg-gold-100 text-gold-700 border border-gold-300 rounded-lg shrink-0">
-            <XCircle className="h-5 w-5 text-rose-600 stroke-[2.5]" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
+          <div className="p-2.5 bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0] rounded-xl shrink-0 shadow-2xs">
+            <XCircle className="h-5 w-5 stroke-[1.75]" />
           </div>
           <div>
-            <div className="text-xs font-bold text-black/60">Revisions Requested</div>
-            <div className="text-xl font-extrabold text-rose-700">{rejectedCount}</div>
+            <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+              Revisions
+            </div>
+            <div className="text-2xl font-serif font-bold text-[#B91C1C] mt-0.5">{rejectedCount}</div>
           </div>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white p-4 rounded-xl border border-gold-300 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white/95 backdrop-blur-xs p-3.5 sm:p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-black/50" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A8A29E]" />
           <input
             type="text"
             placeholder="Search deliverables..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gold-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-gold-500 bg-white text-black font-medium"
+            className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] bg-white text-[#1C1917] placeholder-[#A8A29E]"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           {/* Project Filter */}
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-black/50" />
+            <Filter className="h-4 w-4 text-[#8C7E72]" />
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="text-xs font-bold py-2 px-3 bg-gold-50 border border-gold-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-gold-500 text-black"
+              className="text-xs font-semibold py-2 px-3.5 bg-white border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1C1917] shadow-2xs cursor-pointer"
             >
               <option value="ALL">All Projects</option>
               {projects.map((p) => (
@@ -354,7 +377,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="text-xs font-bold py-2 px-3 bg-gold-50 border border-gold-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-gold-500 text-black"
+            className="text-xs font-semibold py-2 px-3.5 bg-white border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1C1917] shadow-2xs cursor-pointer"
           >
             <option value="ALL">All Statuses</option>
             <option value="PENDING">Pending Review</option>
@@ -366,15 +389,14 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
 
       {/* Deliverables List */}
       {loading ? (
-        <div className="p-12 text-center text-black/60 bg-white rounded-xl border border-gold-300">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gold-600 border-t-transparent mb-3" />
-          <p className="text-sm font-bold">Loading approval requests...</p>
-        </div>
+        <LoadingSpinner message="Loading approval requests..." />
       ) : !hasApprovalItems ? (
-        <div className="p-12 text-center text-black/50 bg-white rounded-xl border border-gold-300">
-          <FileCheck className="h-10 w-10 text-gold-400 mx-auto mb-3" />
-          <h3 className="text-base font-extrabold text-black">No deliverables to display</h3>
-          <p className="text-xs text-black/60 mt-1 max-w-sm mx-auto font-medium">
+        <div className="p-12 text-center text-[#78716C] bg-white rounded-2xl border border-[#EDE7DD] shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-[#FAF4EC] border border-[#EDE3D4] flex items-center justify-center text-[#BA954F] mx-auto mb-3 shadow-2xs">
+            <FileCheck className="h-6 w-6 stroke-[1.75]" />
+          </div>
+          <h3 className="text-base font-serif font-bold text-[#1C1917]">No deliverables to display</h3>
+          <p className="text-xs text-[#78716C] mt-1 max-w-sm mx-auto font-normal">
             {search || selectedProject !== 'ALL' || selectedStatus !== 'ALL'
               ? 'No approval requests match the selected filters.'
               : 'Deliverables requested for client sign-off will appear here.'}
@@ -383,150 +405,165 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={handleOpenSubmit}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-gold-500 hover:bg-gold-600 text-black text-xs font-bold rounded-lg border border-gold-600 shadow-xs transition-colors cursor-pointer btn-hover-lift"
+              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer btn-hover-lift"
             >
-              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              <Plus className="h-3.5 w-3.5 stroke-[2]" />
               Submit First Deliverable
             </button>
           )}
         </div>
       ) : (
         <div className="space-y-4">
-          {(Object.entries(taskApprovalsByProject) as [string, Task[]][]).map(([projectId, tasks]) => {
-            const project = projects.find((item) => item.id === projectId);
+          {(Object.entries(taskApprovalsByProject) as [string, Task[]][]).map(
+            ([projectId, tasks]) => {
+              const project = projects.find((item) => item.id === projectId);
 
-            return (
-              <section key={projectId} className="space-y-3">
-                <div className="flex items-center gap-2 px-1">
-                  <FolderKanban className="h-4 w-4 text-gold-700" />
-                  <h2 className="text-sm font-extrabold text-black">
-                    {project?.name || 'Project'}
-                  </h2>
-                  <span className="text-[11px] font-bold text-black/50">
-                    {tasks.length} task {tasks.length === 1 ? 'request' : 'requests'}
-                  </span>
-                </div>
+              return (
+                <section key={projectId} className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <FolderKanban className="h-4 w-4 text-[#BA954F]" />
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-[#1C1917]">
+                      {project?.name || 'Project'}
+                    </h2>
+                    <span className="text-[11px] font-mono text-[#78716C]">
+                      ({tasks.length} {tasks.length === 1 ? 'task request' : 'task requests'})
+                    </span>
+                  </div>
 
-                {tasks.map((task) => {
-                  const status = taskStatus(task);
-                  const isPending = status === 'PENDING';
+                  {tasks.map((task) => {
+                    const status = taskStatus(task);
+                    const isPending = status === 'PENDING';
 
-                  return (
-                    <div
-                      key={`task-${task.id}`}
-                      onClick={() => isClient && setClientViewTask(task)}
-                      className={`bg-white rounded-xl border border-gold-300 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all ${
-                        isClient ? 'cursor-pointer hover:border-gold-500 hover:shadow-md' : ''
-                      }`}
-                    >
-                      <div className="space-y-2 flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          {getStatusPill(status)}
-                          <span className="text-[11px] font-bold text-gold-800 bg-gold-100 px-2.5 py-0.5 rounded border border-gold-300">
-                            Task approval
-                          </span>
-                          {task.createdAt && (
-                            <span className="text-xs text-black/50 flex items-center gap-1 font-medium">
-                              <Calendar className="h-3 w-3" />
-                              Updated {new Date(task.updatedAt || task.createdAt).toLocaleDateString()}
+                    return (
+                      <div
+                        key={`task-${task.id}`}
+                        onClick={() => isClient && setClientViewTask(task)}
+                        className={`bg-white rounded-2xl border border-[#EDE7DD] p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all ${
+                          isClient
+                            ? 'cursor-pointer hover:border-[#DFD5C6] hover:shadow-md'
+                            : ''
+                        }`}
+                      >
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            {getStatusPill(status)}
+                            <span className="text-[10px] font-semibold text-[#BA954F] bg-[#FAF4EC] px-2.5 py-0.5 rounded-full border border-[#EDE3D4]">
+                              Task approval
                             </span>
+                            {task.createdAt && (
+                              <span className="text-xs text-[#A8A29E] flex items-center gap-1 font-mono">
+                                <Calendar className="h-3 w-3" />
+                                Updated{' '}
+                                {new Date(task.updatedAt || task.createdAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-sm sm:text-base font-bold text-[#1C1917] leading-snug">
+                            {task.title}
+                          </h3>
+                          {task.description && (
+                            <p className="text-xs text-[#78716C] leading-relaxed max-w-2xl font-normal">
+                              {task.description}
+                            </p>
+                          )}
+                          {task.submissionDescription && (
+                            <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EDE7DD] text-xs mt-2 space-y-1">
+                              <div className="font-semibold text-[#1C1917]">Completion details</div>
+                              <p className="text-[#57534E] font-normal">{task.submissionDescription}</p>
+                              <div className="font-semibold text-[#1C1917] pt-1">Proof</div>
+                              <p className="text-[#57534E] font-normal">{task.proofDetails}</p>
+                              {task.deliverableUrl && (
+                                <a
+                                  href={
+                                    task.deliverableUrl.startsWith('http')
+                                      ? task.deliverableUrl
+                                      : `https://${task.deliverableUrl}`
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-1 text-[#BA954F] font-semibold pt-1 hover:underline"
+                                >
+                                  <ExternalLink className="h-3 w-3" /> View deliverable
+                                </a>
+                              )}
+                            </div>
+                          )}
+                          {task.revisionRequest && (
+                            <div className="p-3.5 bg-[#FDF2F0] rounded-xl border border-[#F5D5D0] text-xs mt-2">
+                              <div className="font-semibold text-[#B91C1C] mb-1">
+                                Client revision request
+                              </div>
+                              <p className="text-[#7F1D1D] font-normal">{task.revisionRequest.feedback}</p>
+                            </div>
                           )}
                         </div>
-                        <h3 className="text-base font-extrabold text-black leading-snug">{task.title}</h3>
-                        {task.description && (
-                          <p className="text-xs text-black/70 leading-relaxed max-w-2xl font-medium">
-                            {task.description}
-                          </p>
-                        )}
-                        {task.submissionDescription && (
-                          <div className="p-3 bg-gold-50 rounded-lg border border-gold-200 text-xs mt-2 space-y-1">
-                            <div className="font-bold text-black">Completion details</div>
-                            <p className="text-black/75">{task.submissionDescription}</p>
-                            <div className="font-bold text-black pt-1">Proof</div>
-                            <p className="text-black/75">{task.proofDetails}</p>
-                            {task.deliverableUrl && (
-                              <a
-                                href={task.deliverableUrl.startsWith('http') ? task.deliverableUrl : `https://${task.deliverableUrl}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-gold-800 font-bold pt-1"
-                              >
-                                <ExternalLink className="h-3 w-3" /> View deliverable
-                              </a>
+
+                        {isClient && (
+                          <div
+                            className="flex items-center gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#EDE7DD]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setClientViewTask(task)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-[#FAF7F2] text-[#443B30] border border-[#DFD5C6] text-xs font-semibold rounded-xl transition-colors cursor-pointer shadow-2xs"
+                            >
+                              Review Details
+                            </button>
+                            {isPending && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleApproveTask(task)}
+                                  disabled={
+                                    taskActionLoading === task.id ||
+                                    !task.submittedAt ||
+                                    !task.submissionDescription?.trim() ||
+                                    !task.proofDetails?.trim() ||
+                                    task.status !== 'REVIEW' ||
+                                    task.clientApprovalStatus !== 'PENDING'
+                                  }
+                                  title={
+                                    !task.submittedAt
+                                      ? 'Task must be submitted before approval'
+                                      : undefined
+                                  }
+                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed btn-hover-lift"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  {taskActionLoading === task.id
+                                    ? 'Approving...'
+                                    : !task.submittedAt
+                                    ? 'Not Submitted'
+                                    : 'Approve'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setRequestChangesTask(task)}
+                                  disabled={taskActionLoading === task.id}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#FDF2F0] hover:bg-[#FCE7E4] text-[#B91C1C] border border-[#F5D5D0] text-xs font-semibold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Request Changes
+                                </button>
+                              </>
                             )}
                           </div>
                         )}
-                        {task.revisionRequest && (
-                          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs mt-2">
-                            <div className="font-bold text-amber-900 mb-1">Client revision request</div>
-                            <p className="text-amber-900/80">{task.revisionRequest.feedback}</p>
-                          </div>
-                        )}
                       </div>
-
-                      {isClient && (
-                        <div
-                          className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-gold-200"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => setClientViewTask(task)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gold-100 hover:bg-gold-200 text-gold-900 border border-gold-300 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                          >
-                            Review Details
-                          </button>
-                          {isPending && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleApproveTask(task)}
-                                disabled={
-                                  taskActionLoading === task.id ||
-                                  !task.submittedAt ||
-                                  !task.submissionDescription?.trim() ||
-                                  !task.proofDetails?.trim() ||
-                                  task.status !== 'REVIEW' ||
-                                  task.clientApprovalStatus !== 'PENDING'
-                                }
-                                title={
-                                  !task.submittedAt
-                                    ? 'Task must be submitted before approval'
-                                    : undefined
-                                }
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black hover:bg-gold-500 text-gold-400 hover:text-black border border-gold-400/50 text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                {taskActionLoading === task.id
-                                  ? 'Approving...'
-                                  : !task.submittedAt
-                                  ? 'Not Submitted'
-                                  : 'Approve'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setRequestChangesTask(task)}
-                                disabled={taskActionLoading === task.id}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                              >
-                                <XCircle className="h-3.5 w-3.5" />
-                                Request Changes
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </section>
-            );
-          })}
+                    );
+                  })}
+                </section>
+              );
+            }
+          )}
 
           {approvals.length > 0 && (
             <div className="pt-2">
-              <h2 className="text-sm font-extrabold text-black px-1 mb-3">Deliverable requests</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#1C1917] px-1 mb-3">
+                Deliverable requests
+              </h2>
             </div>
           )}
           {approvals.map((item) => {
@@ -535,7 +572,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-xl border border-gold-300 p-5 shadow-sm hover:border-gold-500 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 card-hover-lift"
+                className="bg-white rounded-2xl border border-[#EDE7DD] p-5 shadow-xs hover:border-[#DFD5C6] transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 card-hover-lift"
               >
                 {/* Left details */}
                 <div className="space-y-2 flex-1 min-w-0">
@@ -545,24 +582,24 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                       <button
                         type="button"
                         onClick={() => onNavigate && onNavigate(`/projects/${project.id}`)}
-                        className="inline-flex items-center gap-1 text-[11px] font-extrabold text-black bg-gold-100 hover:bg-gold-200 px-2.5 py-0.5 rounded border border-gold-300 transition-colors"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#BA954F] bg-[#FAF4EC] hover:bg-[#F5EFE6] px-2.5 py-0.5 rounded-full border border-[#EDE3D4] transition-colors"
                       >
-                        <FolderKanban className="h-3 w-3 text-gold-700" />
+                        <FolderKanban className="h-3 w-3 text-[#BA954F]" />
                         <span>{project.name}</span>
                       </button>
                     )}
-                    <span className="text-xs text-black/50 flex items-center gap-1 font-medium">
+                    <span className="text-xs text-[#A8A29E] flex items-center gap-1 font-mono">
                       <Calendar className="h-3 w-3" />
                       Submitted {new Date(item.createdAt).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <h3 className="text-base font-extrabold text-black leading-snug">
+                  <h3 className="text-sm sm:text-base font-bold text-[#1C1917] leading-snug">
                     {item.title}
                   </h3>
 
                   {item.description && (
-                    <p className="text-xs text-black/70 leading-relaxed max-w-2xl font-medium">
+                    <p className="text-xs text-[#78716C] leading-relaxed max-w-2xl font-normal">
                       {item.description}
                     </p>
                   )}
@@ -571,10 +608,14 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                   {item.deliverableUrl && (
                     <div className="pt-1">
                       <a
-                        href={item.deliverableUrl.startsWith('http') ? item.deliverableUrl : `https://${item.deliverableUrl}`}
+                        href={
+                          item.deliverableUrl.startsWith('http')
+                            ? item.deliverableUrl
+                            : `https://${item.deliverableUrl}`
+                        }
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-gold-800 hover:text-black bg-gold-100 hover:bg-gold-200 px-2.5 py-1 rounded-md border border-gold-300 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] bg-[#FAF4EC] hover:bg-[#F5EFE6] px-3 py-1.5 rounded-xl border border-[#EDE3D4] transition-colors"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                         <span>View Deliverable Link / Asset</span>
@@ -583,42 +624,44 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                   )}
 
                   {/* Requester & Reviewer metadata */}
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-black/60 pt-1 font-medium">
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-[#78716C] pt-1 font-normal">
                     {item.requestedBy && (
                       <span className="flex items-center gap-1">
-                        <User className="h-3 w-3 text-gold-700" />
-                        Submitted by <span className="font-bold text-black">{item.requestedBy.name}</span>
+                        <User className="h-3 w-3 text-[#BA954F]" />
+                        Submitted by{' '}
+                        <span className="font-semibold text-[#1C1917]">{item.requestedBy.name}</span>
                       </span>
                     )}
                     {item.reviewedBy && (
                       <span className="flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3 text-gold-700" />
-                        Reviewed by <span className="font-bold text-black">{item.reviewedBy.name}</span>
+                        <CheckCircle2 className="h-3 w-3 text-[#2D6A4F]" />
+                        Reviewed by{' '}
+                        <span className="font-semibold text-[#1C1917]">{item.reviewedBy.name}</span>
                       </span>
                     )}
                   </div>
 
                   {/* Feedback comments box */}
                   {item.comments && (
-                    <div className="p-3 bg-gold-50/50 rounded-lg border border-gold-200 text-xs mt-2">
-                      <div className="font-bold text-black flex items-center gap-1.5 mb-1">
-                        <MessageSquare className="h-3.5 w-3.5 text-gold-700" />
+                    <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EDE7DD] text-xs mt-2">
+                      <div className="font-semibold text-[#1C1917] flex items-center gap-1.5 mb-1">
+                        <MessageSquare className="h-3.5 w-3.5 text-[#BA954F]" />
                         Client Review Feedback:
                       </div>
-                      <p className="text-black/70 italic">"{item.comments}"</p>
+                      <p className="text-[#57534E] italic font-normal">"{item.comments}"</p>
                     </div>
                   )}
                 </div>
 
                 {/* Right action buttons */}
-                <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-gold-200">
+                <div className="flex items-center gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#EDE7DD]">
                   {/* Actions for Client or Admin on Pending Items */}
                   {item.status === 'PENDING' && (
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => handleOpenReview(item, 'APPROVED')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black hover:bg-gold-500 text-gold-400 hover:text-black border border-gold-400/50 text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer btn-hover-lift"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Approve
@@ -626,7 +669,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                       <button
                         type="button"
                         onClick={() => handleOpenReview(item, 'REJECTED')}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#FDF2F0] hover:bg-[#FCE7E4] text-[#B91C1C] border border-[#F5D5D0] text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                       >
                         <XCircle className="h-3.5 w-3.5" />
                         Request Revisions
@@ -639,7 +682,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                     <button
                       type="button"
                       onClick={() => handleDelete(item.id, item.title)}
-                      className="p-2 text-black/40 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      className="p-2 text-[#A8A29E] hover:text-[#B91C1C] hover:bg-[#FDF2F0] rounded-xl transition-colors"
                       title="Delete Deliverable Request"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -654,31 +697,31 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
 
       {/* Submit Deliverable Modal */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gold-300 space-y-4">
-            <div className="flex items-center justify-between border-b border-gold-200 pb-3">
-              <h2 className="text-lg font-extrabold text-black flex items-center gap-2">
-                <FileCheck className="h-5 w-5 text-gold-600 stroke-[2.5]" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#EDE7DD] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#EDE7DD] pb-3.5">
+              <h2 className="text-base font-serif font-bold text-[#1C1917] flex items-center gap-2">
+                <FileCheck className="h-5 w-5 text-[#BA954F] stroke-[2]" />
                 Submit Deliverable for Client Sign-Off
               </h2>
               <button
                 type="button"
                 onClick={() => setIsSubmitModalOpen(false)}
-                className="p-1 text-black/50 hover:text-black rounded-lg cursor-pointer"
+                className="p-1.5 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-xl cursor-pointer"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {submitError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-lg">
+              <div className="p-3 bg-[#FDF2F0] border border-[#F5D5D0] text-[#B91C1C] text-xs font-medium rounded-xl">
                 {submitError}
               </div>
             )}
 
             <form onSubmit={handleSubmitDeliverable} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-black mb-1">
+                <label className="block text-xs font-semibold text-[#1C1917] mb-1">
                   Deliverable Title *
                 </label>
                 <input
@@ -687,19 +730,19 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                   placeholder="e.g. Design System Figma v1, Staging Build Deployment"
                   value={submitForm.title}
                   onChange={(e) => setSubmitForm({ ...submitForm, title: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gold-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-hidden bg-white text-black font-medium"
+                  className="w-full px-3.5 py-2 text-xs sm:text-sm border border-[#DFD5C6] rounded-xl focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] focus:outline-none bg-white text-[#1C1917]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-black mb-1">
+                <label className="block text-xs font-semibold text-[#1C1917] mb-1">
                   Project *
                 </label>
                 <select
                   required
                   value={submitForm.projectId}
                   onChange={(e) => setSubmitForm({ ...submitForm, projectId: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gold-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-hidden bg-white text-black font-medium"
+                  className="w-full px-3.5 py-2 text-xs sm:text-sm border border-[#DFD5C6] rounded-xl focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] focus:outline-none bg-white text-[#1C1917] cursor-pointer shadow-2xs"
                 >
                   <option value="" disabled>
                     Select Project
@@ -713,43 +756,47 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-black mb-1">
+                <label className="block text-xs font-semibold text-[#1C1917] mb-1">
                   Deliverable URL / Preview Link
                 </label>
                 <input
                   type="url"
                   placeholder="https://figma.com/... or https://staging.app.com"
                   value={submitForm.deliverableUrl}
-                  onChange={(e) => setSubmitForm({ ...submitForm, deliverableUrl: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gold-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-hidden bg-white text-black font-medium"
+                  onChange={(e) =>
+                    setSubmitForm({ ...submitForm, deliverableUrl: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 text-xs sm:text-sm border border-[#DFD5C6] rounded-xl focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] focus:outline-none bg-white text-[#1C1917]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-black mb-1">
+                <label className="block text-xs font-semibold text-[#1C1917] mb-1">
                   Description & Context
                 </label>
                 <textarea
                   rows={3}
                   placeholder="Explain what was accomplished and what specific points the client should inspect..."
                   value={submitForm.description}
-                  onChange={(e) => setSubmitForm({ ...submitForm, description: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gold-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-hidden bg-white text-black font-medium"
+                  onChange={(e) =>
+                    setSubmitForm({ ...submitForm, description: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 text-xs sm:text-sm border border-[#DFD5C6] rounded-xl focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] focus:outline-none bg-white text-[#1C1917]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gold-200">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#EDE7DD]">
                 <button
                   type="button"
                   onClick={() => setIsSubmitModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-black bg-gold-100 hover:bg-gold-200 border border-gold-300 rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] border border-[#DFD5C6] rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitLoading}
-                  className="px-4 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 border border-gold-600 rounded-lg transition-colors disabled:opacity-50 cursor-pointer shadow-xs btn-hover-lift"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-xs btn-hover-lift"
                 >
                   {submitLoading ? 'Submitting...' : 'Send for Client Review'}
                 </button>
@@ -761,41 +808,47 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
 
       {/* Review / Decision Modal */}
       {reviewModalOpen && reviewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gold-300 space-y-4">
-            <div className="flex items-center justify-between border-b border-gold-200 pb-3">
-              <h2 className="text-lg font-extrabold text-black flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#EDE7DD] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#EDE7DD] pb-3.5">
+              <h2 className="text-base font-serif font-bold text-[#1C1917] flex items-center gap-2">
                 {reviewDecision === 'APPROVED' ? (
-                  <CheckCircle2 className="h-5 w-5 text-gold-600" />
+                  <CheckCircle2 className="h-5 w-5 text-[#2D6A4F]" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-rose-600" />
+                  <XCircle className="h-5 w-5 text-[#B91C1C]" />
                 )}
-                {reviewDecision === 'APPROVED' ? 'Approve Deliverable' : 'Request Deliverable Revisions'}
+                {reviewDecision === 'APPROVED'
+                  ? 'Approve Deliverable'
+                  : 'Request Deliverable Revisions'}
               </h2>
               <button
                 type="button"
                 onClick={() => setReviewModalOpen(false)}
-                className="p-1 text-black/50 hover:text-black rounded-lg cursor-pointer"
+                className="p-1.5 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-xl cursor-pointer"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {reviewError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-lg">
+              <div className="p-3 bg-[#FDF2F0] border border-[#F5D5D0] text-[#B91C1C] text-xs font-medium rounded-xl">
                 {reviewError}
               </div>
             )}
 
-            <div className="bg-gold-50/50 p-3 rounded-lg border border-gold-300">
-              <div className="text-xs text-black/60 font-bold">Deliverable</div>
-              <div className="text-sm font-extrabold text-black">{reviewItem.title}</div>
+            <div className="bg-[#FAF7F2] p-3.5 rounded-xl border border-[#EDE7DD]">
+              <div className="text-xs text-[#78716C] font-medium">Deliverable</div>
+              <div className="text-sm font-serif font-bold text-[#1C1917]">{reviewItem.title}</div>
               {reviewItem.deliverableUrl && (
                 <a
-                  href={reviewItem.deliverableUrl.startsWith('http') ? reviewItem.deliverableUrl : `https://${reviewItem.deliverableUrl}`}
+                  href={
+                    reviewItem.deliverableUrl.startsWith('http')
+                      ? reviewItem.deliverableUrl
+                      : `https://${reviewItem.deliverableUrl}`
+                  }
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs text-gold-700 font-bold inline-flex items-center gap-1 mt-1 hover:underline"
+                  className="text-xs text-[#BA954F] font-semibold inline-flex items-center gap-1 mt-1 hover:underline"
                 >
                   <ExternalLink className="h-3 w-3" /> Inspect Asset Link
                 </a>
@@ -804,7 +857,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
 
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-black mb-1">
+                <label className="block text-xs font-semibold text-[#1C1917] mb-1">
                   Feedback & Comments {reviewDecision === 'REJECTED' && '*'}
                 </label>
                 <textarea
@@ -813,29 +866,29 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                   placeholder={
                     reviewDecision === 'APPROVED'
                       ? 'Optional note (e.g., "Looks great, ready for production!")'
-                      : 'Specify the required adjustments, visual feedback, or bug notes...'
+                      : 'Specify the required adjustments, visual feedback, or revision notes...'
                   }
                   value={reviewComments}
                   onChange={(e) => setReviewComments(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gold-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-hidden bg-white text-black font-medium"
+                  className="w-full px-3.5 py-2 text-xs sm:text-sm border border-[#DFD5C6] rounded-xl focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] focus:outline-none bg-white text-[#1C1917]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gold-200">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#EDE7DD]">
                 <button
                   type="button"
                   onClick={() => setReviewModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-black bg-gold-100 hover:bg-gold-200 border border-gold-300 rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] border border-[#DFD5C6] rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={reviewLoading}
-                  className={`px-4 py-2 text-xs font-bold text-white rounded-lg transition-colors disabled:opacity-50 cursor-pointer shadow-xs btn-hover-lift ${
+                  className={`px-4 py-2 text-xs font-semibold rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-xs btn-hover-lift ${
                     reviewDecision === 'APPROVED'
-                      ? 'bg-black hover:bg-gold-500 text-gold-400 hover:text-black border border-gold-400'
-                      : 'bg-rose-600 hover:bg-rose-700'
+                      ? 'bg-[#BA954F] hover:bg-[#A17B2F] text-white'
+                      : 'bg-[#B91C1C] hover:bg-[#991B1B] text-white'
                   }`}
                 >
                   {reviewLoading

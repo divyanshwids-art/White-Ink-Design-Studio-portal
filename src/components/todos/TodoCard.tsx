@@ -43,23 +43,23 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 
   return (
     <div
-      className={`p-4 rounded-xl border transition-all duration-200 ${
+      className={`p-5 rounded-2xl border transition-all duration-200 ${
         todo.completed
-          ? 'bg-gold-50/50 border-gold-200 opacity-80'
-          : 'bg-white border-gold-300 shadow-xs hover:border-gold-400 hover:shadow-sm'
+          ? 'bg-[#FAF7F2]/60 border-[#EDE7DD] opacity-75'
+          : 'bg-white border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:border-[#BA954F]/40'
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3.5">
         {/* Checkbox and Content */}
-        <div className="flex items-start gap-3 min-w-0 flex-1">
+        <div className="flex items-start gap-3.5 min-w-0 flex-1">
           {/* Complete Toggle Checkbox */}
           <button
             type="button"
             onClick={() => onToggle(todo)}
             className={`mt-0.5 shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer ${
               todo.completed
-                ? 'bg-gold-500 border-gold-600 text-black shadow-2xs'
-                : 'border-gold-400 hover:border-gold-600 bg-white hover:bg-gold-100/50'
+                ? 'bg-[#BA954F] border-[#BA954F] text-white shadow-2xs'
+                : 'border-[#DFD5C6] hover:border-[#BA954F] bg-[#FAF7F2]'
             }`}
             title={todo.completed ? 'Mark as pending' : 'Mark as completed'}
           >
@@ -69,8 +69,8 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           {/* Text details */}
           <div className="min-w-0 flex-1">
             <h4
-              className={`text-sm font-bold text-black break-words ${
-                todo.completed ? 'line-through text-black/50' : ''
+              className={`text-sm font-semibold text-neutral-900 break-words ${
+                todo.completed ? 'line-through text-neutral-400' : ''
               }`}
             >
               {todo.title}
@@ -78,8 +78,8 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 
             {todo.description && (
               <p
-                className={`text-xs text-black/70 mt-1 whitespace-pre-line break-words font-medium ${
-                  todo.completed ? 'text-black/40' : ''
+                className={`text-xs text-neutral-500 mt-1 whitespace-pre-line break-words leading-relaxed ${
+                  todo.completed ? 'text-neutral-400' : ''
                 }`}
               >
                 {todo.description}
@@ -87,18 +87,18 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             )}
 
             {/* Badges / Meta row */}
-            <div className="flex flex-wrap items-center gap-2 mt-2.5">
+            <div className="flex flex-wrap items-center gap-2 mt-3">
               {/* Due Date Badge */}
               {hasDueDate && (
                 <span
-                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
                     todo.completed
-                      ? 'bg-gray-100 text-black/50 border-gray-200'
+                      ? 'bg-neutral-100 text-neutral-400 border-neutral-200'
                       : isOverdue
-                      ? 'bg-red-50 text-red-700 border-red-300 font-bold'
+                      ? 'bg-[#FDF0ED] text-[#9E2A2B] border-[#F5D0C5] font-semibold'
                       : isDueToday
-                      ? 'bg-amber-50 text-amber-800 border-amber-300 font-bold'
-                      : 'bg-gold-100 text-black border-gold-300'
+                      ? 'bg-[#FDF6E9] text-[#B45309] border-[#F9E2AF] font-semibold'
+                      : 'bg-[#FAF7F2] text-[#BA954F] border-[#EDE7DD]'
                   }`}
                 >
                   <Calendar className="h-3 w-3 shrink-0" />
@@ -112,16 +112,16 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 
               {/* Assignment Badge */}
               {todo.assignedTo && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-gold-100 text-black border border-gold-300">
-                  <UserCheck className="h-3 w-3 text-gold-700 shrink-0" />
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#FAF7F2] text-[#BA954F] border border-[#EDE7DD]">
+                  <UserCheck className="h-3 w-3 text-[#BA954F] shrink-0" />
                   <span>
                     {isAssignee ? (
                       <>
-                        Assigned by <strong className="font-bold">{todo.createdBy?.name || 'Colleague'}</strong>
+                        Assigned by <strong className="font-semibold text-neutral-900">{todo.createdBy?.name || 'Colleague'}</strong>
                       </>
                     ) : (
                       <>
-                        Assigned to <strong className="font-bold">{todo.assignedTo.name}</strong>
+                        Assigned to <strong className="font-semibold text-neutral-900">{todo.assignedTo.name}</strong>
                       </>
                     )}
                   </span>
@@ -130,7 +130,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 
               {/* Personal Tag if unassigned */}
               {!todo.assignedTo && isOwner && (
-                <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-white text-black/60 border border-gold-200">
+                <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#FAF7F2] text-neutral-500 border border-[#EDE7DD]">
                   Personal
                 </span>
               )}
@@ -145,7 +145,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             <button
               type="button"
               onClick={() => onEdit(todo)}
-              className="p-1.5 text-black/70 hover:text-black hover:bg-gold-100 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-neutral-400 hover:text-neutral-900 hover:bg-[#FAF7F2] rounded-lg transition-colors cursor-pointer"
               title="Edit Todo"
             >
               <Edit2 className="h-3.5 w-3.5" />
@@ -157,7 +157,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             <button
               type="button"
               onClick={() => onDelete(todo)}
-              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-neutral-400 hover:text-[#9E2A2B] hover:bg-[#FDF0ED] rounded-lg transition-colors cursor-pointer"
               title="Delete Todo"
             >
               <Trash2 className="h-3.5 w-3.5" />

@@ -260,7 +260,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
         {/* Handover & Deliverables Fields */}
         <div className="p-3.5 bg-[#FAF6ED] border border-[#DFCE9F] rounded-xl space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-[#8C6D23]">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-[#BA954F]">
             Handover & Deliverables Settings
           </h4>
           <div>

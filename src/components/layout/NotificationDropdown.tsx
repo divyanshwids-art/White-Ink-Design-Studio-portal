@@ -107,25 +107,25 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onNa
     switch (type) {
       case 'APPROVAL_REQUESTED':
       case 'APPROVAL_RESOLVED':
-        return <FileCheck className="h-4 w-4 text-gold-700" />;
+        return <FileCheck className="h-4 w-4 stroke-[1.75]" />;
       case 'TASK_ASSIGNED':
       case 'TASK_STATUS':
-        return <CheckCircle className="h-4 w-4 text-gold-600" />;
+        return <CheckCircle className="h-4 w-4 stroke-[1.75]" />;
       case 'PROJECT_ASSIGNED':
-        return <FolderKanban className="h-4 w-4 text-gold-800" />;
+        return <FolderKanban className="h-4 w-4 stroke-[1.75]" />;
       case 'MILESTONE_DUE':
-        return <AlertTriangle className="h-4 w-4 text-gold-600" />;
+        return <AlertTriangle className="h-4 w-4 stroke-[1.75]" />;
       case 'ATTENDANCE_ALERT':
-        return <Clock className="h-4 w-4 text-gold-700" />;
+        return <Clock className="h-4 w-4 stroke-[1.75]" />;
       case 'LEAVE_REQUESTED':
       case 'LEAVE_RESOLVED':
-        return <Calendar className="h-4 w-4 text-gold-800" />;
+        return <Calendar className="h-4 w-4 stroke-[1.75]" />;
       case 'PERFORMANCE_REVIEW':
-        return <Award className="h-4 w-4 text-gold-600" />;
+        return <Award className="h-4 w-4 stroke-[1.75]" />;
       case 'CHAT_MENTION':
-        return <MessageSquare className="h-4 w-4 text-gold-700" />;
+        return <MessageSquare className="h-4 w-4 stroke-[1.75]" />;
       default:
-        return <Bell className="h-4 w-4 text-gold-600" />;
+        return <Bell className="h-4 w-4 stroke-[1.75]" />;
     }
   };
 
@@ -148,26 +148,26 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onNa
           setIsOpen(!isOpen);
           if (!isOpen) fetchNotifications();
         }}
-        className="relative p-2 text-black hover:bg-gold-600/20 rounded-lg transition-colors cursor-pointer"
+        className="relative p-2 text-[#57534E] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-xl transition-colors cursor-pointer"
         title="Notifications"
         aria-label="View notifications"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-5 w-5 stroke-[1.75]" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-black px-1 text-[10px] font-extrabold text-gold-400 ring-2 ring-gold-400">
+          <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#BA954F] px-1 text-[10px] font-bold text-white shadow-2xs">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border-2 border-gold-300 py-0 z-50 overflow-hidden animate-gold-fade-in">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-[#EDE7DD] py-0 z-50 overflow-hidden animate-gold-fade-in">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gold-200 bg-gold-50">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#EDE7DD] bg-[#FAF7F2]">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-black">Notifications</span>
+              <span className="font-serif font-bold text-sm text-[#1C1917]">Notifications</span>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 text-[11px] font-extrabold bg-gold-200 text-black rounded-full border border-gold-400">
+                <span className="px-2 py-0.5 text-[10px] font-bold bg-[#FAF4EC] text-[#BA954F] rounded-full border border-[#EAE0D0]">
                   {unreadCount} new
                 </span>
               )}
@@ -176,21 +176,23 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onNa
               <button
                 type="button"
                 onClick={handleMarkAllAsRead}
-                className="text-xs text-black hover:text-gold-800 font-bold cursor-pointer flex items-center gap-1"
+                className="text-xs text-[#BA954F] hover:text-[#A17B2F] font-semibold cursor-pointer flex items-center gap-1"
               >
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3.5 w-3.5 stroke-[2]" />
                 Mark all read
               </button>
             )}
           </div>
 
           {/* List */}
-          <div className="max-h-[380px] overflow-y-auto divide-y divide-gold-100">
+          <div className="max-h-[380px] overflow-y-auto divide-y divide-[#F5EFE6]">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center text-black/70">
-                <Bell className="h-8 w-8 mx-auto text-gold-500 mb-2" />
-                <p className="text-sm font-bold text-black">No notifications yet</p>
-                <p className="text-xs text-black/60 mt-0.5">
+              <div className="p-8 text-center text-[#78716C]">
+                <div className="w-12 h-12 rounded-2xl bg-[#FAF4EC] border border-[#EDE3D4] flex items-center justify-center text-[#BA954F] mx-auto mb-3 shadow-2xs">
+                  <Bell className="h-6 w-6 stroke-[1.75]" />
+                </div>
+                <p className="text-sm font-serif font-bold text-[#1C1917]">No notifications yet</p>
+                <p className="text-xs text-[#78716C] mt-1">
                   You're all caught up with projects and tasks!
                 </p>
               </div>
@@ -199,31 +201,31 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onNa
                 <div
                   key={item.id}
                   onClick={() => handleNotificationClick(item)}
-                  className={`p-3.5 flex items-start gap-3 hover:bg-gold-50/80 transition-colors cursor-pointer ${
-                    !item.isRead ? 'bg-gold-50/40 border-l-3 border-gold-500' : ''
+                  className={`p-3.5 flex items-start gap-3 hover:bg-[#FAF7F2] transition-colors cursor-pointer ${
+                    !item.isRead ? 'bg-[#FAF7F2]/60' : ''
                   }`}
                 >
-                  <div className="mt-0.5 p-1.5 bg-gold-100/70 border border-gold-300 rounded-lg shrink-0">
+                  <div className="mt-0.5 p-2 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shrink-0">
                     {getTypeIcon(item.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-0.5">
                       <h4
                         className={`text-xs truncate ${
-                          !item.isRead ? 'text-black font-extrabold' : 'text-black/80 font-semibold'
+                          !item.isRead ? 'text-[#1C1917] font-bold' : 'text-[#57534E] font-medium'
                         }`}
                       >
                         {item.title}
                       </h4>
-                      <span className="text-[10px] text-black/60 font-medium shrink-0">
+                      <span className="text-[10px] text-[#A8A29E] shrink-0 font-mono">
                         {formatTimeAgo(item.createdAt)}
                       </span>
                     </div>
-                    <p className="text-xs text-black/80 line-clamp-2 leading-relaxed font-normal">
+                    <p className="text-xs text-[#57534E] line-clamp-2 leading-relaxed font-normal">
                       {item.message}
                     </p>
                     {item.linkUrl && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-black font-bold mt-1.5 hover:text-gold-700 hover:underline">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[#BA954F] font-semibold mt-1.5 hover:underline">
                         View details <ExternalLink className="h-2.5 w-2.5" />
                       </span>
                     )}
@@ -233,16 +235,16 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onNa
                       <button
                         type="button"
                         onClick={(e) => handleMarkAsRead(item.id, e)}
-                        className="p-1 text-gold-600 hover:text-gold-800 hover:bg-gold-100 rounded"
+                        className="p-1 text-[#BA954F] hover:bg-[#FAF4EC] rounded-lg"
                         title="Mark as read"
                       >
-                        <span className="h-2 w-2 rounded-full bg-gold-600 block" />
+                        <span className="h-2 w-2 rounded-full bg-[#BA954F] block" />
                       </button>
                     )}
                     <button
                       type="button"
                       onClick={(e) => handleDelete(item.id, e)}
-                      className="p-1 text-black/40 hover:text-black hover:bg-gold-200 rounded transition-colors"
+                      className="p-1 text-[#A8A29E] hover:text-[#B91C1C] hover:bg-[#FDF2F0] rounded-lg transition-colors"
                       title="Dismiss"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

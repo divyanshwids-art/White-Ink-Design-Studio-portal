@@ -151,50 +151,49 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gold-300 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
       {/* Header & Filter Controls */}
-      <div className="p-5 border-b border-gold-200 space-y-4">
+      <div className="p-5 border-b border-[#EDE7DD] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black/40" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by date, employee name..."
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-gold-300 focus:outline-hidden focus:ring-2 focus:ring-gold-500 focus:border-gold-500 bg-white text-black placeholder:text-black/40"
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-[#EDE7DD] focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] bg-[#FAF7F2]/40 text-neutral-900 placeholder:text-neutral-400 transition-all"
             />
           </form>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* CSV Export Button */}
             <button
               type="button"
               onClick={exportToCSV}
               disabled={records.length === 0}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-black bg-white border border-gold-300 rounded-lg hover:bg-gold-100 disabled:opacity-40 cursor-pointer shadow-xs transition-colors"
+              className="btn-gold-secondary px-3.5 py-2 text-xs font-semibold inline-flex items-center gap-1.5"
             >
-              <Download className="h-3.5 w-3.5 text-gold-600" />
+              <Download className="h-3.5 w-3.5 text-[#BA954F]" />
               <span>Export CSV</span>
             </button>
           </div>
         </div>
 
         {/* Filter Badges Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-black/70 font-bold flex items-center gap-1">
-              <Filter className="h-3.5 w-3.5 text-gold-600" /> Status:
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-neutral-500 font-semibold flex items-center gap-1 mr-1">
+              <Filter className="h-3.5 w-3.5 text-[#BA954F]" /> Status:
             </span>
             {['ALL', 'PRESENT', 'LATE', 'HALF_DAY', 'ON_LEAVE', 'ABSENT'].map((st) => (
               <button
                 key={st}
                 type="button"
                 onClick={() => handleStatusChange(st)}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer border ${
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer border ${
                   statusFilter === st
-                    ? 'bg-gold-500 border-gold-600 text-black shadow-xs'
-                    : 'bg-white border-gold-200 text-black/70 hover:bg-gold-50 hover:text-black'
+                    ? 'bg-[#BA954F] border-[#BA954F] text-white shadow-xs'
+                    : 'bg-white border-[#EDE7DD] text-neutral-600 hover:bg-[#FAF7F2] hover:text-neutral-900'
                 }`}
               >
                 {st === 'ALL' ? 'All Records' : st.replace('_', ' ')}
@@ -203,27 +202,27 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Calendar className="h-3.5 w-3.5 text-gold-600" />
+            <Calendar className="h-3.5 w-3.5 text-[#BA954F]" />
             <input
               type="date"
               value={startDate}
               onChange={(e) => handleDateChange(e.target.value, endDate)}
-              className="px-2 py-1 border border-gold-300 rounded-md text-xs bg-white text-black"
+              className="px-2.5 py-1 border border-[#EDE7DD] rounded-lg text-xs bg-[#FAF7F2]/40 text-neutral-800"
               title="Start Date"
             />
-            <span className="text-black/50 font-bold">to</span>
+            <span className="text-neutral-400 font-medium">to</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => handleDateChange(startDate, e.target.value)}
-              className="px-2 py-1 border border-gold-300 rounded-md text-xs bg-white text-black"
+              className="px-2.5 py-1 border border-[#EDE7DD] rounded-lg text-xs bg-[#FAF7F2]/40 text-neutral-800"
               title="End Date"
             />
             {(startDate || endDate || statusFilter !== 'ALL' || search) && (
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="text-xs text-black hover:text-gold-700 font-bold underline ml-1 cursor-pointer"
+                className="text-xs text-[#BA954F] font-semibold hover:underline ml-1 cursor-pointer"
               >
                 Reset
               </button>
@@ -235,7 +234,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
       {/* Table Content */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
-          <thead className="bg-gold-50/70 border-b border-gold-200 text-black font-extrabold uppercase tracking-wider">
+          <thead className="bg-[#FAF7F2] border-b border-[#EDE7DD] text-neutral-600 font-semibold uppercase tracking-wider text-[11px]">
             <tr>
               <th className="py-3.5 px-4">Date</th>
               {showUserColumn && <th className="py-3.5 px-4">Employee</th>}
@@ -248,22 +247,22 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
               <th className="py-3.5 px-4 text-right">Details</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gold-200">
+          <tbody className="divide-y divide-[#EDE7DD]">
             {isLoading ? (
               <tr>
-                <td colSpan={showUserColumn ? 9 : 8} className="py-12 text-center text-black/60">
-                  <div className="inline-flex items-center gap-2 font-bold">
-                    <div className="w-4 h-4 border-2 border-gold-600 border-t-transparent rounded-full animate-spin" />
+                <td colSpan={showUserColumn ? 9 : 8} className="py-12 text-center text-neutral-500">
+                  <div className="inline-flex items-center gap-2 font-medium">
+                    <div className="w-4 h-4 border-2 border-[#BA954F] border-t-transparent rounded-full animate-spin" />
                     <span>Loading attendance records...</span>
                   </div>
                 </td>
               </tr>
             ) : records.length === 0 ? (
               <tr>
-                <td colSpan={showUserColumn ? 9 : 8} className="py-12 text-center text-black/60">
-                  <AlertCircle className="h-8 w-8 text-gold-500 mx-auto mb-2" />
-                  <p className="font-bold text-black">No attendance records found</p>
-                  <p className="text-xs text-black/50 mt-0.5 font-medium">
+                <td colSpan={showUserColumn ? 9 : 8} className="py-12 text-center text-neutral-500">
+                  <AlertCircle className="h-8 w-8 text-[#BA954F] mx-auto mb-2 opacity-60" />
+                  <p className="font-serif text-base font-bold text-neutral-900">No attendance records found</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">
                     Try adjusting your filters or search query.
                   </p>
                 </td>
@@ -276,11 +275,11 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                 return (
                   <React.Fragment key={record.id}>
                     <tr
-                      className={`hover:bg-gold-50/40 transition-colors ${
-                        isExpanded ? 'bg-gold-50/70' : ''
+                      className={`hover:bg-[#FAF7F2]/60 transition-colors ${
+                        isExpanded ? 'bg-[#FAF7F2]' : ''
                       }`}
                     >
-                      <td className="py-3.5 px-4 font-bold text-black whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-semibold text-neutral-900 whitespace-nowrap">
                         {new Date(record.date + 'T00:00:00').toLocaleDateString('en-US', {
                           weekday: 'short',
                           month: 'short',
@@ -291,51 +290,51 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
 
                       {showUserColumn && (
                         <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-gold-200 text-black border border-gold-400 flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-[#FAF7F2] text-[#BA954F] border border-[#EDE7DD] flex items-center justify-center font-bold text-xs uppercase shrink-0 font-serif">
                               {record.user?.name?.charAt(0) || <UserIcon className="h-3.5 w-3.5" />}
                             </div>
                             <div>
-                              <div className="font-bold text-black">{record.user?.name || 'User'}</div>
-                              <div className="text-[11px] text-black/60 font-medium">{record.user?.email || ''}</div>
+                              <div className="font-semibold text-neutral-900">{record.user?.name || 'User'}</div>
+                              <div className="text-[11px] text-neutral-500">{record.user?.email || ''}</div>
                             </div>
                           </div>
                         </td>
                       )}
 
-                      <td className="py-3.5 px-4 font-mono font-bold text-black whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono text-neutral-800 whitespace-nowrap">
                         {formatShortTime(record.clockIn)}
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono font-bold text-black whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono text-neutral-800 whitespace-nowrap">
                         {record.clockOut ? (
                           <div className="flex items-center gap-1.5">
                             <span>{formatShortTime(record.clockOut)}</span>
                             {record.earlyClockOutReason && (
                               <span
                                 title={`Early Clock-Out: "${record.earlyClockOutReason}"`}
-                                className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 cursor-help"
+                                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#FDF6E9] text-[#B45309] border border-[#F9E2AF] cursor-help"
                               >
                                 Early
                               </span>
                             )}
                           </div>
                         ) : record.clockIn ? (
-                          <span className="text-gold-700 font-extrabold">Active Shift</span>
+                          <span className="text-[#BA954F] font-semibold">Active Shift</span>
                         ) : (
                           '--:--'
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-black font-semibold whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-neutral-700 font-medium whitespace-nowrap">
                         {formatMinutes(record.totalWorkingMinutes || record.liveWorkingMinutes || 0)}
                       </td>
 
-                      <td className="py-3.5 px-4 text-black font-semibold whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-neutral-700 font-medium whitespace-nowrap">
                         {formatMinutes(record.totalBreakMinutes || record.liveBreakMinutes || 0)}
                       </td>
 
-                      <td className="py-3.5 px-4 font-extrabold text-black whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-bold text-neutral-900 whitespace-nowrap">
                         {formatMinutes(record.effectiveWorkingMinutes || record.liveEffectiveMinutes || 0)}
                       </td>
 
@@ -347,7 +346,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                         <button
                           type="button"
                           onClick={() => toggleRow(record.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-black bg-gold-100 hover:bg-gold-200 border border-gold-300 rounded-md transition-colors cursor-pointer"
+                          className="btn-gold-secondary inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg"
                         >
                           <span>{hasBreaks ? `${record.breaks.length} Break(s)` : 'View'}</span>
                           {isExpanded ? (
@@ -361,50 +360,50 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
 
                     {/* Expandable Accordion for Details & Breaks */}
                     {isExpanded && (
-                      <tr className="bg-gold-50/50">
+                      <tr className="bg-[#FAF7F2]/50">
                         <td colSpan={showUserColumn ? 9 : 8} className="p-4">
-                          <div className="bg-white rounded-lg border border-gold-300 p-4 shadow-xs space-y-3">
-                            <div className="flex items-center justify-between text-xs border-b border-gold-200 pb-2">
-                              <span className="font-extrabold text-black flex items-center gap-1.5">
-                                <Clock className="h-4 w-4 text-gold-600" />
+                          <div className="bg-white rounded-xl border border-[#EDE7DD] p-4 shadow-xs space-y-3">
+                            <div className="flex items-center justify-between text-xs border-b border-[#EDE7DD] pb-2">
+                              <span className="font-bold text-neutral-900 flex items-center gap-1.5 font-serif">
+                                <Clock className="h-4 w-4 text-[#BA954F]" />
                                 Session Details for {record.date}
                               </span>
-                              <span className="text-black/60 font-medium">Record ID: {record.id}</span>
+                              <span className="text-neutral-400 font-mono text-[11px]">ID: {record.id}</span>
                             </div>
 
                             {/* Early Clock-Out Reason Callout if present */}
                             {record.earlyClockOutReason && (
-                              <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 flex items-start gap-2.5">
-                                <AlertCircle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                              <div className="p-3 bg-[#FDF6E9] border border-[#F9E2AF] rounded-xl text-xs text-[#B45309] flex items-start gap-2.5">
+                                <AlertCircle className="h-4 w-4 text-[#B45309] shrink-0 mt-0.5" />
                                 <div>
-                                  <span className="font-extrabold text-amber-900">Early Clock-Out Reason: </span>
-                                  <span className="italic font-semibold text-amber-950">&ldquo;{record.earlyClockOutReason}&rdquo;</span>
+                                  <span className="font-semibold text-[#B45309]">Early Clock-Out Reason: </span>
+                                  <span className="italic text-amber-950">&ldquo;{record.earlyClockOutReason}&rdquo;</span>
                                 </div>
                               </div>
                             )}
 
                             {hasBreaks ? (
                               <div className="space-y-2">
-                                <div className="text-xs font-bold text-black flex items-center gap-1.5">
-                                  <Coffee className="h-3.5 w-3.5 text-gold-700" />
+                                <div className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
+                                  <Coffee className="h-3.5 w-3.5 text-[#BA954F]" />
                                   Logged Breaks ({record.breaks.length})
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                                   {record.breaks.map((b, idx) => (
                                     <div
                                       key={b.id || idx}
-                                      className="p-2.5 bg-gold-50 border border-gold-300 rounded-md text-xs flex items-center justify-between"
+                                      className="p-2.5 bg-[#FAF7F2] border border-[#EDE7DD] rounded-xl text-xs flex items-center justify-between"
                                     >
                                       <div>
-                                        <div className="font-extrabold text-black">
+                                        <div className="font-semibold text-neutral-900">
                                           Break #{idx + 1}
                                         </div>
-                                        <div className="text-black/70 text-[11px] font-medium">
+                                        <div className="text-neutral-500 text-[11px]">
                                           {formatShortTime(b.startTime)} -{' '}
                                           {b.endTime ? formatShortTime(b.endTime) : 'Ongoing'}
                                         </div>
                                       </div>
-                                      <div className="font-bold text-black">
+                                      <div className="font-bold text-[#BA954F]">
                                         {b.endTime ? `${b.durationMinutes}m` : 'In progress'}
                                       </div>
                                     </div>
@@ -412,7 +411,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-xs text-black/60 italic font-medium">
+                              <div className="text-xs text-neutral-400 italic font-medium">
                                 No break sessions were logged during this shift.
                               </div>
                             )}
@@ -430,3 +429,4 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
     </div>
   );
 };
+

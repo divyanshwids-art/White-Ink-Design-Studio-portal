@@ -16,6 +16,7 @@ import {
   Coffee,
   RefreshCw,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 
 interface AttendancePageProps {
@@ -39,19 +40,15 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
     if (isClient) return;
     setIsLoading(true);
     try {
-      // Fetch today's record
       const todayRes = await api.getTodayAttendance();
       setTodayAttendance(todayRes.attendance);
 
-      // Fetch personal history
       const historyRes = await api.getAttendanceHistory();
       setHistoryRecords(historyRes);
 
-      // Fetch stats
       const statsRes = await api.getAttendanceStats();
       setStats(statsRes);
 
-      // If admin, fetch users for team filter
       if (isAdminOrSuperAdmin) {
         const users = await api.getUsers();
         setTeamMembers(users.filter((u) => u.role !== 'CLIENT' && u.role !== 'CLIENT_ADMIN'));
@@ -75,29 +72,31 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
 
   if (isClient) {
     return (
-      <div className="p-8 max-w-2xl mx-auto text-center space-y-4">
-        <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto">
+      <div className="p-8 max-w-2xl mx-auto text-center space-y-4 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] my-12">
+        <div className="w-16 h-16 bg-[#FAF7F2] text-[#BA954F] rounded-full flex items-center justify-center mx-auto border border-[#EDE7DD]">
           <ShieldAlert className="h-8 w-8" />
         </div>
-        <h2 className="text-xl font-bold text-[#111827]">Internal Staff Portal</h2>
-        <p className="text-sm text-[#4B5563]">
-          Attendance and work-hour tracking is restricted to internal team members and administrators. As a client, you can view project milestones, deliverables, and tasks in the Projects section.
+        <h2 className="font-serif text-2xl font-bold text-neutral-900">Internal Staff Portal</h2>
+        <p className="text-sm text-neutral-500 leading-relaxed">
+          Attendance and work-hour tracking is reserved for internal team members and administrators. As a client stakeholder, you can review design deliverables, drawings, and project milestones in the Projects section.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-8 max-w-7xl mx-auto pb-16">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-black tracking-tight flex items-center gap-2">
-            <Clock className="h-6 w-6 text-gold-600 stroke-[2.5]" />
-            Attendance Management
+          <span className="text-xs font-semibold tracking-widest uppercase text-[#BA954F]">
+            Time & Presence Tracking
+          </span>
+          <h1 className="font-serif text-3xl font-bold text-neutral-900 tracking-tight mt-1">
+            Studio Attendance
           </h1>
-          <p className="text-xs text-black/70 font-medium mt-0.5">
-            Track daily work hours, break sessions, and team presence in real-time.
+          <p className="text-sm text-neutral-500 mt-1">
+            Monitor daily working hours, break sessions, and team availability in real-time
           </p>
         </div>
 
@@ -106,55 +105,55 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
             type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-black bg-white border border-gold-300 rounded-lg hover:bg-gold-100 disabled:opacity-50 cursor-pointer shadow-xs transition-colors"
+            className="btn-gold-secondary px-4 py-2 text-xs font-semibold inline-flex items-center gap-2"
           >
-            <RefreshCw className={`h-3.5 w-3.5 text-gold-600 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
+            <RefreshCw className={`h-3.5 w-3.5 text-[#BA954F] ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>Sync Records</span>
           </button>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-gold-300 pb-px overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-[#EDE7DD] pb-px overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab('punch')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'punch'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-neutral-900 bg-white shadow-2xs rounded-t-xl'
+              : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
-          <Clock className="h-4 w-4 text-gold-600" />
+          <Clock className="h-4 w-4 text-[#BA954F]" />
           <span>Clock In / Out</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('history')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'history'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-neutral-900 bg-white shadow-2xs rounded-t-xl'
+              : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
-          <History className="h-4 w-4 text-gold-600" />
-          <span>My History</span>
+          <History className="h-4 w-4 text-[#BA954F]" />
+          <span>My History Logs</span>
         </button>
 
         {isAdminOrSuperAdmin && (
           <button
             type="button"
             onClick={() => setActiveTab('team')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'team'
-                ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-                : 'border-transparent text-black/60 hover:text-black'
+                ? 'border-[#BA954F] text-neutral-900 bg-white shadow-2xs rounded-t-xl'
+                : 'border-transparent text-neutral-500 hover:text-neutral-900'
             }`}
           >
-            <Users className="h-4 w-4 text-gold-600" />
-            <span>Team Attendance</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-gold-200 text-black font-extrabold border border-gold-300">
+            <Users className="h-4 w-4 text-[#BA954F]" />
+            <span>Team Oversight</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#FAF7F2] text-[#BA954F] font-semibold border border-[#EDE7DD]">
               Admin
             </span>
           </button>
@@ -163,13 +162,13 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
         <button
           type="button"
           onClick={() => setActiveTab('analytics')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'analytics'
-              ? 'border-gold-600 text-black bg-gold-100/50 rounded-t-lg'
-              : 'border-transparent text-black/60 hover:text-black'
+              ? 'border-[#BA954F] text-neutral-900 bg-white shadow-2xs rounded-t-xl'
+              : 'border-transparent text-neutral-500 hover:text-neutral-900'
           }`}
         >
-          <TrendingUp className="h-4 w-4 text-gold-600" />
+          <TrendingUp className="h-4 w-4 text-[#BA954F]" />
           <span>Analytics & Trends</span>
         </button>
       </div>
@@ -186,15 +185,15 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
           <AttendanceOverviewChart stats={stats} />
 
           {/* Quick Recent Activity preview */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-black">Your Recent Attendance Records</h3>
+              <h3 className="font-serif text-lg font-bold text-neutral-900">Recent Attendance Logs</h3>
               <button
                 type="button"
                 onClick={() => setActiveTab('history')}
-                className="text-xs font-bold text-black hover:text-gold-700 cursor-pointer underline"
+                className="text-xs font-semibold text-[#BA954F] hover:underline cursor-pointer"
               >
-                View Full History
+                View Full Logs →
               </button>
             </div>
             <AttendanceHistoryTable
@@ -209,13 +208,11 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
       {/* TAB CONTENT: MY HISTORY */}
       {activeTab === 'history' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-extrabold text-black">Personal Attendance Logs</h2>
-              <p className="text-xs text-black/70 font-medium">
-                Review all your previous punch-in timestamps, working durations, and break history.
-              </p>
-            </div>
+          <div>
+            <h2 className="font-serif text-xl font-bold text-neutral-900">Personal Attendance Logs</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Review all historical shift timestamps, total productive durations, and recorded break intervals.
+            </p>
           </div>
           <AttendanceHistoryTable
             records={historyRecords}
@@ -240,8 +237,8 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
       {activeTab === 'team' && isAdminOrSuperAdmin && (
         <div className="space-y-4">
           <div>
-            <h2 className="text-base font-extrabold text-black">Workforce Attendance Oversight</h2>
-            <p className="text-xs text-black/70 font-medium">
+            <h2 className="font-serif text-xl font-bold text-neutral-900">Workforce Attendance Oversight</h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
               Monitor team presence, identify absences, review break durations, and audit shifts.
             </p>
           </div>
@@ -261,3 +258,4 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
     </div>
   );
 };
+

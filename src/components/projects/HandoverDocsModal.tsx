@@ -173,7 +173,7 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E3D9C6] bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#8C6D23]/10 border border-[#8C6D23]/30 flex items-center justify-center text-[#8C6D23]">
+            <div className="w-9 h-9 rounded-xl bg-[#BA954F]/10 border border-[#BA954F]/30 flex items-center justify-center text-[#BA954F]">
               <FileText className="h-5 w-5" />
             </div>
             <div>
@@ -211,7 +211,7 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
             <form onSubmit={handleUpload} className="bg-white border border-[#E7DECB] p-4 rounded-xl shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#3E3424]">Upload New Document</span>
-                <span className="text-[11px] text-[#8C6D23] font-semibold">Max 50 MB</span>
+                <span className="text-[11px] text-[#BA954F] font-semibold">Max 50 MB</span>
               </div>
 
               {/* Drop area */}
@@ -219,7 +219,7 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-[#CFBFA0] hover:border-[#8C6D23] bg-[#FBF9F4] rounded-xl p-5 text-center cursor-pointer transition-colors"
+                className="border-2 border-dashed border-[#CFBFA0] hover:border-[#BA954F] bg-[#FBF9F4] rounded-xl p-5 text-center cursor-pointer transition-colors"
               >
                 <input
                   ref={fileInputRef}
@@ -228,7 +228,7 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
                   onChange={handleFileSelect}
                 />
                 <div className="flex flex-col items-center justify-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-[#F5EDD6] text-[#8C6D23] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-[#F5EDD6] text-[#BA954F] flex items-center justify-center">
                     <Upload className="h-5 w-5" />
                   </div>
                   {selectedFile ? (
@@ -252,7 +252,7 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
                   value={docNote}
                   onChange={(e) => setDocNote(e.target.value)}
                   placeholder="Optional brief description or note (e.g., Final Brand Guidelines v2.0)..."
-                  className="w-full text-xs px-3 py-2 bg-[#FBF9F4] border border-[#DCD3C1] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#8C6D23] text-[#1E1B18]"
+                  className="w-full text-xs px-3 py-2 bg-[#FBF9F4] border border-[#DCD3C1] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1E1B18]"
                 />
               </div>
 
@@ -272,7 +272,7 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
                 <button
                   type="submit"
                   disabled={!selectedFile || isUploading}
-                  className="px-4 py-2 bg-[#8C6D23] hover:bg-[#7A5F1E] disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   {isUploading ? (
                     <>
@@ -313,10 +313,10 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
                 {documents.map((doc) => (
                   <div
                     key={doc.id}
-                    className="bg-white border border-[#E7DECB] p-3.5 rounded-xl shadow-xs flex items-center justify-between gap-3 hover:border-[#8C6D23]/50 transition-colors"
+                    className="bg-white border border-[#E7DECB] p-3.5 rounded-xl shadow-xs flex items-center justify-between gap-3 hover:border-[#BA954F]/50 transition-colors"
                   >
                     <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-[#FAF6ED] border border-[#E3D9C6] flex items-center justify-center text-[#8C6D23] shrink-0 mt-0.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#FAF6ED] border border-[#E3D9C6] flex items-center justify-center text-[#BA954F] shrink-0 mt-0.5">
                         <FileText className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
@@ -325,7 +325,7 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
                           <p className="text-[11px] text-[#6E6659] line-clamp-1 italic">{doc.note}</p>
                         )}
                         <div className="flex items-center gap-3 text-[10px] text-[#7A7162] pt-0.5">
-                          <span className="font-semibold text-[#8C6D23]">{doc.size}</span>
+                          <span className="font-semibold text-[#BA954F]">{doc.size}</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-2.5 w-2.5" />
                             {new Date(doc.uploadedAt).toLocaleDateString()}
@@ -344,7 +344,7 @@ export const HandoverDocsModal: React.FC<HandoverDocsModalProps> = ({
                       <button
                         type="button"
                         onClick={() => handleDownload(doc)}
-                        className="p-1.5 text-[#8C6D23] hover:bg-[#F5EDD6] rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-[#BA954F] hover:bg-[#F5EDD6] rounded-lg transition-colors cursor-pointer"
                         title="Download file"
                       >
                         <Download className="h-4 w-4" />

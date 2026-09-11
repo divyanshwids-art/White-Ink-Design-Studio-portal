@@ -76,7 +76,7 @@ export const EditHandoverModal: React.FC<EditHandoverModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E3D9C6] bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#8C6D23]/10 border border-[#8C6D23]/30 flex items-center justify-center text-[#8C6D23]">
+            <div className="w-9 h-9 rounded-xl bg-[#BA954F]/10 border border-[#BA954F]/30 flex items-center justify-center text-[#BA954F]">
               <FileEdit className="h-5 w-5" />
             </div>
             <div>
@@ -112,7 +112,7 @@ export const EditHandoverModal: React.FC<EditHandoverModalProps> = ({
               value={handoverNote}
               onChange={(e) => setHandoverNote(e.target.value)}
               placeholder="e.g. Small summary of project Thank you message"
-              className="w-full text-xs px-3.5 py-2.5 bg-white border border-[#DCD3C1] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#8C6D23] text-[#1E1B18] shadow-xs resize-none"
+              className="w-full text-xs px-3.5 py-2.5 bg-white border border-[#DCD3C1] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1E1B18] shadow-xs resize-none"
             />
             <p className="text-[11px] text-[#7A7162]">
               Displayed prominently underneath the "Final Handover" headline for clients and the team.
@@ -123,10 +123,10 @@ export const EditHandoverModal: React.FC<EditHandoverModalProps> = ({
           <div className="space-y-1.5">
             <label className="block text-xs font-bold uppercase tracking-wider text-[#3E3424] flex items-center gap-1.5">
               <span>Direct Link of project (Google Drive)</span>
-              <span className="text-[10px] text-[#8C6D23] font-normal normal-case">(Deliverables Folder)</span>
+              <span className="text-[10px] text-[#BA954F] font-normal normal-case">(Deliverables Folder)</span>
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8C6D23]">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#BA954F]">
                 <Link2 className="h-4 w-4" />
               </div>
               <input
@@ -134,7 +134,7 @@ export const EditHandoverModal: React.FC<EditHandoverModalProps> = ({
                 value={driveUrl}
                 onChange={(e) => setDriveUrl(e.target.value)}
                 placeholder="https://drive.google.com/drive/folders/..."
-                className="w-full text-xs pl-9 pr-3.5 py-2.5 bg-white border border-[#DCD3C1] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#8C6D23] text-[#1E1B18] shadow-xs"
+                className="w-full text-xs pl-9 pr-3.5 py-2.5 bg-white border border-[#DCD3C1] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1E1B18] shadow-xs"
               />
             </div>
             <p className="text-[11px] text-[#7A7162]">
@@ -154,7 +154,7 @@ export const EditHandoverModal: React.FC<EditHandoverModalProps> = ({
             <button
               type="submit"
               disabled={isSaving}
-              className="px-4 py-2 bg-[#8C6D23] hover:bg-[#7A5F1E] disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               {isSaving ? (
                 <>

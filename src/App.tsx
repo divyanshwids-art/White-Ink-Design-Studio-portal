@@ -102,9 +102,9 @@ function MainApp() {
   const activeProjectId = projectDetailMatch ? projectDetailMatch[1] : null;
 
   return (
-    <div className="min-h-screen bg-[#F8F4E5] text-black flex flex-col antialiased selection:bg-gold-200 selection:text-black">
+    <div className="min-h-screen bg-[#FAF7F2] text-[#1C1917] flex flex-col antialiased selection:bg-[#EAE0D0] selection:text-[#1C1917]">
       {/* Top Navigation */}
-      <Navbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Navbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} onNavigate={navigate} />
 
       {/* Body Layout */}
       <div className="flex-1 flex">

@@ -189,7 +189,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
         {confirmationData && (
           <div className="mb-6 p-4 bg-[#F7F5EE] border border-[#C5B48B] rounded-xl space-y-3">
             <div className="flex items-start gap-2.5">
-              <MailCheck className="h-5 w-5 text-[#8E7028] shrink-0 mt-0.5" />
+              <MailCheck className="h-5 w-5 text-[#BA954F] shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-sm font-bold text-[#1F1D1A]">
                   Project Request Confirmed!
@@ -202,19 +202,19 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
 
             <div className="p-3 bg-white rounded-lg border border-[#DCD3BD] text-xs space-y-1.5">
               <div className="flex items-center gap-2 text-[#655E53]">
-                <Clock className="h-3.5 w-3.5 text-[#8E7028]" />
+                <Clock className="h-3.5 w-3.5 text-[#BA954F]" />
                 <span>Scheduled for: <strong className="text-black">{confirmationData.meetingTime}</strong></span>
               </div>
               {confirmationData.meetingLink && (
                 <div className="flex items-center gap-2 text-[#655E53]">
-                  <Video className="h-3.5 w-3.5 text-[#8E7028]" />
+                  <Video className="h-3.5 w-3.5 text-[#BA954F]" />
                   <span>
                     Join Link:{' '}
                     <a
                       href={confirmationData.meetingLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#8E7028] hover:underline font-bold inline-flex items-center gap-1"
+                      className="text-[#BA954F] hover:underline font-bold inline-flex items-center gap-1"
                     >
                       {confirmationData.meetingLink}
                       <ExternalLink className="h-3 w-3" />
@@ -234,7 +234,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
           {/* SECTION 1: PROJECT BASICS */}
           <div className="space-y-3.5">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-3.5 bg-[#8E7028] rounded-xs inline-block" />
+              <span className="w-1 h-3.5 bg-[#BA954F] rounded-xs inline-block" />
               <h3 className="text-xs font-extrabold uppercase tracking-widest text-[#24201C]">
                 PROJECT BASICS
               </h3>
@@ -243,7 +243,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
             <div className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-[#44403C] mb-1.5">
-                  Project Name <span className="text-[#8E7028] font-bold">*</span>
+                  Project Name <span className="text-[#BA954F] font-bold">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#8C867A]">
@@ -255,14 +255,14 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Aura Brand Identity V2"
-                    className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium placeholder-[#A8A29E] focus:outline-none focus:ring-1.5 focus:ring-[#8E7028] focus:bg-white transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium placeholder-[#A8A29E] focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#44403C] mb-1.5">
-                  Project Description <span className="text-[#8E7028] font-bold">*</span>
+                  Project Description <span className="text-[#BA954F] font-bold">*</span>
                 </label>
                 <textarea
                   rows={3}
@@ -270,7 +270,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Briefly outline project scope and creative direction..."
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium placeholder-[#A8A29E] focus:outline-none focus:ring-1.5 focus:ring-[#8E7028] focus:bg-white transition-all resize-none"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium placeholder-[#A8A29E] focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all resize-none"
                 />
               </div>
             </div>
@@ -279,7 +279,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
           {/* SECTION 2: TIMELINE & RESOURCES */}
           <div className="space-y-3.5">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-3.5 bg-[#8E7028] rounded-xs inline-block" />
+              <span className="w-1 h-3.5 bg-[#BA954F] rounded-xs inline-block" />
               <h3 className="text-xs font-extrabold uppercase tracking-widest text-[#24201C]">
                 TIMELINE &amp; RESOURCES
               </h3>
@@ -289,26 +289,26 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#44403C] mb-1.5">
-                    Start Date <span className="text-[#8E7028] font-bold">*</span>
+                    Start Date <span className="text-[#BA954F] font-bold">*</span>
                   </label>
                   <input
                     type="date"
                     required
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#8E7028] focus:bg-white transition-all cursor-pointer"
+                    className="w-full px-3 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all cursor-pointer"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#44403C] mb-1.5">
-                    End Date <span className="text-[#8E7028] font-bold">*</span>
+                    End Date <span className="text-[#BA954F] font-bold">*</span>
                   </label>
                   <input
                     type="date"
                     required
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#8E7028] focus:bg-white transition-all cursor-pointer"
+                    className="w-full px-3 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all cursor-pointer"
                   />
                 </div>
               </div>
@@ -333,7 +333,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
                     value={estimatedBudget}
                     onChange={(e) => setEstimatedBudget(e.target.value)}
                     placeholder="50,000"
-                    className="w-full pl-8 pr-4 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium placeholder-[#A8A29E] focus:outline-none focus:ring-1.5 focus:ring-[#8E7028] focus:bg-white transition-all"
+                    className="w-full pl-8 pr-4 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium placeholder-[#A8A29E] focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all"
                   />
                 </div>
               </div>
@@ -344,7 +344,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
           {!isClient && (
           <div className="space-y-3.5">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-3.5 bg-[#8E7028] rounded-xs inline-block" />
+              <span className="w-1 h-3.5 bg-[#BA954F] rounded-xs inline-block" />
               <h3 className="text-xs font-extrabold uppercase tracking-widest text-[#24201C]">
                 PROJECT OWNERSHIP
               </h3>
@@ -353,14 +353,14 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-[#44403C] mb-1.5">
-                  Assign Lead Owner <span className="text-[#8E7028] font-bold">*</span>
+                  Assign Lead Owner <span className="text-[#BA954F] font-bold">*</span>
                 </label>
                 <div className="relative">
                   <select
                     required
                     value={leadOwnerId}
                     onChange={(e) => setLeadOwnerId(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#8E7028] focus:bg-white transition-all cursor-pointer pr-10"
+                    className="w-full appearance-none px-3.5 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all cursor-pointer pr-10"
                   >
                     <option value="" disabled>Select lead owner</option>
                     {teamMembers.map((m) => (
@@ -382,7 +382,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
                     placeholder="Filter team members..."
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-[#E5E2DA] rounded-lg text-black font-medium focus:outline-none focus:ring-1 focus:ring-[#8E7028]"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-[#E5E2DA] rounded-lg text-black font-medium focus:outline-none focus:ring-1 focus:ring-[#BA954F]"
                   />
                 </div>
               )}
@@ -425,7 +425,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
 
                       {/* Checkmark icon for selected */}
                       {isSelected && (
-                        <div className="w-4 h-4 rounded-full bg-[#8E7028] text-white flex items-center justify-center shrink-0 ml-0.5">
+                        <div className="w-4 h-4 rounded-full bg-[#BA954F] text-white flex items-center justify-center shrink-0 ml-0.5">
                           <Check className="h-2.5 w-2.5 stroke-[3]" />
                         </div>
                       )}
@@ -439,7 +439,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
                   onClick={() => setIsSearchOpen(!isSearchOpen)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                     isSearchOpen || memberSearch
-                      ? 'bg-[#8E7028] text-white'
+                      ? 'bg-[#BA954F] text-white'
                       : 'bg-[#EAE2CC] hover:bg-[#DFD4B7] text-[#7E6A3B] border border-[#D5C7A5]'
                   }`}
                   title="Search team members"
@@ -454,7 +454,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
           {/* SECTION 4: MEETING PREFERENCE (New Required Section) */}
           <div className="space-y-3.5">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-3.5 bg-[#8E7028] rounded-xs inline-block" />
+              <span className="w-1 h-3.5 bg-[#BA954F] rounded-xs inline-block" />
               <h3 className="text-xs font-extrabold uppercase tracking-widest text-[#24201C]">
                 MEETING PREFERENCE
               </h3>
@@ -462,7 +462,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-[#44403C]">
-                Preferred Meeting Time <span className="text-[#8E7028] font-bold">*</span>
+                Preferred Meeting Time <span className="text-[#BA954F] font-bold">*</span>
               </label>
               <div className="relative">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#8C867A]">
@@ -473,7 +473,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
                   required
                   value={preferredMeetingTime}
                   onChange={(e) => setPreferredMeetingTime(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#8E7028] focus:bg-white transition-all cursor-pointer"
+                  className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all cursor-pointer"
                 />
               </div>
               <p className="text-[11px] text-[#78716C] font-normal leading-normal mt-1">
@@ -484,7 +484,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
 
           {/* Disclaimer Container matching screenshot */}
           <div className="p-3.5 bg-[#F4F3F0] border border-[#E6E4DD] rounded-xl flex items-start gap-3">
-            <div className="w-5 h-5 rounded-full bg-[#EAE2CC] text-[#8E7028] flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-5 h-5 rounded-full bg-[#EAE2CC] text-[#BA954F] flex items-center justify-center shrink-0 mt-0.5">
               <CheckCircle2 className="h-4 w-4 stroke-[2.2]" />
             </div>
             <p className="text-xs text-[#59554D] font-normal leading-relaxed">
@@ -497,7 +497,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
             <button
               type="submit"
               disabled={isSubmitting || !!confirmationData}
-              className="flex-1 py-3 px-6 bg-[#8E7028] hover:bg-[#7D6222] disabled:opacity-50 text-white font-extrabold uppercase tracking-wider text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer active:scale-[0.99]"
+              className="flex-1 py-3 px-6 bg-[#BA954F] hover:bg-[#7D6222] disabled:opacity-50 text-white font-extrabold uppercase tracking-wider text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer active:scale-[0.99]"
             >
               {isSubmitting ? 'Creating Project...' : 'CREATE PROJECT'}
             </button>

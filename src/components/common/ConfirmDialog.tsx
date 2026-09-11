@@ -30,21 +30,23 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       <div className="space-y-4">
         <div className="flex items-start gap-3">
           <div
-            className={`p-2 rounded-lg shrink-0 ${
-              isDangerous ? 'bg-gold-100 text-black border border-gold-400' : 'bg-gold-50 text-black border border-gold-300'
+            className={`p-2.5 rounded-xl shrink-0 ${
+              isDangerous
+                ? 'bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0]'
+                : 'bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]'
             }`}
           >
-            <AlertTriangle className="h-5 w-5 text-gold-700" />
+            <AlertTriangle className="h-5 w-5 shrink-0" />
           </div>
-          <p className="text-sm text-black leading-relaxed pt-0.5">{message}</p>
+          <p className="text-sm text-[#292524] leading-relaxed pt-0.5 font-normal">{message}</p>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-gold-200">
+        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[#EDE7DD]">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-semibold text-black bg-white hover:bg-gold-100 rounded-lg border border-gold-300 transition-colors disabled:opacity-50 cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] rounded-xl border border-[#DFD5C6] transition-colors disabled:opacity-50 cursor-pointer"
           >
             {cancelLabel}
           </button>
@@ -52,8 +54,10 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`px-4 py-2 text-sm font-bold text-black rounded-lg transition-all duration-150 disabled:opacity-50 shadow-sm border border-gold-600 cursor-pointer btn-hover-lift ${
-              isDangerous ? 'bg-gold-400 hover:bg-gold-500' : 'bg-gold-500 hover:bg-gold-600'
+            className={`px-4 py-2 text-xs font-semibold text-white rounded-xl transition-all duration-150 disabled:opacity-50 shadow-xs cursor-pointer btn-hover-lift ${
+              isDangerous
+                ? 'bg-[#B91C1C] hover:bg-[#991B1B]'
+                : 'bg-[#BA954F] hover:bg-[#A17B2F]'
             }`}
           >
             {isLoading ? 'Processing...' : confirmLabel}
@@ -63,4 +67,3 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     </Modal>
   );
 };
-

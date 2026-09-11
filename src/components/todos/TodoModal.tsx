@@ -28,7 +28,6 @@ export const TodoModal: React.FC<TodoModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter out client roles just in case
   const eligibleAssignees = internalMembers.filter(
     (u) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN' || u.role === 'TEAM_MEMBER'
   );
@@ -99,38 +98,38 @@ export const TodoModal: React.FC<TodoModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-red-50 text-red-900 border border-red-300 rounded-lg text-xs font-semibold flex items-center gap-2 animate-gold-fade-in">
-            <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+          <div className="p-3 bg-[#FDF0ED] text-[#9E2A2B] border border-[#F5D0C5] rounded-xl text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Title */}
         <div>
-          <label className="block text-xs font-bold text-black mb-1">
-            Todo Title <span className="text-red-500">*</span>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
+            Todo Title <span className="text-[#BA954F]">*</span>
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Review brand guidelines, prepare presentation"
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-gold-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 font-medium text-black placeholder:text-black/40"
+            className="w-full px-3.5 py-2.5 text-sm bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] font-medium text-neutral-900 placeholder:text-neutral-400"
             autoFocus
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-bold text-black mb-1">
-            Description <span className="text-black/50 font-normal">(Optional)</span>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
+            Description <span className="text-neutral-400 font-normal lowercase">(Optional)</span>
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Add relevant notes, checklist pointers, or context..."
-            className="w-full px-3.5 py-2.5 text-sm bg-white border border-gold-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 font-medium text-black placeholder:text-black/40 resize-none"
+            className="w-full px-3.5 py-2.5 text-sm bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] font-medium text-neutral-900 placeholder:text-neutral-400 resize-none"
           />
         </div>
 
@@ -138,28 +137,26 @@ export const TodoModal: React.FC<TodoModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Due Date */}
           <div>
-            <label className="block text-xs font-bold text-black mb-1">
-              Due Date <span className="text-black/50 font-normal">(Optional)</span>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
+              Due Date <span className="text-neutral-400 font-normal lowercase">(Optional)</span>
             </label>
-            <div className="relative">
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-white border border-gold-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 font-medium text-black"
-              />
-            </div>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] font-medium text-neutral-900"
+            />
           </div>
 
-          {/* Assign To (Internal only) */}
+          {/* Assign To */}
           <div>
-            <label className="block text-xs font-bold text-black mb-1">
-              Assign To <span className="text-black/50 font-normal">(Internal Staff)</span>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
+              Assign To <span className="text-neutral-400 font-normal lowercase">(Internal Staff)</span>
             </label>
             <select
               value={assignedToId}
               onChange={(e) => setAssignedToId(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white border border-gold-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 font-medium text-black cursor-pointer"
+              className="w-full px-3 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] font-medium text-neutral-900 cursor-pointer"
             >
               <option value="">No assignment (Personal only)</option>
               {eligibleAssignees.map((u) => (
@@ -172,25 +169,25 @@ export const TodoModal: React.FC<TodoModalProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-gold-200">
+        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[#EDE7DD]">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors cursor-pointer"
+            className="btn-gold-secondary px-4 py-2 text-xs font-semibold"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-5 py-2 text-xs font-bold text-black bg-gold-500 hover:bg-gold-600 rounded-lg shadow-sm border border-gold-600 transition-colors inline-flex items-center gap-1.5 cursor-pointer btn-hover-lift disabled:opacity-50"
+            className="btn-gold-primary px-5 py-2 text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-50"
           >
             {isSubmitting ? (
               <span>Saving...</span>
             ) : (
               <>
-                <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
+                <CheckCircle2 className="h-4 w-4" />
                 <span>{isEditing ? 'Save Changes' : 'Create Todo'}</span>
               </>
             )}
@@ -200,3 +197,4 @@ export const TodoModal: React.FC<TodoModalProps> = ({
     </Modal>
   );
 };
+

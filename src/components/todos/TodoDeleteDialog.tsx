@@ -41,25 +41,25 @@ export const TodoDeleteDialog: React.FC<TodoDeleteDialogProps> = ({
       maxWidth="sm"
     >
       <div className="space-y-4">
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-          <div className="text-xs text-black/80">
-            <p className="font-bold text-black mb-1">
+        <div className="p-3.5 bg-[#FDF0ED] border border-[#F5D0C5] rounded-xl flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-[#9E2A2B] shrink-0 mt-0.5" />
+          <div className="text-xs text-neutral-700">
+            <p className="font-semibold text-neutral-900 mb-1">
               Are you sure you want to delete this Todo?
             </p>
-            <p className="text-black/70 italic">"{todo.title}"</p>
-            <p className="mt-2 text-red-700 font-semibold">
+            <p className="text-neutral-500 italic">"{todo.title}"</p>
+            <p className="mt-2 text-[#9E2A2B] font-medium">
               This action is permanent and cannot be undone.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gold-200">
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#EDE7DD]">
           <button
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="px-3.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-gold-100 border border-gold-300 rounded-lg transition-colors cursor-pointer"
+            className="btn-gold-secondary px-3.5 py-1.5 text-xs font-semibold"
           >
             Cancel
           </button>
@@ -67,7 +67,7 @@ export const TodoDeleteDialog: React.FC<TodoDeleteDialogProps> = ({
             type="button"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="px-4 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="px-4 py-1.5 text-xs font-semibold text-white bg-[#9E2A2B] hover:bg-[#831F20] rounded-xl shadow-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
             <span>{isDeleting ? 'Deleting...' : 'Delete Permanently'}</span>
@@ -77,3 +77,4 @@ export const TodoDeleteDialog: React.FC<TodoDeleteDialogProps> = ({
     </Modal>
   );
 };
+
