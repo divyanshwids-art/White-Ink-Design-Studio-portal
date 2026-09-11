@@ -223,6 +223,7 @@ export interface AttendanceRecord {
   date: string; // YYYY-MM-DD
   clockIn?: string | null;
   clockOut?: string | null;
+  earlyClockOutReason?: string | null;
   status: AttendanceStatus;
   totalWorkingMinutes: number;
   totalBreakMinutes: number;
@@ -619,6 +620,7 @@ class DatabaseService {
           ...a,
           clockIn: toNullableIsoSafe(a.clockIn),
           clockOut: toNullableIsoSafe(a.clockOut),
+          earlyClockOutReason: a.earlyClockOutReason ?? null,
           sheetsSyncedAt: toNullableIsoSafe(a.sheetsSyncedAt),
           sheetsRowIndex: a.sheetsRowIndex ?? null,
           createdAt: toIsoSafe(a.createdAt),
@@ -1615,7 +1617,7 @@ class DatabaseService {
     return this.getAttendanceWithDetails(record);
   }
 
-  public clockOut(userId: string, customTimestamp?: string): AttendanceWithDetails {
+  public clockOut(userId: string, customTimestamp?: string, earlyClockOutReason?: string): AttendanceWithDetails {
     const now = customTimestamp ? new Date(customTimestamp) : new Date();
     const today = getTodayDateString(now);
 
@@ -1628,6 +1630,21 @@ class DatabaseService {
       throw new Error('Cannot clock out without clocking in first.');
     }
 
+    const settings = this.getSettings();
+    const override = this.getScheduleOverrideByUserId(userId);
+    const officeEnd = override?.customEndTime || settings?.officeEndTime || '18:30';
+
+    const [endH, endM] = officeEnd.split(':').map((v) => parseInt(v, 10) || 0);
+    const scheduledEndMins = endH * 60 + endM;
+    const actualClockOutMins = now.getHours() * 60 + now.getMinutes();
+    const isEarly = actualClockOutMins < scheduledEndMins;
+
+    const trimmedReason = (earlyClockOutReason || '').trim();
+    if (isEarly && !trimmedReason) {
+      throw new Error('You are clocking out before your regular working time. Please provide a reason.');
+    }
+
+    const finalReason = isEarly ? trimmedReason : (trimmedReason || null);
     const clockOutIso = now.toISOString();
 
     const activeBreak = this.data.breaks.find((b) => b.attendanceId === record.id && !b.endTime);
@@ -1665,6 +1682,7 @@ class DatabaseService {
     }
 
     record.clockOut = clockOutIso;
+    record.earlyClockOutReason = finalReason;
     record.totalBreakMinutes = totalBreakMinutes;
     record.totalWorkingMinutes = totalWorkingMinutes;
     record.effectiveWorkingMinutes = effectiveWorkingMinutes;
@@ -1677,11 +1695,12 @@ class DatabaseService {
           where: { id: record.id },
           data: {
             clockOut: new Date(clockOutIso),
+            earlyClockOutReason: finalReason,
             totalBreakMinutes,
             totalWorkingMinutes,
             effectiveWorkingMinutes,
             status,
-          },
+          } as any,
         })
         .catch(() => {});
     }

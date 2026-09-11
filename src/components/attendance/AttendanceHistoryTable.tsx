@@ -118,6 +118,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
       ...(showUserColumn ? ['Employee Name', 'Email'] : []),
       'Clock In',
       'Clock Out',
+      'Early Clock-Out Reason',
       'Total Working (mins)',
       'Total Break (mins)',
       'Effective Working (mins)',
@@ -129,6 +130,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
       ...(showUserColumn ? [r.user?.name || 'Unknown', r.user?.email || ''] : []),
       r.clockIn ? formatShortTime(r.clockIn) : 'N/A',
       r.clockOut ? formatShortTime(r.clockOut) : 'N/A',
+      r.earlyClockOutReason ? `"${r.earlyClockOutReason.replace(/"/g, '""')}"` : 'N/A',
       r.totalWorkingMinutes || 0,
       r.totalBreakMinutes || 0,
       r.effectiveWorkingMinutes || 0,
@@ -307,7 +309,17 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
 
                       <td className="py-3.5 px-4 font-mono font-bold text-black whitespace-nowrap">
                         {record.clockOut ? (
-                          formatShortTime(record.clockOut)
+                          <div className="flex items-center gap-1.5">
+                            <span>{formatShortTime(record.clockOut)}</span>
+                            {record.earlyClockOutReason && (
+                              <span
+                                title={`Early Clock-Out: "${record.earlyClockOutReason}"`}
+                                className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 cursor-help"
+                              >
+                                Early
+                              </span>
+                            )}
+                          </div>
                         ) : record.clockIn ? (
                           <span className="text-gold-700 font-extrabold">Active Shift</span>
                         ) : (
@@ -347,7 +359,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                       </td>
                     </tr>
 
-                    {/* Expandable Accordion for Breaks */}
+                    {/* Expandable Accordion for Details & Breaks */}
                     {isExpanded && (
                       <tr className="bg-gold-50/50">
                         <td colSpan={showUserColumn ? 9 : 8} className="p-4">
@@ -359,6 +371,17 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                               </span>
                               <span className="text-black/60 font-medium">Record ID: {record.id}</span>
                             </div>
+
+                            {/* Early Clock-Out Reason Callout if present */}
+                            {record.earlyClockOutReason && (
+                              <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 flex items-start gap-2.5">
+                                <AlertCircle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                                <div>
+                                  <span className="font-extrabold text-amber-900">Early Clock-Out Reason: </span>
+                                  <span className="italic font-semibold text-amber-950">&ldquo;{record.earlyClockOutReason}&rdquo;</span>
+                                </div>
+                              </div>
+                            )}
 
                             {hasBreaks ? (
                               <div className="space-y-2">

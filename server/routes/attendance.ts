@@ -35,8 +35,8 @@ attendanceRouter.post('/clock-in', (req: AuthenticatedRequest, res: Response) =>
 attendanceRouter.post('/clock-out', (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { timestamp } = req.body || {};
-    const attendance = db.clockOut(userId, timestamp);
+    const { timestamp, earlyClockOutReason } = req.body || {};
+    const attendance = db.clockOut(userId, timestamp, earlyClockOutReason);
     // Background Google Sheets sync (non-blocking)
     syncAttendanceToSheet(attendance.id).catch((err) => console.warn('[SHEETS] Sync on clock-out skipped/failed:', err?.message));
     return res.status(200).json({

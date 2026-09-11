@@ -302,6 +302,7 @@ export interface Attendance {
   date: string; // YYYY-MM-DD
   clockIn?: string | null;
   clockOut?: string | null;
+  earlyClockOutReason?: string | null;
   status: AttendanceStatus;
   totalWorkingMinutes: number;
   totalBreakMinutes: number;

@@ -199,7 +199,7 @@ export const api = {
     startDate?: string;
     dueDate?: string;
     estimatedBudget?: number;
-    leadOwnerId: string;
+    leadOwnerId?: string;
     preferredMeetingTime: string;
   }) =>
     request<{ project: Project; meetingLink: string | null; meetingTime: string; message: string }>('/projects/client-request', {
@@ -448,7 +448,7 @@ export const api = {
       body: JSON.stringify(payload || {}),
     }),
 
-  clockOut: (payload?: { timestamp?: string }) =>
+  clockOut: (payload?: { timestamp?: string; earlyClockOutReason?: string }) =>
     request<{ message: string; attendance: Attendance }>('/attendance/clock-out', {
       method: 'POST',
       body: JSON.stringify(payload || {}),
