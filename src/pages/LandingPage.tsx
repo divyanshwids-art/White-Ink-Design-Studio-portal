@@ -1,148 +1,117 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { BrandLogo } from '../components/common/BrandLogo';
-import { Sparkles, Layers, ShieldCheck, ArrowRight, CheckCircle2, MessageSquare, FileCheck, BarChart3 } from 'lucide-react';
 
 export const LandingPage: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
-  const features = [
-    {
-      icon: Layers,
-      title: 'Studio Project Workspaces',
-      desc: 'Seamless collaborative pipelines from creative concept to review, approvals, and final handover.',
-    },
-    {
-      icon: FileCheck,
-      title: 'Direct Client Approvals',
-      desc: 'Structured approvals, real-time feedback loops, revision requests, and deliverable sign-offs.',
-    },
-    {
-      icon: MessageSquare,
-      title: 'Real-Time Communication',
-      desc: 'Direct in-app messaging, active team chat, project discussions, and instant notification updates.',
-    },
-    {
-      icon: BarChart3,
-      title: 'Studio Performance & Insights',
-      desc: 'Precision attendance, timesheets, daily priorities, SOP documentation, and progress analytics.',
-    },
+
+  const gradients = [
+    'linear-gradient(135deg, #FAF7F2 0%, #F5EFE6 100%)',
+    'linear-gradient(135deg, #FDF9F4 0%, #EDE4D4 100%)',
+    'linear-gradient(135deg, #FAF4EC 0%, #FAF7F2 100%)',
+    'linear-gradient(135deg, #F5EFE6 0%, #FFFDF9 100%)',
   ];
+  const [bgIdx, setBgIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setBgIdx((i) => (i + 1) % gradients.length), 4000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
-    <div className="relative min-h-screen bg-[#FAF7F2] text-[#1C1917] flex flex-col justify-between overflow-hidden selection:bg-[#EAE0D0] selection:text-[#1C1917]">
-      {/* Decorative Subtle Liquid Silk Curves Backdrop */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <svg
-          className="absolute -top-32 -left-32 w-[600px] h-[600px] text-[#EDE4D4]/30"
-          viewBox="0 0 100 100"
-          fill="currentColor"
-        >
-          <path d="M0,50 Q25,0 50,50 T100,50 L100,100 L0,100 Z" />
-        </svg>
-        <svg
-          className="absolute -bottom-40 -right-40 w-[700px] h-[700px] text-[#EFE7D8]/40"
-          viewBox="0 0 100 100"
-          fill="currentColor"
-        >
-          <path d="M0,50 Q25,100 50,50 T100,50 L100,100 L0,100 Z" />
-        </svg>
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-gradient-to-br from-[#FAF4EC] to-transparent blur-3xl pointer-events-none" />
-      </div>
+    <motion.div
+      animate={{ background: gradients[bgIdx] }}
+      transition={{ duration: 4, ease: 'easeInOut' }}
+      className="relative min-h-screen text-[#1C1917] flex flex-col overflow-hidden selection:bg-[#EAE0D0]"
+    >
 
-      {/* Top Header */}
-      <header className="relative z-10 max-w-7xl mx-auto w-full px-6 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BrandLogo className="h-10 w-auto max-w-[9.5rem] object-contain" />
-          <div className="hidden sm:flex flex-col border-l border-[#EDE7DD] pl-3">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#8C7E72] font-semibold">
-              Design Studio
-            </span>
-            <span className="text-xs font-bold text-[#1C1917]">Business Portal</span>
-          </div>
+      {/* Ink drop — top right */}
+      <svg className="pointer-events-none absolute -top-8 -right-8 w-56 h-72 opacity-30" viewBox="0 0 100 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 0 C50 0 90 55 90 85 C90 108 72 125 50 125 C28 125 10 108 10 85 C10 55 50 0 50 0 Z" fill="#BA954F" />
+      </svg>
+
+      {/* Ink drop — bottom left */}
+      <svg className="pointer-events-none absolute -bottom-8 -left-8 w-56 h-72 opacity-30" viewBox="0 0 100 140" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'rotate(180deg)' }}>
+        <path d="M50 0 C50 0 90 55 90 85 C90 108 72 125 50 125 C28 125 10 108 10 85 C10 55 50 0 50 0 Z" fill="#BA954F" />
+      </svg>
+
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: 'easeOut' }}
+        className="relative z-10 w-full px-6 sm:px-10 py-5 flex items-center justify-between"
+      >
+        <BrandLogo className="h-9 w-auto max-w-[9rem] object-contain" />
+        <div />
+      </motion.header>
+
+      {/* Hero */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 py-16">
+
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.88, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          className="inline-flex items-center mb-7"
+        >
+          <img src="/white-ink-logo.png" alt="White Ink" className="h-auto w-48 object-contain" />
+        </motion.div>
+
+        {/* Headline */}
+        <div className="overflow-hidden mb-1">
+          <motion.h1
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: '0%', opacity: 1 }}
+            transition={{ duration: 0.65, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#1C1917] leading-[1.12]"
+          >
+            Your Brand,
+          </motion.h1>
         </div>
-        <div className="flex items-center gap-3">
-          <button
+        <div className="overflow-hidden mb-6">
+          <motion.h1
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: '0%', opacity: 1 }}
+            transition={{ duration: 0.65, delay: 0.36, ease: [0.22, 1, 0.36, 1] }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.12]"
+          >
+            <motion.span
+              animate={{ color: ['#BA954F', '#8C6A2F', '#C9A84C', '#BA954F'] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              Our Priority.
+            </motion.span>
+          </motion.h1>
+        </div>
+
+        {/* Subtext */}
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.48, ease: 'easeOut' }}
+          className="text-sm sm:text-base text-[#78716C] leading-relaxed max-w-md mb-9"
+        >
+          Ink your brand together
+        </motion.p>
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.6, ease: 'easeOut' }}
+        >
+          <motion.button
+            whileHover={{ scale: 1.06, boxShadow: '0 10px 30px -4px rgba(186,149,79,0.42)' }}
+            whileTap={{ scale: 0.96 }}
             onClick={onLogin}
-            className="px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all cursor-pointer btn-hover-lift"
+            className="px-8 py-3.5 text-sm font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-sm transition-colors cursor-pointer"
           >
             Sign In
-          </button>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <main className="relative z-10 max-w-5xl mx-auto px-6 py-12 lg:py-16 flex flex-col items-center text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="flex flex-col items-center"
-        >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#EDE3D4] bg-white/80 backdrop-blur-xs text-xs font-semibold text-[#BA954F] mb-6 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#BA954F] animate-pulse" />
-            From Ideas to Impact Together
-          </div>
-
-          <h1 className="font-serif max-w-3xl text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#1C1917] leading-[1.15]">
-            The White Ink App
-          </h1>
-
-          <p className="font-brand-script text-2xl sm:text-3xl text-[#BA954F] mt-2">
-            Closer Ideas. Stronger Brands.
-          </p>
-
-          <p className="max-w-2xl mt-4 text-sm sm:text-base text-[#78716C] leading-relaxed font-normal">
-            A simpler, elegant way for clients and our creative team to collaborate, manage projects, give approvals, and grow together.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <button
-              onClick={onLogin}
-              className="px-6 py-3 text-sm font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer btn-hover-lift"
-            >
-              <span>Get Started</span>
-              <ArrowRight className="h-4 w-4 stroke-[2]" />
-            </button>
-          </div>
+          </motion.button>
         </motion.div>
 
-        {/* Feature Cards Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
-          className="mt-14 sm:mt-18 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 w-full text-left"
-        >
-          {features.map((feat, idx) => {
-            const Icon = feat.icon;
-            return (
-              <div
-                key={idx}
-                className="bg-white/95 backdrop-blur-xs p-5 rounded-2xl border border-[#EDE7DD] shadow-xs card-hover-lift flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-10 h-10 rounded-xl bg-[#FAF4EC] border border-[#EDE3D4] flex items-center justify-center text-[#BA954F] mb-3.5 shadow-2xs">
-                    <Icon className="w-5 h-5 stroke-[1.75]" />
-                  </div>
-                  <h3 className="text-sm font-serif font-bold text-[#1C1917] mb-1.5">{feat.title}</h3>
-                  <p className="text-xs text-[#78716C] leading-relaxed font-normal">{feat.desc}</p>
-                </div>
-              </div>
-            );
-          })}
-        </motion.div>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 max-w-7xl mx-auto w-full px-6 py-8 border-t border-[#EDE7DD] flex flex-col sm:flex-row items-center justify-between text-xs text-[#78716C] gap-4">
-        <p>© {new Date().getFullYear()} White Ink Design Studio. All rights reserved.</p>
-        <div className="flex items-center gap-4">
-          <span className="font-brand-script text-lg text-[#BA954F]">
-            Your Brand, Our Priority
-          </span>
-          <span className="w-1 h-1 rounded-full bg-[#DFD5C6]" />
-          <span>Internal & Client Portal</span>
-        </div>
-      </footer>
-    </div>
+    </motion.div>
   );
 };

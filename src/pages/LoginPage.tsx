@@ -27,37 +27,25 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-[#FAF7F2] flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden selection:bg-[#EAE0D0] selection:text-[#1C1917]">
-      {/* Decorative Subtle Liquid Silk Curves Backdrop */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <svg
-          className="absolute -top-32 -left-32 w-[600px] h-[600px] text-[#EDE4D4]/30"
-          viewBox="0 0 100 100"
-          fill="currentColor"
-        >
-          <path d="M0,50 Q25,0 50,50 T100,50 L100,100 L0,100 Z" />
-        </svg>
-        <svg
-          className="absolute -bottom-40 -right-40 w-[700px] h-[700px] text-[#EFE7D8]/40"
-          viewBox="0 0 100 100"
-          fill="currentColor"
-        >
-          <path d="M0,50 Q25,100 50,50 T100,50 L100,100 L0,100 Z" />
-        </svg>
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full bg-gradient-to-tr from-[#BA954F]/5 to-transparent blur-3xl pointer-events-none" />
-      </div>
+
+      {/* Ink drop — top right */}
+      <svg className="pointer-events-none absolute -top-8 -right-8 w-56 h-72 opacity-30" viewBox="0 0 100 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 0 C50 0 90 55 90 85 C90 108 72 125 50 125 C28 125 10 108 10 85 C10 55 50 0 50 0 Z" fill="#BA954F" />
+      </svg>
+
+      {/* Ink drop — bottom left */}
+      <svg className="pointer-events-none absolute -bottom-8 -left-8 w-56 h-72 opacity-30" viewBox="0 0 100 140" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'rotate(180deg)' }}>
+        <path d="M50 0 C50 0 90 55 90 85 C90 108 72 125 50 125 C28 125 10 108 10 85 C10 55 50 0 50 0 Z" fill="#BA954F" />
+      </svg>
 
       <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md text-center mb-6">
         <BrandLogo className="mx-auto h-auto w-48 max-w-full object-contain drop-shadow-2xs" />
-        <p className="mt-2 text-xs uppercase tracking-[0.2em] text-[#8C7E72] font-semibold">
-          Inking your brand
-        </p>
       </div>
 
       <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md w-full">
         <div className="bg-white/95 backdrop-blur-md border border-[#EDE7DD] py-8 px-6 sm:px-10 shadow-xl rounded-2xl">
           <div className="mb-6 text-center">
             <h2 className="text-xl font-serif font-bold text-[#1C1917]">Welcome to White Ink</h2>
-            <p className="text-xs text-[#78716C] mt-1">Sign in to access your projects and studio workspace</p>
           </div>
 
           {error && (
@@ -113,7 +101,7 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -123,9 +111,6 @@ export const LoginPage: React.FC = () => {
                 />
                 <span className="text-xs text-[#57534E]">Remember me</span>
               </label>
-              <span className="text-xs text-[#BA954F] hover:text-[#A17B2F] hover:underline cursor-pointer font-medium">
-                Forgot password?
-              </span>
             </div>
 
             <button
@@ -133,16 +118,10 @@ export const LoginPage: React.FC = () => {
               disabled={isLoading}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] transition-all duration-150 shadow-xs disabled:opacity-50 mt-4 cursor-pointer btn-hover-lift"
             >
-              {isLoading ? 'Signing in...' : 'Sign in to Dashboard'}
+              {isLoading ? 'Signing in...' : 'Enter the Studio'}
               <ArrowRight className="h-4 w-4 stroke-[2]" />
             </button>
           </form>
-        </div>
-
-        <div className="text-center mt-6">
-          <p className="text-xs text-[#8C7E72] font-brand-script text-xl">
-            Ideas today. Impact tomorrow.
-          </p>
         </div>
       </div>
     </div>

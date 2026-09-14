@@ -26,6 +26,7 @@ export interface User {
   email: string;
   role: Role;
   profileImage?: string | null;
+  bannerImage?: string | null;
   fcmToken?: string | null;
   clientId?: string | null;
   mustChangePassword?: boolean;

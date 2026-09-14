@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import { NotificationDropdown } from './NotificationDropdown';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -11,6 +11,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) => {
   const { user, logout } = useAuth();
+  const isClient = user?.role === 'CLIENT' || user?.role === 'CLIENT_ADMIN';
 
   const roleBadgeMap: Record<string, string> = {
     SUPER_ADMIN: 'bg-[#FAF4EC] text-[#BA954F] border-[#EBE1D0] font-semibold',
@@ -21,12 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
   };
 
   const userInitials = user?.name
-    ? user.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
+    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'WI';
 
   return (
@@ -42,43 +38,44 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
           <Menu className="h-5 w-5 stroke-[1.75]" />
         </button>
 
-        <BrandLogo className="h-10 w-auto max-w-[9.5rem] object-contain cursor-pointer" />
+        {isClient ? (
+          <div className="flex items-center gap-1.5">
+            <BrandLogo className="h-8 w-auto max-w-[7rem] object-contain" />
+            <X className="h-3.5 w-3.5 text-[#A8A29E] stroke-[2.5]" />
+            {user?.profileImage ? (
+              <img src={user.profileImage} alt={user.name} className="h-8 w-8 rounded-full border border-[#DFD5C6] object-cover shadow-2xs" />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-[#FAF4EC] border border-[#EAE0D0] flex items-center justify-center text-[#BA954F] font-serif font-bold text-xs shadow-2xs">
+                {userInitials}
+              </div>
+            )}
+          </div>
+        ) : (
+          <BrandLogo className="h-10 w-auto max-w-[9.5rem] object-contain cursor-pointer" />
+        )}
       </div>
 
       {/* Right section */}
       <div className="flex items-center gap-2 sm:gap-4">
-        {/* Notification Bell Dropdown */}
         <NotificationDropdown onNavigate={onNavigate} />
 
-        {/* User profile & Logout */}
         {user && (
           <div className="flex items-center gap-3 pl-2 border-l border-[#EDE7DD]">
             <div className="flex items-center gap-2.5">
               {user.profileImage ? (
-                <img
-                  src={user.profileImage}
-                  alt={user.name}
-                  className="h-8 w-8 rounded-full border border-[#DFD5C6] object-cover shadow-2xs"
-                />
+                <img src={user.profileImage} alt={user.name} className="h-8 w-8 rounded-full border border-[#DFD5C6] object-cover shadow-2xs" />
               ) : (
                 <div className="h-8 w-8 rounded-full bg-[#FAF4EC] border border-[#EAE0D0] flex items-center justify-center text-[#BA954F] font-serif font-bold text-xs shadow-2xs">
                   {userInitials}
                 </div>
               )}
               <div className="hidden sm:block text-left">
-                <div className="text-xs font-bold text-[#1C1917] leading-tight truncate max-w-[130px]">
-                  {user.name}
-                </div>
-                <span
-                  className={`inline-block text-[10px] px-1.5 py-0.2 rounded border mt-0.5 shadow-2xs ${
-                    roleBadgeMap[user.role] || 'bg-white text-[#57534E] border-[#EDE7DD]'
-                  }`}
-                >
+                <div className="text-xs font-bold text-[#1C1917] leading-tight truncate max-w-[130px]">{user.name}</div>
+                <span className={`inline-block text-[10px] px-1.5 py-0.2 rounded border mt-0.5 shadow-2xs ${roleBadgeMap[user.role] || 'bg-white text-[#57534E] border-[#EDE7DD]'}`}>
                   {user.role.replace('_', ' ')}
                 </span>
               </div>
             </div>
-
             <button
               type="button"
               onClick={logout}
