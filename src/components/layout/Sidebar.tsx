@@ -85,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       name: 'Kanban Board',
       path: '/kanban',
       icon: Columns3,
-      show: true,
+      show: isInternalStaff,
       category: 'GENERAL',
     },
     {
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       category: 'GENERAL',
     },
     {
-      name: 'Client Approvals',
+      name: isClient ? 'Deliverables & Approvals' : 'Client Approvals',
       path: '/approvals',
       icon: FileCheck,
       show: true,
@@ -124,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       category: 'GENERAL',
     },
     {
-      name: 'SOP Documentation',
+      name: isClient ? 'Brand Book' : 'SOP Documentation',
       path: '/sops',
       icon: BookOpen,
       show: true,
@@ -182,13 +182,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: 'Admin',
       show: isSuperAdminOrAdmin,
       category: 'MANAGEMENT',
-    },
-    {
-      name: 'Account Settings',
-      path: '/client-settings',
-      icon: Settings,
-      show: isClient,
-      category: 'ACCOUNT',
     },
     {
       name: 'My Profile',

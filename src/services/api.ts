@@ -627,13 +627,42 @@ export const api = {
 
   getSOPById: (id: string) => request<any>(`/sops/${id}`),
 
-  createSOP: (payload: { title: string; category: string; content: string; version?: string; tags?: string }) =>
+  createSOP: (payload: {
+    title: string;
+    category?: string;
+    content: string;
+    version?: string;
+    tags?: string;
+    fileUrl?: string | null;
+    fileName?: string | null;
+    fileType?: string | null;
+    logoUrl?: string | null;
+    brandColors?: string | null;
+    typography?: string | null;
+    clientId?: string | null;
+  }) =>
     request<{ message: string; sop: any }>('/sops', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
-  updateSOP: (id: string, payload: Partial<{ title: string; category: string; content: string; version?: string; tags?: string }>) =>
+  updateSOP: (
+    id: string,
+    payload: Partial<{
+      title: string;
+      category: string;
+      content: string;
+      version?: string;
+      tags?: string;
+      fileUrl?: string | null;
+      fileName?: string | null;
+      fileType?: string | null;
+      logoUrl?: string | null;
+      brandColors?: string | null;
+      typography?: string | null;
+      clientId?: string | null;
+    }>
+  ) =>
     request<{ message: string; sop: any }>(`/sops/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),

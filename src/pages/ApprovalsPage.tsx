@@ -257,11 +257,109 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
       default:
         return (
           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
-            <Clock className="h-3.5 w-3.5" /> Pending Client Review
+            <Clock className="h-3.5 w-3.5" /> Pending Review
           </span>
         );
     }
   };
+
+  const renderFilterToolbar = () => (
+    <div className="bg-white/95 backdrop-blur-xs p-3.5 sm:p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="relative w-full md:w-80">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A8A29E]" />
+        <input
+          type="text"
+          placeholder="Search deliverables..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] bg-white text-[#1C1917] placeholder-[#A8A29E]"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+        {/* Project Filter */}
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-[#8C7E72]" />
+          <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            className="text-xs font-semibold py-2 px-3.5 bg-white border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1C1917] shadow-2xs cursor-pointer"
+          >
+            <option value="ALL">All Projects</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Status Filter */}
+        <select
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          className="text-xs font-semibold py-2 px-3.5 bg-white border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1C1917] shadow-2xs cursor-pointer"
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="PENDING">Pending Review</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Needs Revision</option>
+        </select>
+      </div>
+    </div>
+  );
+
+  const renderKPISummary = () => (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
+        <div className="p-2.5 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shrink-0 shadow-2xs">
+          <FileCheck className="h-5 w-5 stroke-[1.75]" />
+        </div>
+        <div>
+          <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+            Total Deliverables
+          </div>
+          <div className="text-2xl font-serif font-bold text-[#1C1917] mt-0.5">{totalCount}</div>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
+        <div className="p-2.5 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shrink-0 shadow-2xs">
+          <Clock className="h-5 w-5 stroke-[1.75]" />
+        </div>
+        <div>
+          <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+            Pending Review
+          </div>
+          <div className="text-2xl font-serif font-bold text-[#BA954F] mt-0.5">{pendingCount}</div>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
+        <div className="p-2.5 bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD] rounded-xl shrink-0 shadow-2xs">
+          <CheckCircle2 className="h-5 w-5 stroke-[1.75]" />
+        </div>
+        <div>
+          <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+            Approved
+          </div>
+          <div className="text-2xl font-serif font-bold text-[#2D6A4F] mt-0.5">{approvedCount}</div>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
+        <div className="p-2.5 bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0] rounded-xl shrink-0 shadow-2xs">
+          <XCircle className="h-5 w-5 stroke-[1.75]" />
+        </div>
+        <div>
+          <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+            Revisions
+          </div>
+          <div className="text-2xl font-serif font-bold text-[#B91C1C] mt-0.5">{rejectedCount}</div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-gold-fade-in">
@@ -270,12 +368,12 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#1C1917] flex items-center gap-2.5">
             <FileCheck className="h-6 w-6 text-[#BA954F] stroke-[2]" />
-            Client Deliverables & Approvals
+            Deliverables & Approvals
           </h1>
           <p className="text-xs sm:text-sm text-[#78716C] font-normal mt-1">
             {isClient
               ? 'Review, provide feedback, and approve deliverables submitted for your projects'
-              : 'Submit milestones, design drafts, and creative assets for client sign-off'}
+              : 'Submit milestones, design drafts, and creative assets for sign-off'}
           </p>
         </div>
 
@@ -291,101 +389,18 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
         )}
       </div>
 
-      {/* KPI Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
-          <div className="p-2.5 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shrink-0 shadow-2xs">
-            <FileCheck className="h-5 w-5 stroke-[1.75]" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
-              Total Deliverables
-            </div>
-            <div className="text-2xl font-serif font-bold text-[#1C1917] mt-0.5">{totalCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
-          <div className="p-2.5 bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] rounded-xl shrink-0 shadow-2xs">
-            <Clock className="h-5 w-5 stroke-[1.75]" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
-              Pending Review
-            </div>
-            <div className="text-2xl font-serif font-bold text-[#BA954F] mt-0.5">{pendingCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
-          <div className="p-2.5 bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD] rounded-xl shrink-0 shadow-2xs">
-            <CheckCircle2 className="h-5 w-5 stroke-[1.75]" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
-              Approved
-            </div>
-            <div className="text-2xl font-serif font-bold text-[#2D6A4F] mt-0.5">{approvedCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex items-center gap-3.5 card-hover-lift">
-          <div className="p-2.5 bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0] rounded-xl shrink-0 shadow-2xs">
-            <XCircle className="h-5 w-5 stroke-[1.75]" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
-              Revisions
-            </div>
-            <div className="text-2xl font-serif font-bold text-[#B91C1C] mt-0.5">{rejectedCount}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Toolbar */}
-      <div className="bg-white/95 backdrop-blur-xs p-3.5 sm:p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A8A29E]" />
-          <input
-            type="text"
-            placeholder="Search deliverables..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] bg-white text-[#1C1917] placeholder-[#A8A29E]"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-          {/* Project Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-[#8C7E72]" />
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="text-xs font-semibold py-2 px-3.5 bg-white border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1C1917] shadow-2xs cursor-pointer"
-            >
-              <option value="ALL">All Projects</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="text-xs font-semibold py-2 px-3.5 bg-white border border-[#DFD5C6] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#BA954F] text-[#1C1917] shadow-2xs cursor-pointer"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="PENDING">Pending Review</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Needs Revision</option>
-          </select>
-        </div>
-      </div>
+      {/* For client: Filter Toolbar goes above the 4 KPI Summary cards */}
+      {isClient ? (
+        <>
+          {renderFilterToolbar()}
+          {renderKPISummary()}
+        </>
+      ) : (
+        <>
+          {renderKPISummary()}
+          {renderFilterToolbar()}
+        </>
+      )}
 
       {/* Deliverables List */}
       {loading ? (
@@ -399,7 +414,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
           <p className="text-xs text-[#78716C] mt-1 max-w-sm mx-auto font-normal">
             {search || selectedProject !== 'ALL' || selectedStatus !== 'ALL'
               ? 'No approval requests match the selected filters.'
-              : 'Deliverables requested for client sign-off will appear here.'}
+              : 'Deliverables requested for sign-off will appear here.'}
           </p>
           {canRequestApproval && (
             <button
@@ -492,7 +507,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                           {task.revisionRequest && (
                             <div className="p-3.5 bg-[#FDF2F0] rounded-xl border border-[#F5D5D0] text-xs mt-2">
                               <div className="font-semibold text-[#B91C1C] mb-1">
-                                Client revision request
+                                Revision request
                               </div>
                               <p className="text-[#7F1D1D] font-normal">{task.revisionRequest.feedback}</p>
                             </div>
@@ -646,7 +661,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                     <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EDE7DD] text-xs mt-2">
                       <div className="font-semibold text-[#1C1917] flex items-center gap-1.5 mb-1">
                         <MessageSquare className="h-3.5 w-3.5 text-[#BA954F]" />
-                        Client Review Feedback:
+                        Review Feedback:
                       </div>
                       <p className="text-[#57534E] italic font-normal">"{item.comments}"</p>
                     </div>
@@ -702,7 +717,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-between border-b border-[#EDE7DD] pb-3.5">
               <h2 className="text-base font-serif font-bold text-[#1C1917] flex items-center gap-2">
                 <FileCheck className="h-5 w-5 text-[#BA954F] stroke-[2]" />
-                Submit Deliverable for Client Sign-Off
+                Submit Deliverable for Sign-Off
               </h2>
               <button
                 type="button"
@@ -776,7 +791,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Explain what was accomplished and what specific points the client should inspect..."
+                  placeholder="Explain what was accomplished and what specific points should be inspected..."
                   value={submitForm.description}
                   onChange={(e) =>
                     setSubmitForm({ ...submitForm, description: e.target.value })
@@ -798,7 +813,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                   disabled={submitLoading}
                   className="px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-xs btn-hover-lift"
                 >
-                  {submitLoading ? 'Submitting...' : 'Send for Client Review'}
+                  {submitLoading ? 'Submitting...' : 'Send for Review'}
                 </button>
               </div>
             </form>

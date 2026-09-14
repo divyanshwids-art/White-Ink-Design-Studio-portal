@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
+import { BottomNavigation } from './components/layout/BottomNavigation';
 import { LoginPage } from './pages/LoginPage';
 import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -66,12 +67,12 @@ function MainApp() {
     }
   }, [user]);
 
-  // Redirect client roles away from /users or /todos if navigated directly
+  // Redirect client roles away from /users, /todos, or /kanban if navigated directly
   useEffect(() => {
     if (
       user &&
       (user.role === 'CLIENT' || user.role === 'CLIENT_ADMIN') &&
-      (currentPath === '/users' || currentPath === '/todos')
+      (currentPath === '/users' || currentPath === '/todos' || currentPath === '/kanban')
     ) {
       navigate('/dashboard');
     }
@@ -117,7 +118,7 @@ function MainApp() {
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden animate-gold-fade-in">
+        <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 max-w-full overflow-x-hidden animate-gold-fade-in">
           {activeProjectId ? (
             <ProjectDetailPage
               projectId={activeProjectId}
@@ -127,7 +128,16 @@ function MainApp() {
           ) : currentPath === '/projects' ? (
             <ProjectsPage onNavigateToProject={(id) => navigate(`/projects/${id}`)} />
           ) : currentPath === '/kanban' ? (
-            <KanbanPage />
+            user.role === 'CLIENT' || user.role === 'CLIENT_ADMIN' ? (
+              <DashboardPage
+                onNavigate={navigate}
+                onOpenNewProject={() => setIsQuickProjectOpen(true)}
+                onOpenClientProject={() => setIsClientProjectOpen(true)}
+                onOpenNewTask={() => setIsQuickTaskOpen(true)}
+              />
+            ) : (
+              <KanbanPage />
+            )
           ) : currentPath === '/tasks' ? (
             <TasksPage />
           ) : currentPath === '/todos' ? (
@@ -179,16 +189,7 @@ function MainApp() {
               />
             )
           ) : currentPath === '/client-settings' ? (
-            user.role === 'CLIENT' || user.role === 'CLIENT_ADMIN' ? (
-              <ClientSettingsPage />
-            ) : (
-              <DashboardPage
-                onNavigate={navigate}
-                onOpenNewProject={() => setIsQuickProjectOpen(true)}
-                onOpenClientProject={() => setIsClientProjectOpen(true)}
-                onOpenNewTask={() => setIsQuickTaskOpen(true)}
-              />
-            )
+            <ProfilePage />
           ) : currentPath === '/access-requests' ? (
             user.role === 'SUPER_ADMIN' ? (
               <AccessRequestsPage />
@@ -293,6 +294,9 @@ function MainApp() {
           )}
         </main>
       </div>
+
+      {/* Mobile & Tablet Bottom Navigation Bar */}
+      <BottomNavigation currentPath={currentPath} onNavigate={navigate} />
 
       {/* Global Quick Add Modals */}
       <ProjectModal

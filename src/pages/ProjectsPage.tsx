@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Project, Client, User } from '../types';
 import { api } from '../services/api';
@@ -19,6 +19,11 @@ import {
   Edit2,
   Trash2,
   ArrowRight,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  Layers,
+  X,
 } from 'lucide-react';
 
 interface ProjectsPageProps {
@@ -87,79 +92,162 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     }
   };
 
+  // Metrics counters
+  const metrics = useMemo(() => {
+    const total = projects.length;
+    const active = projects.filter((p) => p.status === 'ACTIVE').length;
+    const planning = projects.filter((p) => p.status === 'PLANNING' || p.status === 'PENDING').length;
+    const completed = projects.filter((p) => p.status === 'COMPLETED').length;
+    return { total, active, planning, completed };
+  }, [projects]);
+
+  const statusPills = [
+    { label: 'All Projects', value: 'ALL' },
+    { label: 'Active', value: 'ACTIVE' },
+    { label: 'Planning', value: 'PLANNING' },
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'On Hold', value: 'ON_HOLD' },
+  ];
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-gold-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-[#EDE7DD] shadow-xs">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#1C1917]">
-            Projects
-          </h1>
-          <p className="text-xs sm:text-sm text-[#78716C] font-normal">
-            Manage creative deliverables, assign team members, and monitor progress metrics
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C1917]">
+              Projects
+            </h1>
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
+              {projects.length} Total
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-[#78716C] font-normal mt-1">
+            Manage creative deliverables, track milestone progress, and allocate team talent.
           </p>
         </div>
 
-        {canManage && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingProject(null);
-              setIsModalOpen(true);
-            }}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-all shrink-0 cursor-pointer btn-hover-lift"
-          >
-            <Plus className="h-4 w-4 stroke-[2]" />
-            Create Project
-          </button>
-        )}
+        <div className="flex items-center gap-3 shrink-0">
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingProject(null);
+                setIsModalOpen(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer btn-hover-lift"
+            >
+              <Plus className="h-4 w-4 stroke-[2.5]" />
+              Create Project
+            </button>
+          )}
 
-        {isClient && (
-          <button
-            type="button"
-            onClick={() => setIsClientModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-all shrink-0 cursor-pointer btn-hover-lift"
-          >
-            <Plus className="h-4 w-4 stroke-[2]" />
-            Create New Project
-          </button>
-        )}
+          {isClient && (
+            <button
+              type="button"
+              onClick={() => setIsClientModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer btn-hover-lift"
+            >
+              <Plus className="h-4 w-4 stroke-[2.5]" />
+              Create New Project
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Filters Toolbar */}
-      <div className="bg-white/95 backdrop-blur-xs p-3.5 sm:p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">
+      {/* Quick KPI Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="bg-white p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#FAF4EC] border border-[#EAE0D0] flex items-center justify-center text-[#BA954F] shrink-0">
+            <Layers className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-xl font-bold text-[#1C1917]">{metrics.total}</div>
+            <div className="text-xs text-[#78716C] font-medium">Total Workspaces</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7] flex items-center justify-center text-[#16A34A] shrink-0">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-xl font-bold text-[#1C1917]">{metrics.active}</div>
+            <div className="text-xs text-[#78716C] font-medium">In Active Execution</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB] shrink-0">
+            <Clock className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-xl font-bold text-[#1C1917]">{metrics.planning}</div>
+            <div className="text-xs text-[#78716C] font-medium">Planning &amp; Setup</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#FAF5FF] border border-[#F3E8FF] flex items-center justify-center text-[#9333EA] shrink-0">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-xl font-bold text-[#1C1917]">{metrics.completed}</div>
+            <div className="text-xs text-[#78716C] font-medium">Fully Completed</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
         {/* Search */}
-        <div className="relative w-full sm:w-80">
+        <div className="relative w-full md:w-80">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A8A29E]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search projects by name..."
-            className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F]"
+            className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1C1917] placeholder-[#A8A29E] focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#1C1917] p-1"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Status & Priority dropdowns */}
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-1/2 sm:w-auto px-3.5 py-2 text-xs font-semibold bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="PENDING">Pending Setup</option>
-            <option value="PLANNING">Planning</option>
-            <option value="ACTIVE">Active</option>
-            <option value="ON_HOLD">On Hold</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
+        {/* Status Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+          {statusPills.map((pill) => {
+            const isActive = statusFilter === pill.value;
+            return (
+              <button
+                key={pill.value}
+                type="button"
+                onClick={() => setStatusFilter(pill.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0] shadow-2xs'
+                    : 'bg-transparent text-[#78716C] hover:bg-[#FAF7F2] hover:text-[#1C1917] border border-transparent'
+                }`}
+              >
+                {pill.label}
+              </button>
+            );
+          })}
+        </div>
 
+        {/* Priority Filter */}
+        <div className="w-full md:w-auto shrink-0">
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="w-1/2 sm:w-auto px-3.5 py-2 text-xs font-semibold bg-white border border-[#DFD5C6] rounded-xl text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
+            className="w-full md:w-auto px-3.5 py-2 text-xs font-semibold bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1C1917] focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white cursor-pointer"
           >
             <option value="ALL">All Priorities</option>
             <option value="URGENT">Urgent</option>
@@ -176,7 +264,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
       ) : projects.length === 0 ? (
         <EmptyState
           title="No projects found"
-          description="No projects match your current filters. Create a new project to start tracking work."
+          description="No projects match your current filters. Create a new project to start tracking deliverables."
           icon={FolderKanban}
           actionLabel={canManage ? 'Create Project' : isClient ? 'Create New Project' : undefined}
           onAction={() => {
@@ -236,13 +324,13 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 <div>
                   <h3
                     onClick={() => onNavigateToProject(project.id)}
-                    className="text-base font-serif font-bold text-[#1C1917] group-hover:text-[#BA954F] transition-colors cursor-pointer"
+                    className="text-base font-bold text-[#1C1917] group-hover:text-[#BA954F] transition-colors cursor-pointer line-clamp-1"
                   >
                     {project.name}
                   </h3>
                   <p className="text-xs text-[#78716C] flex items-center gap-1.5 mt-1 font-normal">
-                    <Building2 className="h-3.5 w-3.5 text-[#BA954F]" />
-                    <span className="font-semibold text-[#1C1917]">
+                    <Building2 className="h-3.5 w-3.5 text-[#BA954F] shrink-0" />
+                    <span className="font-semibold text-[#1C1917] truncate">
                       {project.client?.company || project.client?.name || 'Client Org'}
                     </span>
                   </p>
@@ -259,7 +347,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-[#78716C] font-medium">Calculated Progress</span>
-                    <span className="font-bold font-mono text-[#BA954F]">{project.progress}%</span>
+                    <span className="font-bold text-[#BA954F]">{project.progress}%</span>
                   </div>
                   <ProgressBar progress={project.progress} size="md" showLabel={false} />
                 </div>
@@ -297,7 +385,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 {/* Due Date & Open link */}
                 <div className="flex items-center gap-3">
                   {project.dueDate && (
-                    <span className="text-[#78716C] text-[11px] font-mono flex items-center gap-1">
+                    <span className="text-[#78716C] text-[11px] flex items-center gap-1">
                       <Calendar className="h-3 w-3 text-[#BA954F]" />
                       {new Date(project.dueDate).toLocaleDateString()}
                     </span>
@@ -320,7 +408,10 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
       {/* Create / Edit Project Modal (Admin / Team) */}
       <ProjectModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingProject(null);
+        }}
         onSuccess={loadData}
         project={editingProject}
         clients={clients}

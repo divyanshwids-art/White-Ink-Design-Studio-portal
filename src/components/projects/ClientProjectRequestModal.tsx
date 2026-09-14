@@ -165,7 +165,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
       isOpen={isOpen}
       onClose={onClose}
       title=""
-      maxWidth="xl"
+      maxWidth="2xl"
     >
       <div className="-mt-3">
         {/* Header matching mobile design */}

@@ -436,6 +436,13 @@ export interface SOPDocument {
   content: string;
   version: string;
   tags?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileType?: string | null;
+  logoUrl?: string | null;
+  brandColors?: string | null;
+  typography?: string | null;
+  clientId?: string | null;
   createdById: string;
   createdAt: string;
   updatedAt: string;
