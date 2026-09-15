@@ -117,8 +117,9 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
       'Date',
       ...(showUserColumn ? ['Employee Name', 'Email'] : []),
       'Clock In',
+      'Clock In Reason',
       'Clock Out',
-      'Early Clock-Out Reason',
+      'Clock Out / Early Reason',
       'Total Working (mins)',
       'Total Break (mins)',
       'Effective Working (mins)',
@@ -129,8 +130,9 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
       r.date,
       ...(showUserColumn ? [r.user?.name || 'Unknown', r.user?.email || ''] : []),
       r.clockIn ? formatShortTime(r.clockIn) : 'N/A',
+      r.clockInReason ? `"${r.clockInReason.replace(/"/g, '""')}"` : 'N/A',
       r.clockOut ? formatShortTime(r.clockOut) : 'N/A',
-      r.earlyClockOutReason ? `"${r.earlyClockOutReason.replace(/"/g, '""')}"` : 'N/A',
+      (r.clockOutReason || r.earlyClockOutReason) ? `"${(r.clockOutReason || r.earlyClockOutReason || '').replace(/"/g, '""')}"` : 'N/A',
       r.totalWorkingMinutes || 0,
       r.totalBreakMinutes || 0,
       r.effectiveWorkingMinutes || 0,
@@ -303,19 +305,29 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                       )}
 
                       <td className="py-3.5 px-4 font-mono text-neutral-800 whitespace-nowrap">
-                        {formatShortTime(record.clockIn)}
+                        <div className="flex items-center gap-1.5">
+                          <span>{formatShortTime(record.clockIn)}</span>
+                          {record.clockInReason && (
+                            <span
+                              title={`Clock-In Note: "${record.clockInReason}"`}
+                              className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#FAF7F2] text-[#BA954F] border border-[#EDE7DD] cursor-help"
+                            >
+                              Note
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-4 font-mono text-neutral-800 whitespace-nowrap">
                         {record.clockOut ? (
                           <div className="flex items-center gap-1.5">
                             <span>{formatShortTime(record.clockOut)}</span>
-                            {record.earlyClockOutReason && (
+                            {(record.clockOutReason || record.earlyClockOutReason) && (
                               <span
-                                title={`Early Clock-Out: "${record.earlyClockOutReason}"`}
+                                title={`Clock-Out Note: "${record.clockOutReason || record.earlyClockOutReason}"`}
                                 className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#FDF6E9] text-[#B45309] border border-[#F9E2AF] cursor-help"
                               >
-                                Early
+                                {record.earlyClockOutReason ? 'Early' : 'Note'}
                               </span>
                             )}
                           </div>
@@ -371,13 +383,28 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                               <span className="text-neutral-400 font-mono text-[11px]">ID: {record.id}</span>
                             </div>
 
-                            {/* Early Clock-Out Reason Callout if present */}
-                            {record.earlyClockOutReason && (
+                            {/* Clock In Reason if present */}
+                            {record.clockInReason && (
+                              <div className="p-3 bg-[#FAF7F2] border border-[#EDE7DD] rounded-xl text-xs text-neutral-800 flex items-start gap-2.5">
+                                <AlertCircle className="h-4 w-4 text-[#BA954F] shrink-0 mt-0.5" />
+                                <div>
+                                  <span className="font-semibold text-[#BA954F]">Clock-In Explanation / Note: </span>
+                                  <span className="italic text-neutral-700">&ldquo;{record.clockInReason}&rdquo;</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Clock-Out / Early Reason if present */}
+                            {(record.clockOutReason || record.earlyClockOutReason) && (
                               <div className="p-3 bg-[#FDF6E9] border border-[#F9E2AF] rounded-xl text-xs text-[#B45309] flex items-start gap-2.5">
                                 <AlertCircle className="h-4 w-4 text-[#B45309] shrink-0 mt-0.5" />
                                 <div>
-                                  <span className="font-semibold text-[#B45309]">Early Clock-Out Reason: </span>
-                                  <span className="italic text-amber-950">&ldquo;{record.earlyClockOutReason}&rdquo;</span>
+                                  <span className="font-semibold text-[#B45309]">
+                                    {record.earlyClockOutReason ? 'Early Clock-Out Reason: ' : 'Clock-Out Reason: '}
+                                  </span>
+                                  <span className="italic text-amber-950">
+                                    &ldquo;{record.clockOutReason || record.earlyClockOutReason}&rdquo;
+                                  </span>
                                 </div>
                               </div>
                             )}

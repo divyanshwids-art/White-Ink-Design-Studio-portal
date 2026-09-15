@@ -5,6 +5,7 @@ import { ClockActionCard } from '../components/attendance/ClockActionCard';
 import { AttendanceHistoryTable } from '../components/attendance/AttendanceHistoryTable';
 import { TeamAttendanceView } from '../components/attendance/TeamAttendanceView';
 import { AttendanceOverviewChart } from '../components/attendance/AttendanceOverviewChart';
+import { EodReportsViewerModal } from '../components/attendance/EodReportsViewerModal';
 import {
   Clock,
   Calendar,
@@ -17,6 +18,7 @@ import {
   RefreshCw,
   ShieldAlert,
   Sparkles,
+  FileText,
 } from 'lucide-react';
 
 interface AttendancePageProps {
@@ -31,6 +33,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showEodViewer, setShowEodViewer] = useState(false);
 
   const isAdminOrSuperAdmin =
     currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN';
@@ -101,6 +104,17 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
         </div>
 
         <div className="flex items-center gap-3">
+          {isAdminOrSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowEodViewer(true)}
+              className="btn-gold-primary px-4 py-2 text-xs font-semibold inline-flex items-center gap-2 cursor-pointer"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span>Team EOD Reports</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleRefresh}
@@ -254,6 +268,14 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
             <TeamAttendanceView teamMembers={teamMembers} />
           )}
         </div>
+      )}
+
+      {/* Team EOD Reports Modal for Admins */}
+      {isAdminOrSuperAdmin && (
+        <EodReportsViewerModal
+          isOpen={showEodViewer}
+          onClose={() => setShowEodViewer(false)}
+        />
       )}
     </div>
   );

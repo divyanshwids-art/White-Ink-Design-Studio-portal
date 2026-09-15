@@ -18,8 +18,8 @@ attendanceRouter.use((req: AuthenticatedRequest, res: Response, next) => {
 attendanceRouter.post('/clock-in', (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { timestamp } = req.body || {};
-    const attendance = db.clockIn(userId, timestamp);
+    const { timestamp, clockInReason } = req.body || {};
+    const attendance = db.clockIn(userId, timestamp, clockInReason);
     // Background Google Sheets sync (non-blocking)
     syncAttendanceToSheet(attendance.id).catch((err) => console.warn('[SHEETS] Sync on clock-in skipped/failed:', err?.message));
     return res.status(200).json({
@@ -35,8 +35,8 @@ attendanceRouter.post('/clock-in', (req: AuthenticatedRequest, res: Response) =>
 attendanceRouter.post('/clock-out', (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { timestamp, earlyClockOutReason } = req.body || {};
-    const attendance = db.clockOut(userId, timestamp, earlyClockOutReason);
+    const { timestamp, earlyClockOutReason, clockOutReason, tomorrowTask } = req.body || {};
+    const attendance = db.clockOut(userId, timestamp, earlyClockOutReason, clockOutReason, tomorrowTask);
     // Background Google Sheets sync (non-blocking)
     syncAttendanceToSheet(attendance.id).catch((err) => console.warn('[SHEETS] Sync on clock-out skipped/failed:', err?.message));
     return res.status(200).json({
@@ -235,6 +235,82 @@ attendanceRouter.post('/admin-create', requireRoles(['SUPER_ADMIN', 'ADMIN']), (
     return res.status(201).json({ message: 'Attendance record created.', attendance: created });
   } catch (err: any) {
     return res.status(400).json({ message: err.message || 'Failed to create attendance record.' });
+  }
+});
+
+// --- EOD REPORT ENDPOINTS ---
+
+// POST /eod - Submit EOD Report for current user
+attendanceRouter.post('/eod', (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { date, summaryNote, blockers, completedTasks, inProgressTasks, tomorrowTask } = req.body || {};
+    const report = db.submitEodReport({
+      userId,
+      date,
+      summaryNote,
+      blockers,
+      completedTasks,
+      inProgressTasks,
+      tomorrowTask,
+    });
+    return res.status(200).json({
+      message: 'End of Day report submitted successfully.',
+      report,
+    });
+  } catch (err: any) {
+    return res.status(400).json({ message: err.message || 'Failed to submit EOD report.' });
+  }
+});
+
+// GET /eod/summary - Get today's daily task activity summary for current user (or query userId if admin)
+attendanceRouter.get('/eod/summary', (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const isSuperAdminOrAdmin = req.user!.role === 'SUPER_ADMIN' || req.user!.role === 'ADMIN';
+    let targetUserId = req.user!.id;
+    if (isSuperAdminOrAdmin && req.query.userId) {
+      targetUserId = req.query.userId as string;
+    }
+    const dateStr = (req.query.date as string) || undefined;
+    const summary = db.getDailyTaskSummary(targetUserId, dateStr);
+    return res.status(200).json(summary);
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Failed to fetch daily summary.' });
+  }
+});
+
+// GET /eod/today - Get current user's submitted EOD report for today
+attendanceRouter.get('/eod/today', (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const dateStr = (req.query.date as string) || undefined;
+    const report = db.getTodayEodReport(userId, dateStr);
+    return res.status(200).json({ report });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Failed to fetch today EOD report.' });
+  }
+});
+
+// GET /eod/team - Get team EOD reports (Admin / Super Admin only, or filtered)
+attendanceRouter.get('/eod/team', (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const isSuperAdminOrAdmin = req.user!.role === 'SUPER_ADMIN' || req.user!.role === 'ADMIN';
+    const filters: any = {};
+
+    if (req.query.date) filters.date = req.query.date as string;
+    if (req.query.startDate) filters.startDate = req.query.startDate as string;
+    if (req.query.endDate) filters.endDate = req.query.endDate as string;
+
+    if (!isSuperAdminOrAdmin) {
+      filters.userId = req.user!.id;
+    } else if (req.query.userId) {
+      filters.userId = req.query.userId as string;
+    }
+
+    const reports = db.getEodReports(filters);
+    return res.status(200).json(reports);
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Failed to fetch team EOD reports.' });
   }
 });
 

@@ -8,6 +8,7 @@ import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
+import { TaskDetailPage } from './pages/TaskDetailPage';
 import { KanbanPage } from './pages/KanbanPage';
 import { TasksPage } from './pages/TasksPage';
 import { ClientsPage } from './pages/ClientsPage';
@@ -102,6 +103,10 @@ function MainApp() {
   const projectDetailMatch = currentPath.match(/^\/projects\/([a-zA-Z0-9_-]+)$/);
   const activeProjectId = projectDetailMatch ? projectDetailMatch[1] : null;
 
+  // Parse task detail route: /tasks/:id
+  const taskDetailMatch = currentPath.match(/^\/tasks\/([a-zA-Z0-9_-]+)$/);
+  const activeTaskId = taskDetailMatch ? taskDetailMatch[1] : null;
+
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1C1917] flex flex-col antialiased selection:bg-[#EAE0D0] selection:text-[#1C1917]">
       {/* Top Navigation */}
@@ -124,6 +129,13 @@ function MainApp() {
               projectId={activeProjectId}
               onBack={() => navigate('/projects')}
               onNavigateToKanban={() => navigate('/kanban')}
+              onNavigate={navigate}
+            />
+          ) : activeTaskId ? (
+            <TaskDetailPage
+              taskId={activeTaskId}
+              onBack={() => navigate('/tasks')}
+              onNavigate={navigate}
             />
           ) : currentPath === '/projects' ? (
             <ProjectsPage onNavigateToProject={(id) => navigate(`/projects/${id}`)} />
@@ -139,7 +151,7 @@ function MainApp() {
               <KanbanPage />
             )
           ) : currentPath === '/tasks' ? (
-            <TasksPage />
+            <TasksPage onNavigate={navigate} />
           ) : currentPath === '/todos' ? (
             user.role === 'CLIENT' || user.role === 'CLIENT_ADMIN' ? (
               <DashboardPage

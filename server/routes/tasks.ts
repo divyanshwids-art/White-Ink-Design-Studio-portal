@@ -185,6 +185,16 @@ tasksRouter.post('/import', requireAuth, excelUpload.single('file'), (req: Authe
         return;
       }
 
+      // Validation 1b: Description (Mandatory)
+      if (!description || !description.trim()) {
+        failedRows.push({
+          row: rowNum,
+          title,
+          reason: 'Task description is mandatory.',
+        });
+        return;
+      }
+
       // Validation 2: Project
       if (!projectIdentifier) {
         failedRows.push({
@@ -393,6 +403,9 @@ tasksRouter.get('/', requireAuth, (req: AuthenticatedRequest, res: Response) => 
   const currentUser = req.user!;
   const { search, status, priority, projectId, assignedToId } = req.query;
 
+  // Trigger overdue checks for non-completed tasks
+  db.checkAndNotifyOverdueTasks();
+
   let allTasks = db.getTasks();
 
   // Role scoping
@@ -480,29 +493,32 @@ tasksRouter.get('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) 
   // Role scoping
   if (currentUser.role === 'CLIENT' || currentUser.role === 'CLIENT_ADMIN') {
     const client = db.getClientById(project.clientId);
-    if (!client || ((!currentUser.clientId || client.id !== currentUser.clientId) && client.email.toLowerCase() !== currentUser.email.toLowerCase() && client.id !== currentUser.id)) {
-      return res.status(403).json({ message: 'Forbidden: Access to this task is restricted.' });
+    const isOwner =
+      client &&
+      ((currentUser.clientId && client.id === currentUser.clientId) ||
+        client.email.toLowerCase() === currentUser.email.toLowerCase() ||
+        client.id === currentUser.id);
+    if (!isOwner) {
+      return res.status(403).json({ message: 'Forbidden: You cannot access this task.' });
     }
   } else if (currentUser.role === 'TEAM_MEMBER') {
     const isAssigned = task.assignedToId === currentUser.id;
     const isProjectMember = db.getProjectMembers(task.projectId).some((pm) => pm.userId === currentUser.id);
-    if (!isAssigned && !isProjectMember && task.createdById !== currentUser.id && project.createdById !== currentUser.id) {
-      return res.status(403).json({ message: 'Forbidden: Access to this task is restricted.' });
+    if (!isAssigned && !isProjectMember && project.createdById !== currentUser.id) {
+      return res.status(403).json({ message: 'Forbidden: You do not have access to this task.' });
     }
   }
 
   const assignedTo = task.assignedToId ? db.getUserById(task.assignedToId) : null;
   const createdBy = db.getUserById(task.createdById);
-  const comments = db.getComments()
-    .filter((c) => c.taskId === task.id)
-    .map((c) => {
-      const u = db.getUserById(c.userId);
-      return {
-        ...c,
-        user: u ? sanitizeUser(u) : { name: 'Unknown User' },
-      };
-    })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const rawComments = db.getComments().filter((c) => c.taskId === task.id);
+  const comments = rawComments.map((c) => {
+    const commentUser = db.getUserById(c.userId);
+    return {
+      ...c,
+      user: commentUser ? sanitizeUser(commentUser) : undefined,
+    };
+  });
 
   return res.json({
     ...task,
@@ -524,8 +540,8 @@ tasksRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =>
       return res.status(403).json({ message: 'Clients cannot create internal tasks.' });
     }
 
-    if (!title || !projectId) {
-      return res.status(400).json({ message: 'Task title and Project ID are required.' });
+    if (!title || !title.trim() || !description || !description.trim() || !projectId) {
+      return res.status(400).json({ message: 'Task title, description, and Project are required.' });
     }
 
     const project = db.getProjectById(projectId);
@@ -543,7 +559,7 @@ tasksRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =>
     const newTask = db.createTask({
       id: `tsk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       title: title.trim(),
-      description: description ? description.trim() : null,
+      description: description.trim(),
       projectId,
       assignedToId: assignedToId || null,
       createdById: currentUser.id,
@@ -600,7 +616,12 @@ tasksRouter.patch('/:id', requireAuth, (req: AuthenticatedRequest, res: Response
 
     const updates: any = {};
     if (title) updates.title = title.trim();
-    if (description !== undefined) updates.description = description ? description.trim() : null;
+    if (description !== undefined) {
+      if (!description || !description.trim()) {
+        return res.status(400).json({ message: 'Task description cannot be empty.' });
+      }
+      updates.description = description.trim();
+    }
     if (projectId) updates.projectId = projectId;
     if (assignedToId !== undefined) updates.assignedToId = assignedToId || null;
     if (status) updates.status = status;
@@ -609,10 +630,57 @@ tasksRouter.patch('/:id', requireAuth, (req: AuthenticatedRequest, res: Response
     if (dueDate !== undefined) updates.dueDate = dueDate;
 
     const updated = db.updateTask(id, updates);
-    return res.json(updated);
+    if (!updated) {
+      return res.status(500).json({ message: 'Failed to update task.' });
+    }
+
+    const project = db.getProjectById(updated.projectId);
+    const assignedTo = updated.assignedToId ? db.getUserById(updated.assignedToId) : null;
+    const createdBy = db.getUserById(updated.createdById);
+
+    return res.json({
+      ...updated,
+      revisionRequest: updated.revisionRequest ? JSON.parse(updated.revisionRequest) : null,
+      project: project ? { id: project.id, name: project.name } : null,
+      assignedTo: assignedTo ? sanitizeUser(assignedTo) : null,
+      createdBy: createdBy ? sanitizeUser(createdBy) : null,
+    });
   } catch (error: any) {
     console.error('Error updating task:', error);
     return res.status(500).json({ message: 'Failed to update task.' });
+  }
+});
+
+// PATCH /api/tasks/:id/overdue-reason
+tasksRouter.patch('/:id/overdue-reason', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const currentUser = req.user!;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ message: 'Delay explanation reason is required.' });
+    }
+
+    const updated = db.setTaskOverdueReason(id, currentUser.id, reason.trim());
+    if (!updated) {
+      return res.status(403).json({ message: 'Forbidden: Only the assigned member or creator can submit delay reasons.' });
+    }
+
+    const project = db.getProjectById(updated.projectId);
+    const assignedTo = updated.assignedToId ? db.getUserById(updated.assignedToId) : null;
+
+    return res.json({
+      message: 'Delay reason submitted successfully.',
+      task: {
+        ...updated,
+        project: project ? { id: project.id, name: project.name } : null,
+        assignedTo: assignedTo ? sanitizeUser(assignedTo) : null,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error saving delay reason:', error);
+    return res.status(500).json({ message: 'Failed to submit delay explanation.' });
   }
 });
 
@@ -1041,3 +1109,45 @@ tasksRouter.delete('/:id', requireAuth, (req: AuthenticatedRequest, res: Respons
 
   return res.json({ message: 'Task deleted successfully.', deletedId: id });
 });
+
+// POST /api/tasks/:id/time-log - Log time spent on task
+tasksRouter.post('/:id/time-log', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { durationMinutes, notes, date } = req.body;
+    const currentUser = req.user!;
+
+    if (!durationMinutes || isNaN(Number(durationMinutes))) {
+      return res.status(400).json({ message: 'durationMinutes is required and must be a number.' });
+    }
+
+    const task = db.getTaskById(id);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found.' });
+    }
+
+    const log = db.logTaskTime({
+      taskId: id,
+      userId: currentUser.id,
+      durationMinutes: Number(durationMinutes),
+      notes: notes || undefined,
+      date: date || undefined,
+    });
+
+    return res.status(201).json({ message: 'Time logged successfully.', log });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Failed to log task time.' });
+  }
+});
+
+// GET /api/tasks/:id/time-logs - Get time logs for a specific task
+tasksRouter.get('/:id/time-logs', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const logs = db.getTaskTimeLogs({ taskId: id });
+    return res.json(logs);
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Failed to get task time logs.' });
+  }
+});
+

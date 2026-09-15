@@ -19,7 +19,34 @@ import {
   Phone,
   Camera,
   Upload,
+  Award,
+  Plus,
+  X as XIcon,
+  Tag,
+  Briefcase,
+  Layers,
 } from 'lucide-react';
+
+const SUGGESTED_SKILLS = [
+  'AutoCAD',
+  'Revit Architecture',
+  'SketchUp 3D',
+  '3ds Max',
+  'V-Ray Rendering',
+  'Corona Renderer',
+  'Adobe Photoshop',
+  'Lumion',
+  'Rhino 3D',
+  'BIM Modeling',
+  'Spatial Planning',
+  'Interior Styling',
+  'Detail Working Drawings',
+  'Lighting Design',
+  'Site Supervision',
+  'BOQ & Estimation',
+  'Client Presentations',
+  'Material Selection',
+];
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -33,6 +60,12 @@ export const ProfilePage: React.FC = () => {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [profileEmail, setProfileEmail] = useState(user?.email || '');
   const [profileImageUrl, setProfileImageUrl] = useState(user?.profileImage || '');
+  const [skills, setSkills] = useState<string[]>(user?.skills || []);
+  const [newSkillInput, setNewSkillInput] = useState('');
+  const [skillsSaving, setSkillsSaving] = useState(false);
+  const [skillsSuccess, setSkillsSuccess] = useState<string | null>(null);
+  const [skillsError, setSkillsError] = useState<string | null>(null);
+
   const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
   const [clientRecord, setClientRecord] = useState<Client | null>(null);
@@ -57,8 +90,43 @@ export const ProfilePage: React.FC = () => {
       setProfileName(user.name || '');
       setProfileEmail(user.email || '');
       setProfileImageUrl(user.profileImage || '');
+      setSkills(user.skills || []);
     }
   }, [user]);
+
+  const handleAddSkill = (skillToAdd?: string) => {
+    const val = (skillToAdd || newSkillInput).trim();
+    if (!val) return;
+    if (skills.some((s) => s.toLowerCase() === val.toLowerCase())) {
+      setSkillsError(`Skill "${val}" is already in your profile.`);
+      setTimeout(() => setSkillsError(null), 3000);
+      return;
+    }
+    setSkills([...skills, val]);
+    setNewSkillInput('');
+    setSkillsError(null);
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setSkills(skills.filter((s) => s !== skillToRemove));
+  };
+
+  const handleSaveSkills = async () => {
+    if (!user?.id) return;
+    setSkillsSaving(true);
+    setSkillsSuccess(null);
+    setSkillsError(null);
+    try {
+      await api.updateUser(user.id, { skills });
+      await refreshUser();
+      setSkillsSuccess('Skills & professional expertise updated successfully.');
+      setTimeout(() => setSkillsSuccess(null), 4000);
+    } catch (err: any) {
+      setSkillsError(err.message || 'Failed to save skills.');
+    } finally {
+      setSkillsSaving(false);
+    }
+  };
 
   // Load client record for phone & company details
   useEffect(() => {
@@ -128,6 +196,7 @@ export const ProfilePage: React.FC = () => {
         name: profileName.trim(),
         email: profileEmail.trim().toLowerCase(),
         profileImage: profileImageUrl.trim() || undefined,
+        skills,
       });
 
       if (isClient && clientRecord) {
@@ -294,6 +363,32 @@ export const ProfilePage: React.FC = () => {
             <p className="text-xs text-neutral-600 pt-1 leading-relaxed max-w-xl">
               {getRoleDescription()}
             </p>
+
+            {/* LinkedIn-style Skills Badges Preview in Hero */}
+            {skills && skills.length > 0 && (
+              <div className="pt-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#8C7E72] uppercase tracking-wider mb-1.5">
+                  <Award className="h-3.5 w-3.5 text-[#BA954F]" />
+                  Skills & Expertise ({skills.length})
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {skills.slice(0, 8).map((sk) => (
+                    <span
+                      key={sk}
+                      className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#FAF4EC] text-[#845F2F] border border-[#EDE3D4] shadow-2xs inline-flex items-center gap-1"
+                    >
+                      <Tag className="h-2.5 w-2.5 text-[#BA954F]" />
+                      {sk}
+                    </span>
+                  ))}
+                  {skills.length > 8 && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#FAF7F2] text-[#78716C] border border-[#EDE7DD]">
+                      +{skills.length - 8} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -455,6 +550,153 @@ export const ProfilePage: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* LinkedIn-style Skills & Professional Expertise Card (Internal Team Members & Admins) */}
+      {!isClient && (
+        <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden space-y-5">
+          <div className="px-6 py-4 border-b border-[#EDE7DD] bg-[#FAF7F2]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="font-serif text-base font-bold text-neutral-900 flex items-center gap-2">
+                <Award className="h-4 w-4 text-[#BA954F]" />
+                Skills & Professional Expertise
+              </h2>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Add and highlight your design tools, software proficiencies, and architectural competencies (LinkedIn style)
+              </p>
+            </div>
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] self-start sm:self-auto">
+              {skills.length} {skills.length === 1 ? 'Skill' : 'Skills'} Added
+            </span>
+          </div>
+
+          <div className="p-6 pt-1 space-y-6">
+            {/* Feedback notifications */}
+            {skillsSuccess && (
+              <div className="flex items-center gap-2 p-3 text-sm text-[#2D6A4F] bg-[#EBF3ED] border border-[#D1E7D8] font-medium rounded-xl">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2D6A4F]" />
+                {skillsSuccess}
+              </div>
+            )}
+            {skillsError && (
+              <div className="flex items-center gap-2 p-3 text-sm text-[#9E2A2B] bg-[#FDF0ED] border border-[#F5D0C5] rounded-xl font-medium">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {skillsError}
+              </div>
+            )}
+
+            {/* Add Skill Input Form */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700">
+                Add a Skill or Software Competency
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C7E72]" />
+                  <input
+                    type="text"
+                    value={newSkillInput}
+                    onChange={(e) => setNewSkillInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddSkill();
+                      }
+                    }}
+                    placeholder="e.g. AutoCAD, Revit, 3ds Max, V-Ray, Interior Styling..."
+                    className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl text-neutral-900 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] transition-all"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAddSkill()}
+                  disabled={!newSkillInput.trim()}
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-[#BA954F] hover:bg-[#A17B2F] disabled:opacity-40 rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-xs btn-hover-lift"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Skill
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Add Suggestions */}
+            <div className="space-y-2 pt-1">
+              <span className="text-[11px] font-bold text-[#8C7E72] uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-[#BA954F]" />
+                Suggested Studio & Architectural Proficiencies:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {SUGGESTED_SKILLS.map((suggested) => {
+                  const isAlreadyAdded = skills.some((s) => s.toLowerCase() === suggested.toLowerCase());
+                  if (isAlreadyAdded) return null;
+                  return (
+                    <button
+                      key={suggested}
+                      type="button"
+                      onClick={() => handleAddSkill(suggested)}
+                      className="px-3 py-1 rounded-full text-xs font-medium bg-[#FAF7F2] hover:bg-[#FAF4EC] hover:text-[#BA954F] text-neutral-700 border border-[#EDE7DD] hover:border-[#BA954F] transition-all inline-flex items-center gap-1 cursor-pointer group"
+                    >
+                      <Plus className="h-3 w-3 text-neutral-400 group-hover:text-[#BA954F] transition-colors" />
+                      {suggested}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Current Active Skills List */}
+            <div className="space-y-3 pt-2">
+              <h3 className="text-xs font-bold text-neutral-800 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="h-4 w-4 text-[#BA954F]" />
+                Your Active Profile Skills ({skills.length})
+              </h3>
+              {skills.length === 0 ? (
+                <div className="p-6 rounded-2xl border border-dashed border-[#EDE7DD] bg-[#FAF7F2]/40 text-center space-y-1">
+                  <p className="text-xs font-semibold text-neutral-700">No skills added yet</p>
+                  <p className="text-[11px] text-neutral-500">
+                    Add skills from above or click suggested tags to showcase your expertise on your profile.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2.5 p-4 rounded-2xl bg-[#FAF7F2]/60 border border-[#EDE7DD]">
+                  {skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-neutral-900 border border-[#EDE3D4] shadow-xs group hover:border-[#BA954F] transition-all"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#BA954F]" />
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="text-neutral-400 hover:text-[#9E2A2B] hover:bg-neutral-100 rounded-full p-0.5 transition-colors cursor-pointer"
+                        title={`Remove ${skill}`}
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Save Skills Button */}
+            <div className="flex items-center justify-between pt-4 border-t border-[#EDE7DD]">
+              <span className="text-[11px] text-neutral-500">
+                Skills are visible to managers, admins, and displayed on your studio profile.
+              </span>
+              <button
+                type="button"
+                onClick={handleSaveSkills}
+                disabled={skillsSaving}
+                className="btn-gold-primary px-6 py-2.5 text-sm font-semibold inline-flex items-center gap-2 cursor-pointer shadow-xs btn-hover-lift disabled:opacity-50"
+              >
+                {skillsSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {skillsSaving ? 'Saving Skills...' : 'Save Skills & Endorsements'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Change Password Card - Internal Staff Only (Hidden for clients) */}
       {!isClient && (

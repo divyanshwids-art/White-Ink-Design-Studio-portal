@@ -14,9 +14,14 @@ import { PriorityBadge } from '../components/common/PriorityBadge';
 import { ProgressBar } from '../components/common/ProgressBar';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { TodoModal } from '../components/todos/TodoModal';
+import { DeadlineCountdownBadge } from '../components/tasks/DeadlineCountdownBadge';
+import { TaskFocusTimerModal } from '../components/tasks/TaskFocusTimerModal';
+import { DailyTaskActivityCard } from '../components/dashboard/DailyTaskActivityCard';
+import { TaskOverdueReasonModal } from '../components/tasks/TaskOverdueReasonModal';
 import {
   FolderKanban,
   CheckCircle2,
+  Clock,
   FileCheck,
   Users,
   AlertCircle,
@@ -27,9 +32,17 @@ import {
   Check,
   Calendar,
   UserCheck,
+  Building,
   Building2,
   Bell,
   Zap,
+  Play,
+  Timer,
+  TrendingUp,
+  Activity,
+  Layers,
+  Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -52,6 +65,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [todos, setTodos] = useState<PersonalTodo[]>([]);
   const [internalUsers, setInternalUsers] = useState<User[]>([]);
   const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
+  const [focusTimerTask, setFocusTimerTask] = useState<any>(null);
+  const [isFocusTimerOpen, setIsFocusTimerOpen] = useState(false);
+  const [overdueTask, setOverdueTask] = useState<any>(null);
+  const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -230,7 +247,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* Stats Grid */}
       {stats && (
-        <div className={`grid gap-4 ${isClient ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
+        <div className={`grid gap-4 ${isSuperAdminOrAdmin ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
           <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col justify-between card-hover-lift">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">Active Projects</span>
@@ -288,7 +305,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           </div>
 
-          {!isClient && (
+          {isSuperAdminOrAdmin && (
             <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col justify-between card-hover-lift">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">Team Members</span>
@@ -364,9 +381,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     </div>
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex-1 max-w-[180px]"><ProgressBar progress={project.progress} size="sm" /></div>
-                      <span className="text-[11px] text-[#A8A29E] shrink-0">
-                        {project.dueDate ? `Due ${new Date(project.dueDate).toLocaleDateString()}` : 'No deadline'}
-                      </span>
+                      <DeadlineCountdownBadge dueDate={project.dueDate} status={project.status} size="sm" />
                     </div>
                   </div>
                 ))
@@ -390,23 +405,65 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <div className="p-8 text-center text-xs text-[#78716C]">No tasks found.</div>
             ) : (
               recentTasks.map((task) => (
-                <div key={task.id} className="p-4 hover:bg-[#FAF7F2] transition-colors flex items-center justify-between gap-3">
+                <div
+                  key={task.id}
+                  onClick={() => onNavigate(`/tasks/${task.id}`)}
+                  className="p-4 hover:bg-[#FAF7F2] transition-colors flex items-center justify-between gap-3 cursor-pointer group"
+                >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       {isInternalStaff && <PriorityBadge priority={task.priority} size="sm" />}
                       <span className="text-xs text-[#78716C] truncate">{task.projectName}</span>
+                      {task.dueDate && (
+                        <DeadlineCountdownBadge dueDate={task.dueDate} status={task.status} size="sm" />
+                      )}
                     </div>
-                    <p className="text-xs font-bold text-[#1C1917] truncate">{task.title}</p>
+                    <p className="text-xs font-bold text-[#1C1917] group-hover:text-[#BA954F] transition-colors truncate">{task.title}</p>
                     {task.assignedTo && (
                       <p className="text-[11px] text-[#78716C] mt-0.5">
                         Assigned to <span className="font-semibold text-[#1C1917]">{task.assignedTo.name}</span>
                       </p>
                     )}
                   </div>
-                  <div className="shrink-0">
+                  <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    {/* Overdue delay button for team member */}
+                    {task.dueDate &&
+                      new Date(task.dueDate).getTime() < Date.now() &&
+                      task.status !== 'COMPLETED' &&
+                      user?.role === 'TEAM_MEMBER' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOverdueTask(task);
+                            setIsOverdueModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-semibold text-[#B91C1C] hover:text-[#991B1B] bg-[#FDF2F0] hover:bg-[#FBE8E6] border border-[#F5D5D0] rounded-xl transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          title="Explain delay reason to Admin"
+                        >
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>{task.overdueReason ? 'Edit Reason' : 'Explain Delay'}</span>
+                        </button>
+                    )}
+
+                    {isInternalStaff && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFocusTimerTask(task);
+                          setIsFocusTimerOpen(true);
+                        }}
+                        className="p-1.5 rounded-xl text-[#BA954F] hover:text-[#A17B2F] hover:bg-[#FAF4EC] border border-[#EDE3D4] transition-colors cursor-pointer"
+                        title="Start Focus Timer with Alarm"
+                      >
+                        <Timer className="h-4 w-4" />
+                      </button>
+                    )}
                     {isInternalStaff ? (
                       <select
                         value={task.status}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => handleQuickTaskStatus(task.id, e.target.value as TaskStatus)}
                         className="text-xs py-1.5 px-2.5 border border-[#DFD5C6] rounded-xl bg-white font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
                       >
@@ -425,6 +482,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Daily Task Activity & Time Tracking Widget — Internal Staff */}
+      {isInternalStaff && (
+        <DailyTaskActivityCard onRefresh={loadDashboardData} isAdmin={isSuperAdminOrAdmin} />
+      )}
 
       {/* Todo List — Internal staff only */}
       {isInternalStaff && (
@@ -488,9 +550,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         </div>
                       </div>
                     </div>
-                    <button type="button" onClick={() => handleQuickTodoToggle(todo)} className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-xl text-[#57534E] hover:text-[#1C1917] hover:bg-[#F5EFE6] border border-[#EDE7DD] transition-colors cursor-pointer">
-                      Done
-                    </button>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFocusTimerTask(todo);
+                          setIsFocusTimerOpen(true);
+                        }}
+                        className="p-1.5 rounded-xl text-[#BA954F] hover:text-[#A17B2F] hover:bg-[#FAF4EC] border border-[#EDE3D4] transition-colors cursor-pointer"
+                        title="Start Focus Timer with Alarm"
+                      >
+                        <Timer className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" onClick={() => handleQuickTodoToggle(todo)} className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-xl text-[#57534E] hover:text-[#1C1917] hover:bg-[#F5EFE6] border border-[#EDE7DD] transition-colors cursor-pointer">
+                        Done
+                      </button>
+                    </div>
                   </div>
                 );
               })
@@ -511,6 +586,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         onSuccess={loadDashboardData}
         internalMembers={internalUsers}
       />
+
+      {/* Focus Timer Modal */}
+      {focusTimerTask && (
+        <TaskFocusTimerModal
+          isOpen={isFocusTimerOpen}
+          onClose={() => {
+            setIsFocusTimerOpen(false);
+            setFocusTimerTask(null);
+          }}
+          task={focusTimerTask}
+          onTimeLogged={loadDashboardData}
+        />
+      )}
+
+      {/* Task Overdue Delay Explanation Modal */}
+      {overdueTask && (
+        <TaskOverdueReasonModal
+          isOpen={isOverdueModalOpen}
+          onClose={() => {
+            setIsOverdueModalOpen(false);
+            setOverdueTask(null);
+          }}
+          task={overdueTask}
+          onSuccess={loadDashboardData}
+        />
+      )}
     </div>
   );
 };
+

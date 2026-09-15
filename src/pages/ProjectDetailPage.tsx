@@ -41,11 +41,13 @@ interface ProjectDetailPageProps {
   projectId: string;
   onBack: () => void;
   onNavigateToKanban?: () => void;
+  onNavigate?: (path: string) => void;
 }
 
 export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   projectId,
   onBack,
+  onNavigate,
 }) => {
   const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
@@ -485,10 +487,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               project.tasks.map((task) => (
                 <div
                   key={task.id}
-                  onClick={isClient ? () => setClientViewTask(task) : undefined}
-                  className={`p-4 sm:p-5 hover:bg-[#FAF7F2] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4${
-                    isClient ? ' cursor-pointer' : ''
-                  }`}
+                  onClick={() => onNavigate ? onNavigate(`/tasks/${task.id}`) : setClientViewTask(task)}
+                  className="p-4 sm:p-5 hover:bg-[#FAF7F2] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group"
                 >
                   <div className="space-y-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -1032,8 +1032,8 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
         </div>
       )}
 
-      {/* Client Task Detail Modal */}
-      {clientViewTask && isClient && (
+      {/* Universal Task Detail Modal */}
+      {clientViewTask && (
         <ClientTaskDetailModal
           task={clientViewTask}
           onClose={() => setClientViewTask(null)}
@@ -1044,6 +1044,17 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           onRequestChanges={(task) => {
             setClientViewTask(null);
             setRequestChangesTask(task);
+          }}
+          onSubmitTask={(task) => {
+            setSubmitTask(task);
+          }}
+          onEditTask={(task) => {
+            setEditingTask(task);
+            setIsTaskModalOpen(true);
+          }}
+          onStatusChange={async (taskId, status) => {
+            await handleQuickTaskStatus(taskId, status);
+            setClientViewTask((prev) => (prev && prev.id === taskId ? { ...prev, status } : prev));
           }}
         />
       )}

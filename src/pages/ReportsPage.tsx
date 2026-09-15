@@ -489,6 +489,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
                   <tr className="border-b border-gold-200 text-gold-900 bg-gold-50/70">
                     <th className="table-header py-2.5 px-3">Team Member</th>
                     <th className="table-header py-2.5 px-3">Role</th>
+                    <th className="table-header py-2.5 px-3 text-center">Date</th>
                     <th className="table-header py-2.5 px-3 text-center">Active Projects</th>
                     <th className="table-header py-2.5 px-3 text-center">Assigned Tasks</th>
                     <th className="table-header py-2.5 px-3 text-center">In Progress</th>
@@ -500,6 +501,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
                   {teamWorkload.map((m) => {
                     const workloadScore = m.activeTasksCount * 2;
                     const isHeavy = workloadScore > 10;
+                    const todayFormatted = new Date().toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    });
 
                     return (
                       <tr key={m.user.id} className="hover:bg-gold-50/60 transition-colors">
@@ -526,6 +532,9 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
                           <span className="px-2 py-0.5 bg-gold-50 border border-gold-200 rounded text-gold-900 font-semibold text-[10px]">
                             {m.user.role}
                           </span>
+                        </td>
+                        <td className="py-3 px-3 text-center text-gold-800 font-medium text-[11px] whitespace-nowrap">
+                          {todayFormatted}
                         </td>
                         <td className="py-3 px-3 text-center font-bold text-heading">
                           {m.assignedProjectCount}

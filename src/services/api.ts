@@ -23,6 +23,10 @@ import {
   PersonalTodo,
   CreateTodoInput,
   UpdateTodoInput,
+  TaskTimeLog,
+  DailyActivitySummary,
+  EodReport,
+  SubmitEodInput,
 } from '../types';
 
 const API_BASE = '/api';
@@ -126,7 +130,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  updateUser: (id: string, payload: Partial<{ name: string; email: string; password: string; role: Role; profileImage?: string; clientId?: string | null }>) =>
+  updateUser: (id: string, payload: Partial<{ name: string; email: string; password: string; role: Role; profileImage?: string; clientId?: string | null; skills?: string[] | null }>) =>
     request<User>(`/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -445,13 +449,13 @@ export const api = {
   resetDemoDatabase: () => request<{ message: string }>('/dashboard/reset-seed', { method: 'POST' }),
 
   // Attendance
-  clockIn: (payload?: { timestamp?: string }) =>
+  clockIn: (payload?: { timestamp?: string; clockInReason?: string }) =>
     request<{ message: string; attendance: Attendance }>('/attendance/clock-in', {
       method: 'POST',
       body: JSON.stringify(payload || {}),
     }),
 
-  clockOut: (payload?: { timestamp?: string; earlyClockOutReason?: string }) =>
+  clockOut: (payload?: { timestamp?: string; earlyClockOutReason?: string; clockOutReason?: string; tomorrowTask?: string }) =>
     request<{ message: string; attendance: Attendance }>('/attendance/clock-out', {
       method: 'POST',
       body: JSON.stringify(payload || {}),
@@ -468,6 +472,52 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload || {}),
     }),
+
+  // Task Time Logging
+  logTaskTime: (taskId: string, payload: { durationMinutes: number; notes?: string; date?: string }) =>
+    request<{ message: string; log: TaskTimeLog }>(`/tasks/${taskId}/time-log`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getTaskTimeLogs: (taskId: string) =>
+    request<TaskTimeLog[]>(`/tasks/${taskId}/time-logs`),
+
+  submitTaskOverdueReason: (taskId: string, reason: string) =>
+    request<{ message: string; task: Task }>(`/tasks/${taskId}/overdue-reason`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    }),
+
+  // EOD Reports
+  submitEodReport: (payload: SubmitEodInput) =>
+    request<{ message: string; report: EodReport }>('/attendance/eod', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getDailyActivitySummary: (params?: { userId?: string; date?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.userId) query.append('userId', params.userId);
+    if (params?.date) query.append('date', params.date);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<DailyActivitySummary>(`/attendance/eod/summary${qs}`);
+  },
+
+  getTodayEodReport: (date?: string) => {
+    const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+    return request<{ report: EodReport | null }>(`/attendance/eod/today${qs}`);
+  },
+
+  getTeamEodReports: (params?: { userId?: string; date?: string; startDate?: string; endDate?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.userId && params.userId !== 'ALL') query.append('userId', params.userId);
+    if (params?.date) query.append('date', params.date);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<EodReport[]>(`/attendance/eod/team${qs}`);
+  },
 
   getTodayAttendance: (date?: string) => {
     const qs = date ? `?date=${encodeURIComponent(date)}` : '';

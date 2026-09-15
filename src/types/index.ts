@@ -29,6 +29,7 @@ export interface User {
   bannerImage?: string | null;
   fcmToken?: string | null;
   clientId?: string | null;
+  skills?: string[] | null;
   mustChangePassword?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -218,6 +219,9 @@ export interface Task {
   clientReviewComments?: string | null;
   reviewedById?: string | null;
   reviewedAt?: string | null;
+  overdueReason?: string | null;
+  overdueReasonSubmittedAt?: string | null;
+  overdueNotifiedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
   project?: { id: string; name: string; status?: ProjectStatus } | null;
@@ -304,6 +308,8 @@ export interface Attendance {
   clockIn?: string | null;
   clockOut?: string | null;
   earlyClockOutReason?: string | null;
+  clockInReason?: string | null;
+  clockOutReason?: string | null;
   status: AttendanceStatus;
   totalWorkingMinutes: number;
   totalBreakMinutes: number;
@@ -595,5 +601,77 @@ export interface UpdateTodoInput {
   dueDate?: string | null;
   assignedToId?: string | null;
   completed?: boolean;
+}
+
+export interface TaskTimeLog {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  projectId: string;
+  projectName: string;
+  userId: string;
+  userName?: string;
+  date: string; // YYYY-MM-DD
+  durationMinutes: number;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface DailyActivityTaskItem {
+  id: string;
+  title: string;
+  projectName?: string;
+  projectId?: string;
+  status: string;
+  priority?: string;
+  totalLoggedMinutes: number;
+  isCompleted: boolean;
+  type: 'TASK' | 'TODO';
+}
+
+export interface DailyActivitySummary {
+  date: string;
+  userId: string;
+  userName: string;
+  totalWorkingMinutes: number;
+  totalLoggedTaskMinutes: number;
+  completedTasksCount: number;
+  inProgressTasksCount: number;
+  tasks: DailyActivityTaskItem[];
+}
+
+export interface EodTaskReportItem {
+  id: string;
+  title: string;
+  projectName?: string;
+  timeSpentMinutes?: number;
+  progress?: number;
+  status?: string;
+  type: 'TASK' | 'TODO';
+}
+
+export interface EodReport {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  date: string; // YYYY-MM-DD
+  totalWorkingMinutes: number;
+  totalBreakMinutes: number;
+  completedTasks: EodTaskReportItem[];
+  inProgressTasks: EodTaskReportItem[];
+  summaryNote?: string | null;
+  blockers?: string | null;
+  submittedAt: string;
+  user?: User;
+}
+
+export interface SubmitEodInput {
+  date?: string;
+  summaryNote?: string | null;
+  blockers?: string | null;
+  completedTasks?: EodTaskReportItem[];
+  inProgressTasks?: EodTaskReportItem[];
+  tomorrowTask?: string | null;
 }
 

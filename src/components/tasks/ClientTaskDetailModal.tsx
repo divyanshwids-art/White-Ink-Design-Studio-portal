@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Task, Comment } from '../../types';
+import { Task, TaskStatus, Comment } from '../../types';
 import { api } from '../../services/api';
+import { PriorityBadge } from '../common/PriorityBadge';
+import { StatusBadge } from '../common/StatusBadge';
+import { DeadlineCountdownBadge } from './DeadlineCountdownBadge';
 import {
   X,
   Calendar,
@@ -9,21 +12,41 @@ import {
   RefreshCw,
   Send,
   MessageSquare,
-  AlertCircle,
+  AlertTriangle,
+  Timer,
+  ExternalLink,
+  Edit2,
+  Briefcase,
+  FileCheck2,
+  Clock,
+  Sparkles,
+  Info,
 } from 'lucide-react';
 
-interface ClientTaskDetailModalProps {
-  task: Task;
+export interface ClientTaskDetailModalProps {
+  task: Task | null;
+  isOpen?: boolean;
   onClose: () => void;
-  onApproved: () => void;
-  onRequestChanges: (task: Task) => void;
+  onApproved?: () => void;
+  onRequestChanges?: (task: Task) => void;
+  onStartTimer?: (task: Task) => void;
+  onSubmitTask?: (task: Task) => void;
+  onExplainDelay?: (task: Task) => void;
+  onEditTask?: (task: Task) => void;
+  onStatusChange?: (taskId: string, status: TaskStatus) => Promise<void> | void;
 }
 
 export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
   task,
+  isOpen = true,
   onClose,
   onApproved,
   onRequestChanges,
+  onStartTimer,
+  onSubmitTask,
+  onExplainDelay,
+  onEditTask,
+  onStatusChange,
 }) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -32,7 +55,13 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
   const [isApproving, setIsApproving] = useState(false);
   const [loadingComments, setLoadingComments] = useState(true);
 
+  const isClient = user?.role === 'CLIENT' || user?.role === 'CLIENT_ADMIN';
+  const isAdminOrSuper = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+  const isTeamMember = user?.role === 'TEAM_MEMBER';
+  const isAssignee = task?.assignedToId === user?.id;
+
   const loadComments = useCallback(async () => {
+    if (!task?.id) return;
     setLoadingComments(true);
     try {
       const data = await api.getTaskComments(task.id);
@@ -42,11 +71,15 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
     } finally {
       setLoadingComments(false);
     }
-  }, [task.id]);
+  }, [task?.id]);
 
   useEffect(() => {
-    loadComments();
-  }, [loadComments]);
+    if (task?.id && isOpen) {
+      loadComments();
+    }
+  }, [task?.id, isOpen, loadComments]);
+
+  if (!task || !isOpen) return null;
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +97,11 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
   };
 
   const handleApprove = async () => {
+    if (!task) return;
     setIsApproving(true);
     try {
       await api.approveTask(task.id);
-      onApproved();
+      onApproved?.();
     } catch {
       // silently fail
     } finally {
@@ -96,146 +130,335 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
     task.status === 'REVIEW' &&
     task.clientApprovalStatus === 'PENDING';
 
+  const isOverdue =
+    task.dueDate &&
+    new Date(task.dueDate).getTime() < Date.now() &&
+    task.status !== 'COMPLETED';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl border border-gold-300 flex flex-col max-h-[92vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-gold-fade-in">
+      <div className="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-2xl shadow-2xl border border-[#EDE7DD] flex flex-col max-h-[92vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b border-gold-200 shrink-0">
-          <div className="space-y-1 pr-4">
-            <h2 className="text-base font-extrabold text-black leading-snug">{task.title}</h2>
-            {task.dueDate && (
-              <div className="flex items-center gap-1.5 text-xs text-black/60 font-semibold">
-                <Calendar className="h-3.5 w-3.5 text-gold-600" />
-                {new Date(task.dueDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+        <div className="p-5 sm:p-6 border-b border-[#EDE7DD] bg-white shrink-0">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 flex-1 min-w-0">
+              {/* Badges row */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#BA954F] bg-[#FAF4EC] px-2.5 py-0.5 rounded-full border border-[#EDE3D4]">
+                  <Briefcase className="h-3 w-3 text-[#BA954F]" />
+                  {task.project?.name || 'Project'}
+                </span>
+                <PriorityBadge priority={task.priority} size="sm" />
+                <StatusBadge status={task.status} size="sm" />
+                {task.dueDate && (
+                  <DeadlineCountdownBadge dueDate={task.dueDate} status={task.status} size="sm" />
+                )}
               </div>
-            )}
+
+              {/* Title */}
+              <h2 className="text-base sm:text-xl font-bold text-[#1C1917] leading-snug">
+                {task.title}
+              </h2>
+
+              {/* Meta Row: Assignee and Due Date */}
+              <div className="flex flex-wrap items-center gap-4 text-xs text-[#78716C] pt-0.5">
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src={
+                      task.assignedTo?.profileImage ||
+                      `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                        task.assignedTo?.name || 'Assignee'
+                      )}`
+                    }
+                    alt={task.assignedTo?.name || 'Assignee'}
+                    className="h-5 w-5 rounded-full border border-[#DFD5C6] object-cover"
+                  />
+                  <span className="font-semibold text-[#1C1917]">
+                    {task.assignedTo?.name || 'Unassigned'}
+                  </span>
+                </div>
+
+                {task.dueDate && (
+                  <div className="flex items-center gap-1 font-mono text-[#78716C]">
+                    <Calendar className="h-3.5 w-3.5 text-[#BA954F]" />
+                    <span>Due {new Date(task.dueDate).toLocaleDateString()}</span>
+                  </div>
+                )}
+
+                {task.updatedAt && (
+                  <div className="flex items-center gap-1 text-[11px] text-[#A8A29E]">
+                    <Clock className="h-3 w-3" />
+                    <span>Updated {new Date(task.updatedAt).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-xl text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] border border-transparent hover:border-[#EDE7DD] transition-colors cursor-pointer shrink-0"
+              title="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-black/50 hover:text-black hover:bg-gold-100 transition-colors cursor-pointer shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Revision Request Banner — shown to client when they've already requested changes */}
-          {isRevisionRequested && task.revisionRequest && (
-            <div className="mx-5 mt-5 p-4 bg-amber-50 border border-amber-300 rounded-xl space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-800 uppercase tracking-wide">Revision Requested</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  task.revisionRequest.priority === 'HIGH'
-                    ? 'bg-rose-100 text-rose-700 border-rose-300'
-                    : task.revisionRequest.priority === 'LOW'
-                    ? 'bg-gold-100 text-black border-gold-300'
-                    : 'bg-amber-100 text-amber-700 border-amber-300'
-                }`}>
-                  {task.revisionRequest.priority} Priority
-                </span>
-              </div>
-              <p className="text-xs text-amber-900 font-medium leading-relaxed">{task.revisionRequest.feedback}</p>
-              {task.revisionRequest.targetDate && (
-                <p className="text-[11px] text-amber-700 font-semibold">
-                  Target: {new Date(task.revisionRequest.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </p>
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 bg-[#FCFBF8]/40 divide-y divide-[#F5EFE6]">
+          {/* Action Bar (Top CTAs for Team Member / Admin) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#8C7E72] uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-[#BA954F]" />
+                Task Actions & Tools
+              </span>
+              {isAdminOrSuper && onEditTask && (
+                <button
+                  type="button"
+                  onClick={() => onEditTask(task)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#78716C] hover:text-[#BA954F] transition-colors cursor-pointer"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Edit Task Details
+                </button>
               )}
             </div>
-          )}
 
-          {/* Description */}
-          <div className="px-5 pt-5 pb-4 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-black uppercase tracking-wider">
-              <span className="w-4 h-4 rounded-full bg-gold-400 flex items-center justify-center text-[9px] text-black font-black">i</span>
-              Description
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* 1. Focus Timer CTA (for internal team / admins) */}
+              {!isClient && onStartTimer && (
+                <button
+                  type="button"
+                  onClick={() => onStartTimer(task)}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-[#FAF4EC] hover:bg-[#F5EBDD] text-[#BA954F] border border-[#EDE3D4] transition-all cursor-pointer shadow-2xs hover:shadow-xs group"
+                  title="Run interactive LeetCode-style countdown timer with alarm"
+                >
+                  <Timer className="h-4 w-4 text-[#BA954F] group-hover:rotate-12 transition-transform" />
+                  <span>Start Focus Timer (Alarm)</span>
+                </button>
+              )}
+
+              {/* 2. Submit Task with Proof CTA (for team members / assignee) */}
+              {!isClient && onSubmitTask && isAssignee && task.status !== 'COMPLETED' && (
+                <button
+                  type="button"
+                  onClick={() => onSubmitTask(task)}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold bg-[#BA954F] hover:bg-[#A17B2F] text-white shadow-xs transition-all cursor-pointer btn-hover-lift"
+                  title="Submit completed work with proof & deliverable link"
+                >
+                  <Send className="h-4 w-4" />
+                  <span>Submit Task with Proof</span>
+                </button>
+              )}
+
+              {/* 3. Delay explanation button if overdue */}
+              {!isClient && onExplainDelay && isOverdue && isAssignee && (
+                <button
+                  type="button"
+                  onClick={() => onExplainDelay(task)}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-[#B91C1C] hover:text-[#991B1B] bg-[#FDF2F0] hover:bg-[#FBE8E6] border border-[#F5D5D0] transition-colors cursor-pointer"
+                  title="Submit or update overdue reason to Admin"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>{task.overdueReason ? 'Update Overdue Reason' : 'Explain Delay to Admin'}</span>
+                </button>
+              )}
+
+              {/* 4. Quick status selector for internal staff */}
+              {!isClient && onStatusChange && (
+                <div className="flex items-center gap-2 bg-white border border-[#DFD5C6] rounded-xl px-3 py-1.5 shadow-2xs">
+                  <span className="text-xs font-semibold text-[#78716C] whitespace-nowrap">Status:</span>
+                  <select
+                    value={task.status}
+                    onChange={(e) => onStatusChange(task.id, e.target.value as TaskStatus)}
+                    disabled={isTeamMember && (task.status === 'REVIEW' || task.status === 'COMPLETED')}
+                    className="w-full text-xs font-semibold bg-transparent text-[#1C1917] focus:outline-none cursor-pointer disabled:opacity-60"
+                  >
+                    <option value="TODO">To Do</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="REVIEW">In Review</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="REVISION_REQUESTED">Revision Requested</option>
+                  </select>
+                </div>
+              )}
             </div>
-            <p className="text-sm text-black/80 leading-relaxed">
-              {task.description || 'No description provided for this task.'}
-            </p>
           </div>
 
-          {isSubmitted && (
-            <div className="px-5 pb-4 space-y-2">
-              <div className="text-xs font-bold text-black uppercase tracking-wider">Submitted work</div>
-              <div className="p-3 bg-gold-50 border border-gold-200 rounded-xl space-y-2 text-sm text-black/80">
-                <div><span className="font-bold text-black">Completion:</span> {task.submissionDescription}</div>
-                <div><span className="font-bold text-black">Proof:</span> {task.proofDetails}</div>
-                {task.deliverableUrl && <a href={task.deliverableUrl.startsWith('http') ? task.deliverableUrl : `https://${task.deliverableUrl}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-gold-800"><Send className="h-3 w-3" /> Open deliverable</a>}
-                {task.submittedAt && <div className="text-xs text-black/55">Submitted {formatTime(task.submittedAt)}</div>}
+          {/* Section: Task Instructions / What to do */}
+          <div className="pt-4 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-[#1C1917] uppercase tracking-wider">
+              <Info className="h-4 w-4 text-[#BA954F]" />
+              What to do / Task Instructions
+            </div>
+            <div className="bg-white border border-[#EDE7DD] rounded-2xl p-4 sm:p-5 shadow-xs">
+              <p className="text-xs sm:text-sm text-[#3E3832] leading-relaxed whitespace-pre-wrap font-normal">
+                {task.description?.trim() ? task.description : 'No specific description provided for this task.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Overdue Delay Reason Banner (if exists) */}
+          {task.overdueReason && (
+            <div className="pt-4">
+              <div className="p-4 rounded-2xl bg-[#FDF2F0] border border-[#F5D5D0] text-xs space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-1.5 font-bold text-[#B91C1C]">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  Overdue Delay Reason ({task.assignedTo?.name || 'Assignee'})
+                </div>
+                <p className="text-[#7F1D1D] italic text-xs sm:text-sm pl-5 leading-relaxed">
+                  &ldquo;{task.overdueReason}&rdquo;
+                </p>
               </div>
             </div>
           )}
 
-          {/* Warning note if not submitted */}
-          {!isSubmitted && task.status !== 'COMPLETED' && (
-            <div className="mx-5 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
-              <span>This task has not yet been submitted for approval by the assigned team member.</span>
+          {/* Revision Request Banner (if revision requested) */}
+          {isRevisionRequested && task.revisionRequest && (
+            <div className="pt-4">
+              <div className="p-4 bg-[#FDF2F0] border border-[#F5D5D0] rounded-2xl space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#B91C1C] uppercase tracking-wider flex items-center gap-1.5">
+                    <RefreshCw className="h-3.5 w-3.5 text-[#B91C1C]" />
+                    Client Revision Feedback
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8]">
+                    {task.revisionRequest.priority || 'NORMAL'} Priority
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#7F1D1D] leading-relaxed font-normal">
+                  {task.revisionRequest.feedback}
+                </p>
+                {task.revisionRequest.targetDate && (
+                  <p className="text-[11px] text-[#991B1B] font-mono font-semibold">
+                    Target Revision Date: {new Date(task.revisionRequest.targetDate).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="px-5 pb-5 grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={handleApprove}
-              disabled={isApproving || !canApprove}
-              title={!isSubmitted ? 'Task must be submitted before approval' : undefined}
-              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                isAlreadyApproved
-                  ? 'bg-gold-200 text-black border border-gold-400 cursor-default'
-                  : !canApprove
-                  ? 'bg-gold-100 text-black/40 border border-gold-200 cursor-default'
-                  : 'bg-black hover:bg-gold-500 text-gold-400 hover:text-black border border-gold-400/50 shadow-sm btn-hover-lift'
-              } disabled:opacity-60`}
-            >
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              {isAlreadyApproved
-                ? 'Approved'
-                : isApproving
-                ? 'Approving...'
-                : !isSubmitted
-                ? 'Not Submitted'
-                : 'Approve Task'}
-            </button>
-            <button
-              type="button"
-              onClick={() => onRequestChanges(task)}
-              disabled={isAlreadyApproved || isRevisionRequested || !isSubmitted || task.status !== 'REVIEW'}
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold bg-white hover:bg-gold-50 text-black border border-gold-400 transition-all cursor-pointer btn-hover-lift disabled:opacity-40 disabled:cursor-default"
-            >
-              <RefreshCw className="h-4 w-4 shrink-0" />
-              {isRevisionRequested ? 'Pending Review' : 'Request Changes'}
-            </button>
-          </div>
+          {/* Submitted Work & Proof Details */}
+          {isSubmitted && (
+            <div className="pt-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#1C1917] uppercase tracking-wider flex items-center gap-1.5">
+                  <FileCheck2 className="h-4 w-4 text-[#2D6A4F]" />
+                  Submitted Work & Proof of Deliverable
+                </span>
+                {task.submittedAt && (
+                  <span className="text-[11px] text-[#78716C] font-mono">
+                    Submitted {formatTime(task.submittedAt)}
+                  </span>
+                )}
+              </div>
 
-          {/* Collaboration / Comments */}
-          <div className="border-t border-gold-200 px-5 pt-4 pb-5 space-y-4">
+              <div className="p-4 sm:p-5 bg-white border border-[#EDE7DD] rounded-2xl space-y-3 text-xs sm:text-sm text-[#1C1917] shadow-xs">
+                {task.submissionDescription && (
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#8C7E72] block mb-1">
+                      Completion Summary:
+                    </span>
+                    <p className="text-xs sm:text-sm text-[#443B30] bg-[#FAF7F2] p-3 rounded-xl border border-[#EDE7DD] whitespace-pre-wrap">
+                      {task.submissionDescription}
+                    </p>
+                  </div>
+                )}
+
+                {task.proofDetails && (
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#8C7E72] block mb-1">
+                      Proof of Work:
+                    </span>
+                    <p className="text-xs sm:text-sm text-[#443B30] bg-[#FAF7F2] p-3 rounded-xl border border-[#EDE7DD] whitespace-pre-wrap">
+                      {task.proofDetails}
+                    </p>
+                  </div>
+                )}
+
+                {task.deliverableUrl && (
+                  <div className="pt-1">
+                    <a
+                      href={task.deliverableUrl.startsWith('http') ? task.deliverableUrl : `https://${task.deliverableUrl}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] bg-[#FAF4EC] hover:bg-[#F5EFE6] border border-[#EDE3D4] rounded-xl transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      <span>Open Deliverable Asset / Link</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Client Approval / Rejection Action Panel (For Clients) */}
+          {isClient && (
+            <div className="pt-4 space-y-3">
+              <span className="text-xs font-bold text-[#8C7E72] uppercase tracking-wider block">
+                Client Review & Sign-Off
+              </span>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleApprove}
+                  disabled={isApproving || !canApprove}
+                  title={!isSubmitted ? 'Task must be submitted before approval' : undefined}
+                  className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                    isAlreadyApproved
+                      ? 'bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD] cursor-default'
+                      : !canApprove
+                      ? 'bg-[#FAF7F2] text-[#A8A29E] border border-[#EDE7DD] cursor-default'
+                      : 'bg-[#BA954F] hover:bg-[#A17B2F] text-white shadow-xs btn-hover-lift'
+                  } disabled:opacity-60`}
+                >
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  {isAlreadyApproved
+                    ? 'Approved'
+                    : isApproving
+                    ? 'Approving...'
+                    : !isSubmitted
+                    ? 'Not Submitted'
+                    : 'Approve Task'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRequestChanges?.(task)}
+                  disabled={isAlreadyApproved || isRevisionRequested || !isSubmitted || task.status !== 'REVIEW' || !onRequestChanges}
+                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold bg-white hover:bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0] transition-all cursor-pointer btn-hover-lift disabled:opacity-40 disabled:cursor-default"
+                >
+                  <RefreshCw className="h-4 w-4 shrink-0" />
+                  {isRevisionRequested ? 'Revision Requested' : 'Request Changes'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Collaboration / Discussion Comments Feed */}
+          <div className="pt-4 space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-sm font-bold text-black">
-                <MessageSquare className="h-4 w-4 text-gold-600" />
-                Collaboration
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#1C1917] uppercase tracking-wider">
+                <MessageSquare className="h-4 w-4 text-[#BA954F]" />
+                Task Discussion Feed
               </div>
               {!loadingComments && (
-                <span className="text-xs font-bold text-black/50 bg-gold-100 px-2 py-0.5 rounded-full">
-                  {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+                <span className="text-[11px] font-semibold text-[#78716C] bg-[#FAF7F2] border border-[#EDE7DD] px-2.5 py-0.5 rounded-full">
+                  {comments.length} {comments.length === 1 ? 'Message' : 'Messages'}
                 </span>
               )}
             </div>
 
-            {/* Comments list */}
+            {/* Comments List */}
             <div className="space-y-3">
               {loadingComments ? (
-                <div className="text-xs text-black/40 font-medium text-center py-4">Loading...</div>
+                <div className="text-xs text-[#78716C] font-medium text-center py-4">Loading messages...</div>
               ) : comments.length === 0 ? (
-                <div className="text-xs text-black/40 font-medium text-center py-4">
-                  No messages yet. Start the conversation!
+                <div className="text-xs text-[#A8A29E] font-medium text-center py-5 bg-white border border-[#EDE7DD] rounded-2xl">
+                  No comments on this task yet. Leave notes or ask questions below.
                 </div>
               ) : (
                 comments.map((comment) => {
@@ -254,22 +477,27 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
                       <img
                         src={avatarSrc}
                         alt={comment.user?.name}
-                        className="h-8 w-8 rounded-full border border-gold-300 object-cover shrink-0"
+                        className="h-8 w-8 rounded-full border border-[#DFD5C6] object-cover shrink-0 shadow-2xs"
                       />
-                      <div className={`max-w-[75%] space-y-1 ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
+                      <div className={`max-w-[80%] space-y-1 ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
                         <div className={`flex items-center gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
-                          <span className="text-[11px] font-bold text-black">
+                          <span className="text-[11px] font-bold text-[#1C1917]">
                             {isMe ? 'You' : comment.user?.name}
                           </span>
-                          <span className="text-[10px] text-black/40 font-medium">
+                          {comment.user?.role && (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
+                              {comment.user.role.replace('_', ' ')}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-[#A8A29E] font-mono">
                             {formatTime(comment.createdAt)}
                           </span>
                         </div>
                         <div
-                          className={`px-3.5 py-2.5 rounded-2xl text-xs font-medium leading-relaxed ${
+                          className={`px-3.5 py-2.5 rounded-2xl text-xs font-medium leading-relaxed shadow-2xs ${
                             isMe
-                              ? 'bg-[#BA954F] text-white rounded-br-sm'
-                              : 'bg-gold-100 text-black border border-gold-200 rounded-bl-sm'
+                              ? 'bg-[#BA954F] text-white rounded-br-xs'
+                              : 'bg-white text-[#1C1917] border border-[#EDE7DD] rounded-bl-xs'
                           }`}
                         >
                           {comment.content}
@@ -281,17 +509,17 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
               )}
             </div>
 
-            {/* New comment input */}
-            <form onSubmit={handlePostComment} className="flex items-end gap-2 pt-1">
+            {/* Comment Form */}
+            <form onSubmit={handlePostComment} className="flex items-end gap-2 pt-2">
               <img
                 src={
                   user?.profileImage ||
                   `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.name || 'Me')}`
                 }
                 alt={user?.name}
-                className="h-8 w-8 rounded-full border border-gold-300 object-cover shrink-0"
+                className="h-8 w-8 rounded-full border border-[#DFD5C6] object-cover shrink-0 shadow-2xs"
               />
-              <div className="flex-1 flex items-end gap-2 bg-gold-50 border border-gold-300 rounded-2xl px-3 py-2 focus-within:ring-1 focus-within:ring-gold-500 focus-within:border-gold-500 transition-all">
+              <div className="flex-1 flex items-end gap-2 bg-white border border-[#DFD5C6] rounded-2xl px-3.5 py-2 focus-within:ring-2 focus-within:ring-[#BA954F]/20 focus-within:border-[#BA954F] transition-all shadow-2xs">
                 <textarea
                   rows={1}
                   value={commentText}
@@ -302,16 +530,17 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
                       if (commentText.trim()) handlePostComment(e as any);
                     }
                   }}
-                  placeholder="Write a message..."
-                  className="flex-1 bg-transparent text-xs text-black font-medium placeholder-black/40 resize-none focus:outline-none leading-relaxed"
-                  style={{ minHeight: '20px', maxHeight: '80px' }}
+                  placeholder="Type a message or note regarding this task... (Enter to send)"
+                  className="flex-1 bg-transparent text-xs text-[#1C1917] placeholder-[#A8A29E] resize-none focus:outline-none leading-relaxed font-normal"
+                  style={{ minHeight: '22px', maxHeight: '90px' }}
                 />
                 <button
                   type="submit"
                   disabled={isPosting || !commentText.trim()}
-                  className="p-1 text-gold-700 hover:text-black disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                  className="p-1.5 text-white bg-[#BA954F] hover:bg-[#A17B2F] disabled:opacity-40 rounded-xl transition-colors cursor-pointer shrink-0 shadow-2xs"
+                  title="Send Message"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-3.5 w-3.5" />
                 </button>
               </div>
             </form>
@@ -321,3 +550,5 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
     </div>
   );
 };
+
+export const TaskDetailModal = ClientTaskDetailModal;

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Attendance, Break } from '../../types';
 import { api } from '../../services/api';
 import { AttendanceStatusBadge } from './AttendanceStatusBadge';
+import { Periodic15MinAlarm } from './Periodic15MinAlarm';
+import { EodReportModal } from './EodReportModal';
 import {
   Clock,
   Play,
@@ -13,6 +15,7 @@ import {
   Timer,
   Hourglass,
   Sparkles,
+  FileText,
 } from 'lucide-react';
 
 interface ClockActionCardProps {
@@ -29,8 +32,15 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
   const [actionError, setActionError] = useState<string | null>(null);
   const [showClockOutModal, setShowClockOutModal] = useState(false);
   const [showEarlyClockOutModal, setShowEarlyClockOutModal] = useState(false);
+  const [showClockInReasonModal, setShowClockInReasonModal] = useState(false);
+  const [clockInReasonTitle, setClockInReasonTitle] = useState('Late Arrival');
+  const [clockInReason, setClockInReason] = useState('');
+  const [clockOutReasonTitle, setClockOutReasonTitle] = useState('Early Clock-Out');
   const [earlyReason, setEarlyReason] = useState('');
-  const [officeEndTime, setOfficeEndTime] = useState<string>('18:30');
+  const [tomorrowTask, setTomorrowTask] = useState('');
+  const [officeStartTime, setOfficeStartTime] = useState<string>('09:00');
+  const [officeEndTime, setOfficeEndTime] = useState<string>('18:00');
+  const [showEodModalAfterClockOut, setShowEodModalAfterClockOut] = useState(false);
 
   // Update clock every second
   useEffect(() => {
@@ -40,7 +50,7 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch configured office end time and employee schedule override
+  // Fetch configured office start & end time
   useEffect(() => {
     const loadScheduleInfo = async () => {
       try {
@@ -48,16 +58,20 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
           api.getSettings(),
           api.getMyScheduleOverride(),
         ]);
-        let end = '18:30';
-        if (settingsRes.status === 'fulfilled' && settingsRes.value?.officeEndTime) {
-          end = settingsRes.value.officeEndTime;
+        let start = '09:00';
+        let end = '18:00';
+        if (settingsRes.status === 'fulfilled' && settingsRes.value) {
+          if (settingsRes.value.officeStartTime) start = settingsRes.value.officeStartTime;
+          if (settingsRes.value.officeEndTime) end = settingsRes.value.officeEndTime;
         }
-        if (overrideRes.status === 'fulfilled' && overrideRes.value?.override?.customEndTime) {
-          end = overrideRes.value.override.customEndTime;
+        if (overrideRes.status === 'fulfilled' && overrideRes.value?.override) {
+          if (overrideRes.value.override.customStartTime) start = overrideRes.value.override.customStartTime;
+          if (overrideRes.value.override.customEndTime) end = overrideRes.value.override.customEndTime;
         }
+        setOfficeStartTime(start);
         setOfficeEndTime(end);
       } catch {
-        // Default to 18:30 if fetch fails
+        // Fallback
       }
     };
     loadScheduleInfo();
@@ -111,29 +125,58 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
     return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
-  const checkIsEarly = () => {
+  const checkClockInStatus = () => {
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = officeStartTime.split(':').map((v) => parseInt(v, 10) || 0);
+    const scheduledStartMins = startH * 60 + startM; // e.g. 09:00 = 540
+    const lateThresholdMins = scheduledStartMins + 15; // 09:15
+    const earlyArrivalThresholdMins = scheduledStartMins - 30; // 08:30
+
+    if (currentMins > lateThresholdMins) {
+      return { isSpecial: true, title: 'Late Arrival Reason' };
+    }
+    if (currentMins < earlyArrivalThresholdMins) {
+      return { isSpecial: true, title: 'Early Arrival Reason' };
+    }
+    return { isSpecial: false, title: '' };
+  };
+
+  const checkClockOutStatus = () => {
     const now = new Date();
     const currentMins = now.getHours() * 60 + now.getMinutes();
     const [endH, endM] = officeEndTime.split(':').map((v) => parseInt(v, 10) || 0);
-    const scheduledEndMins = endH * 60 + endM;
-    return currentMins < scheduledEndMins;
+    const scheduledEndMins = endH * 60 + endM; // e.g. 18:00 = 1080
+    const lateOvertimeMins = scheduledEndMins + 60; // 19:00
+
+    if (currentMins < scheduledEndMins) {
+      return { isSpecial: true, title: 'Early Clock-Out Reason', isEarly: true };
+    }
+    if (currentMins > lateOvertimeMins) {
+      return { isSpecial: true, title: 'Late / Overtime Clock-Out Reason', isEarly: false };
+    }
+    return { isSpecial: false, title: 'Standard Clock-Out', isEarly: false };
   };
 
-  const handleInitiateClockOut = () => {
+  const handleInitiateClockIn = () => {
     setActionError(null);
-    setEarlyReason('');
-    if (checkIsEarly()) {
-      setShowEarlyClockOutModal(true);
+    setClockInReason('');
+    const status = checkClockInStatus();
+    if (status.isSpecial) {
+      setClockInReasonTitle(status.title);
+      setShowClockInReasonModal(true);
     } else {
-      setShowClockOutModal(true);
+      executeClockIn();
     }
   };
 
-  const handleClockIn = async () => {
+  const executeClockIn = async (reason?: string) => {
     setIsProcessing(true);
     setActionError(null);
     try {
-      await api.clockIn();
+      await api.clockIn({ clockInReason: reason });
+      setShowClockInReasonModal(false);
+      setClockInReason('');
       onAttendanceChange();
     } catch (err: any) {
       setActionError(err.message || 'Failed to clock in.');
@@ -142,13 +185,33 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
     }
   };
 
+  const handleInitiateClockOut = () => {
+    setActionError(null);
+    setEarlyReason('');
+    setTomorrowTask('');
+    const status = checkClockOutStatus();
+    if (status.isSpecial) {
+      setClockOutReasonTitle(status.title);
+      setShowEarlyClockOutModal(true);
+    } else {
+      setShowClockOutModal(true);
+    }
+  };
+
   const handleClockOut = async () => {
+    const trimmedTask = tomorrowTask.trim();
+    if (!trimmedTask) {
+      setActionError('Please specify your planned task for tomorrow before clocking out.');
+      return;
+    }
     setShowClockOutModal(false);
     setIsProcessing(true);
     setActionError(null);
     try {
-      await api.clockOut();
+      await api.clockOut({ tomorrowTask: trimmedTask });
+      setTomorrowTask('');
       onAttendanceChange();
+      setShowEodModalAfterClockOut(true);
     } catch (err: any) {
       setActionError(err.message || 'Failed to clock out.');
     } finally {
@@ -159,17 +222,28 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
   const handleEarlyClockOut = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const trimmedReason = earlyReason.trim();
+    const trimmedTask = tomorrowTask.trim();
     if (!trimmedReason) {
-      setActionError('Please provide a reason before clocking out early.');
+      setActionError('Please provide a reason before proceeding with clock out.');
+      return;
+    }
+    if (!trimmedTask) {
+      setActionError('Please specify your planned task for tomorrow before clocking out.');
       return;
     }
     setIsProcessing(true);
     setActionError(null);
     try {
-      await api.clockOut({ earlyClockOutReason: trimmedReason });
+      await api.clockOut({
+        earlyClockOutReason: trimmedReason,
+        clockOutReason: trimmedReason,
+        tomorrowTask: trimmedTask,
+      });
       setShowEarlyClockOutModal(false);
       setEarlyReason('');
+      setTomorrowTask('');
       onAttendanceChange();
+      setShowEodModalAfterClockOut(true);
     } catch (err: any) {
       setActionError(err.message || 'Failed to clock out.');
     } finally {
@@ -350,7 +424,7 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
               <button
                 type="button"
                 id="btn-clock-in"
-                onClick={handleClockIn}
+                onClick={handleInitiateClockIn}
                 disabled={isProcessing}
                 className="btn-gold-primary px-8 py-3.5 text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-3 cursor-pointer"
               >
@@ -374,14 +448,32 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
                 of effective working time with status{' '}
                 <strong className="font-bold text-neutral-900">{attendance.status}</strong>.
               </p>
-              {attendance.earlyClockOutReason && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 text-left max-w-md mx-auto">
-                  <div className="font-semibold mb-0.5 flex items-center gap-1.5 text-amber-800">
-                    <AlertTriangle className="h-3.5 w-3.5" /> Early Clock-Out Reason:
-                  </div>
-                  <div className="italic text-amber-950">&ldquo;{attendance.earlyClockOutReason}&rdquo;</div>
+              {(attendance.clockInReason || attendance.earlyClockOutReason || attendance.clockOutReason) && (
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 text-left max-w-md mx-auto space-y-1">
+                  {attendance.clockInReason && (
+                    <div>
+                      <span className="font-semibold text-amber-800">Clock-In Note: </span>
+                      <span className="italic">{attendance.clockInReason}</span>
+                    </div>
+                  )}
+                  {(attendance.earlyClockOutReason || attendance.clockOutReason) && (
+                    <div>
+                      <span className="font-semibold text-amber-800">Clock-Out Reason: </span>
+                      <span className="italic">{attendance.earlyClockOutReason || attendance.clockOutReason}</span>
+                    </div>
+                  )}
                 </div>
               )}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEodModalAfterClockOut(true)}
+                  className="px-4 py-2 text-xs font-bold text-[#BA954F] hover:text-[#A17B2F] bg-white hover:bg-[#FAF4EC] border border-[#EDE3D4] rounded-xl transition-all inline-flex items-center gap-2 cursor-pointer shadow-2xs"
+                >
+                  <FileText className="h-4 w-4" />
+                  View / Edit Today's EOD Report
+                </button>
+              </div>
             </div>
           ) : isOnBreak ? (
             <div className="bg-[#FAF7F2] border border-[#EDE7DD] rounded-2xl p-6 sm:p-8 text-center space-y-4">
@@ -406,30 +498,37 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* START BREAK Button */}
-              <button
-                type="button"
-                id="btn-start-break"
-                onClick={handleStartBreak}
-                disabled={isProcessing}
-                className="btn-gold-secondary py-3.5 px-6 text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-2.5 cursor-pointer"
-              >
-                <Coffee className="h-4 w-4 text-[#BA954F]" />
-                <span>{isProcessing ? 'Starting Break...' : 'Start Studio Break'}</span>
-              </button>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* START BREAK Button */}
+                <button
+                  type="button"
+                  id="btn-start-break"
+                  onClick={handleStartBreak}
+                  disabled={isProcessing}
+                  className="btn-gold-secondary py-3.5 px-6 text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-2.5 cursor-pointer"
+                >
+                  <Coffee className="h-4 w-4 text-[#BA954F]" />
+                  <span>{isProcessing ? 'Starting Break...' : 'Start Studio Break'}</span>
+                </button>
 
-              {/* CLOCK OUT Button */}
-              <button
-                type="button"
-                id="btn-clock-out"
-                onClick={handleInitiateClockOut}
-                disabled={isProcessing}
-                className="py-3.5 px-6 bg-[#9E2A2B] hover:bg-[#831F20] disabled:opacity-50 text-white font-semibold text-sm rounded-xl shadow-xs transition-all inline-flex items-center justify-center gap-2.5 cursor-pointer"
-              >
-                <Square className="h-4 w-4 fill-current" />
-                <span>{isProcessing ? 'Clocking Out...' : 'Clock Out for Day'}</span>
-              </button>
+                {/* CLOCK OUT Button */}
+                <button
+                  type="button"
+                  id="btn-clock-out"
+                  onClick={handleInitiateClockOut}
+                  disabled={isProcessing}
+                  className="py-3.5 px-6 bg-[#9E2A2B] hover:bg-[#831F20] disabled:opacity-50 text-white font-semibold text-sm rounded-xl shadow-xs transition-all inline-flex items-center justify-center gap-2.5 cursor-pointer"
+                >
+                  <Square className="h-4 w-4 fill-current" />
+                  <span>{isProcessing ? 'Clocking Out...' : 'Clock Out for Day'}</span>
+                </button>
+              </div>
+
+              {/* 15-min focus alarm ticker */}
+              <div className="flex justify-center">
+                <Periodic15MinAlarm isClockedIn={isClockedIn} isOnBreak={isOnBreak} />
+              </div>
             </div>
           )}
         </div>
@@ -462,6 +561,62 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
         )}
       </div>
 
+      {/* Clock In Reason Modal (Late or Early) */}
+      {showClockInReasonModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-gold-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#EDE7DD] space-y-4">
+            <div className="flex items-center gap-3 text-[#BA954F]">
+              <div className="p-2.5 bg-[#FAF4EC] rounded-xl">
+                <Clock className="h-6 w-6 text-[#BA954F]" />
+              </div>
+              <div>
+                <h3 className="font-serif text-lg font-bold text-neutral-900">{clockInReasonTitle}</h3>
+                <p className="text-xs text-neutral-500 font-medium">Regular Office Start: {officeStartTime} AM</p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-[#FAF7F2] border border-[#EDE7DD] rounded-xl text-xs text-neutral-700 font-medium">
+              Please enter a brief remark/reason for your {clockInReasonTitle.toLowerCase()} to submit to Admin.
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-neutral-700">
+                Reason / Remark <span className="text-[#9E2A2B]">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={clockInReason}
+                onChange={(e) => setClockInReason(e.target.value)}
+                placeholder="e.g., Heavy traffic delay, Metro delay, early client call..."
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#EDE7DD] bg-[#FAF7F2]/40 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] resize-none font-medium"
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#EDE7DD]">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowClockInReasonModal(false);
+                  setClockInReason('');
+                }}
+                className="btn-gold-secondary px-4 py-2 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => executeClockIn(clockInReason)}
+                disabled={isProcessing || !clockInReason.trim()}
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] disabled:opacity-40 rounded-xl transition-colors cursor-pointer shadow-xs btn-hover-lift"
+              >
+                {isProcessing ? 'Clocking In...' : 'Submit & Clock In'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Normal Clock Out Confirmation Modal */}
       {showClockOutModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
@@ -479,10 +634,32 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
               </strong>{' '}
               of effective working hours.
             </p>
+
+            <div className="space-y-1.5 p-3.5 bg-[#FAF7F2] border border-[#EDE7DD] rounded-xl">
+              <label htmlFor="normal-clockout-tomorrow-task" className="block text-xs font-bold text-neutral-800">
+                Tomorrow's Planned Task / To-Do <span className="text-[#9E2A2B]">*</span>
+              </label>
+              <p className="text-[11px] text-neutral-500">
+                Kal ka planned task daalna zaroori hai. Auto-reminder notification will be scheduled for tomorrow.
+              </p>
+              <input
+                id="normal-clockout-tomorrow-task"
+                type="text"
+                required
+                value={tomorrowTask}
+                onChange={(e) => setTomorrowTask(e.target.value)}
+                placeholder="e.g., Finalize floor plan CAD, review client comments..."
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F]"
+              />
+            </div>
+
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#EDE7DD]">
               <button
                 type="button"
-                onClick={() => setShowClockOutModal(false)}
+                onClick={() => {
+                  setShowClockOutModal(false);
+                  setTomorrowTask('');
+                }}
                 className="btn-gold-secondary px-4 py-2 text-xs font-semibold"
               >
                 Cancel
@@ -490,8 +667,8 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
               <button
                 type="button"
                 onClick={handleClockOut}
-                disabled={isProcessing}
-                className="px-4 py-2 text-xs font-semibold text-white bg-[#9E2A2B] hover:bg-[#831F20] disabled:opacity-50 rounded-xl transition-colors cursor-pointer"
+                disabled={isProcessing || !tomorrowTask.trim()}
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#9E2A2B] hover:bg-[#831F20] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors cursor-pointer"
               >
                 {isProcessing ? 'Processing...' : 'Yes, Clock Out'}
               </button>
@@ -500,7 +677,7 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
         </div>
       )}
 
-      {/* Early Clock Out Reason Modal */}
+      {/* Early / Late Clock Out Reason Modal */}
       {showEarlyClockOutModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#EDE7DD] space-y-4">
@@ -509,31 +686,46 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
                 <AlertTriangle className="h-6 w-6 text-[#B45309]" />
               </div>
               <div>
-                <h3 className="font-serif text-lg font-bold text-neutral-900">Early Clock-Out</h3>
+                <h3 className="font-serif text-lg font-bold text-neutral-900">{clockOutReasonTitle}</h3>
                 <p className="text-xs text-neutral-500 font-medium">Scheduled Shift End: {officeEndTime}</p>
               </div>
             </div>
 
             <div className="p-3 bg-[#FDF6E9] border border-[#F9E2AF] rounded-xl text-xs text-amber-900 font-medium">
-              You are clocking out before your regular working time. Please provide a reason.
+              You are clocking out outside your regular 6:00 PM shift time. Please provide a reason.
             </div>
 
             <div className="space-y-1.5">
               <label htmlFor="early-clockout-reason-input" className="block text-xs font-semibold text-neutral-700">
-                Reason for Early Clock Out <span className="text-[#9E2A2B]">*</span>
+                Reason for Clock Out <span className="text-[#9E2A2B]">*</span>
               </label>
               <textarea
                 id="early-clockout-reason-input"
-                rows={3}
+                rows={2}
                 value={earlyReason}
                 onChange={(e) => setEarlyReason(e.target.value)}
-                placeholder="e.g., Doctor appointment, emergency personal work, approved half-day..."
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#EDE7DD] bg-[#FAF7F2]/40 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] resize-none font-medium"
+                placeholder="e.g., Doctor appointment, emergency personal work, approved early leave, overtime completed..."
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-[#FAF7F2]/40 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] resize-none font-medium"
                 required
               />
-              <div className="text-[11px] text-neutral-400 text-right">
-                {earlyReason.trim().length === 0 ? 'Reason required to proceed' : `${earlyReason.trim().length} characters entered`}
-              </div>
+            </div>
+
+            <div className="space-y-1.5 p-3.5 bg-[#FAF7F2] border border-[#EDE7DD] rounded-xl">
+              <label htmlFor="early-clockout-tomorrow-task" className="block text-xs font-bold text-neutral-800">
+                Tomorrow's Planned Task / To-Do <span className="text-[#9E2A2B]">*</span>
+              </label>
+              <p className="text-[11px] text-neutral-500">
+                Kal ka task daalna zaroori hai to complete exit. A reminder notification will be sent.
+              </p>
+              <input
+                id="early-clockout-tomorrow-task"
+                type="text"
+                required
+                value={tomorrowTask}
+                onChange={(e) => setTomorrowTask(e.target.value)}
+                placeholder="e.g., Complete material schedule and 3D elevation renders..."
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F]"
+              />
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#EDE7DD]">
@@ -542,6 +734,7 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
                 onClick={() => {
                   setShowEarlyClockOutModal(false);
                   setEarlyReason('');
+                  setTomorrowTask('');
                   setActionError(null);
                 }}
                 disabled={isProcessing}
@@ -553,7 +746,7 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
                 type="button"
                 id="btn-confirm-early-clockout"
                 onClick={() => handleEarlyClockOut()}
-                disabled={isProcessing || !earlyReason.trim()}
+                disabled={isProcessing || !earlyReason.trim() || !tomorrowTask.trim()}
                 className="px-4 py-2 text-xs font-semibold text-white bg-[#9E2A2B] hover:bg-[#831F20] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors cursor-pointer shadow-xs"
               >
                 {isProcessing ? 'Processing...' : 'Confirm Clock Out'}
@@ -562,7 +755,18 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
           </div>
         </div>
       )}
+
+      {/* EOD Report Modal (auto-opens on clock-out or when user clicks View/Edit) */}
+      <EodReportModal
+        isOpen={showEodModalAfterClockOut}
+        onClose={() => setShowEodModalAfterClockOut(false)}
+        onSuccess={() => {
+          setShowEodModalAfterClockOut(false);
+          onAttendanceChange();
+        }}
+      />
     </div>
   );
 };
+
 

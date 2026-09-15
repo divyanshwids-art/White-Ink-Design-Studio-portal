@@ -11,6 +11,9 @@ import { TaskModal } from '../components/tasks/TaskModal';
 import { SubmitTaskModal } from '../components/tasks/SubmitTaskModal';
 import { ImportTasksModal } from '../components/tasks/ImportTasksModal';
 import { ClientTaskDetailModal } from '../components/tasks/ClientTaskDetailModal';
+import { DeadlineCountdownBadge } from '../components/tasks/DeadlineCountdownBadge';
+import { TaskFocusTimerModal } from '../components/tasks/TaskFocusTimerModal';
+import { TaskOverdueReasonModal } from '../components/tasks/TaskOverdueReasonModal';
 import {
   CheckSquare,
   Search,
@@ -21,14 +24,19 @@ import {
   Trash2,
   Send,
   FileSpreadsheet,
+  Timer,
+  Play,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface TasksPageProps {
   openCreateModalDirectly?: boolean;
+  onNavigate?: (path: string) => void;
 }
 
 export const TasksPage: React.FC<TasksPageProps> = ({
   openCreateModalDirectly = false,
+  onNavigate,
 }) => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -48,6 +56,10 @@ export const TasksPage: React.FC<TasksPageProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [submitTask, setSubmitTask] = useState<Task | null>(null);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
+  const [focusTimerTask, setFocusTimerTask] = useState<Task | null>(null);
+  const [isFocusTimerOpen, setIsFocusTimerOpen] = useState(false);
+  const [overdueTask, setOverdueTask] = useState<Task | null>(null);
+  const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
 
   const isClient = user?.role === 'CLIENT' || user?.role === 'CLIENT_ADMIN';
   const canManage = !isClient;
@@ -207,16 +219,18 @@ export const TasksPage: React.FC<TasksPageProps> = ({
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="p-4 sm:p-5 hover:bg-[#FAF7F2] transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4"
-              onClick={isClient ? () => setViewingTask(task) : undefined}
-              style={isClient ? { cursor: 'pointer' } : undefined}
+              className="p-4 sm:p-5 hover:bg-[#FAF7F2] transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer group"
+              onClick={() => onNavigate ? onNavigate(`/tasks/${task.id}`) : setViewingTask(task)}
             >
               <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   {!isClient && <PriorityBadge priority={task.priority} size="sm" />}
                   <span className="text-xs font-semibold text-[#78716C]">{task.project?.name || 'Project'}</span>
+                  {task.dueDate && (
+                    <DeadlineCountdownBadge dueDate={task.dueDate} status={task.status} size="sm" />
+                  )}
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-[#1C1917] leading-snug">{task.title}</h3>
+                <h3 className="text-sm sm:text-base font-bold text-[#1C1917] leading-snug group-hover:text-[#BA954F] transition-colors">{task.title}</h3>
                 {task.description && (
                   <p className="text-xs text-[#78716C] line-clamp-1 font-normal">{task.description}</p>
                 )}
@@ -232,17 +246,67 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                     </span>
                   )}
                 </div>
+
+                {/* Overdue Reason Callout (visible to admins and team members) */}
+                {task.overdueReason && (
+                  <div className="p-2.5 rounded-xl bg-[#FDF2F0] border border-[#F5D5D0] text-xs text-[#B91C1C] flex items-start gap-2 mt-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-[#B91C1C] mt-0.5" />
+                    <div>
+                      <span className="font-bold">Delay Reason ({task.assignedTo?.name || 'Member'}): </span>
+                      <span className="italic text-red-950">&ldquo;{task.overdueReason}&rdquo;</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-[#EDE7DD]">
+                {/* Overdue delay button for team member */}
+                {task.dueDate &&
+                  new Date(task.dueDate).getTime() < Date.now() &&
+                  task.status !== 'COMPLETED' &&
+                  user?.role === 'TEAM_MEMBER' && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOverdueTask(task);
+                        setIsOverdueModalOpen(true);
+                      }}
+                      className="px-2.5 py-1.5 text-xs font-semibold text-[#B91C1C] hover:text-[#991B1B] bg-[#FDF2F0] hover:bg-[#FBE8E6] border border-[#F5D5D0] rounded-xl transition-colors inline-flex items-center gap-1 cursor-pointer"
+                      title="Explain delay reason to Admin"
+                    >
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      <span>{task.overdueReason ? 'Edit Reason' : 'Explain Delay'}</span>
+                    </button>
+                )}
+
+                {canManage && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFocusTimerTask(task);
+                      setIsFocusTimerOpen(true);
+                    }}
+                    className="px-3 py-1.5 text-xs font-semibold text-[#BA954F] hover:text-[#A17B2F] bg-[#FAF4EC] hover:bg-[#FAF4EC]/80 border border-[#EDE3D4] rounded-xl transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    title="Start LeetCode-style Focus Timer with Alarm"
+                  >
+                    <Timer className="h-3.5 w-3.5" />
+                    <span>Focus Timer</span>
+                  </button>
+                )}
+
                 {isClient ? (
                   <StatusBadge status={task.status} size="sm" />
                 ) : user?.role === 'TEAM_MEMBER' ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {task.status !== 'REVIEW' && task.status !== 'COMPLETED' && task.assignedToId === user?.id && (
                       <button
                         type="button"
-                        onClick={() => setSubmitTask(task)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSubmitTask(task);
+                        }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl cursor-pointer shadow-xs btn-hover-lift"
                       >
                         <Send className="h-3 w-3" />
@@ -261,6 +325,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                     )}
                     <select
                       value={task.status}
+                      onClick={(e) => e.stopPropagation()}
                       onChange={(e) => handleQuickStatusChange(task.id, e.target.value as TaskStatus)}
                       disabled={task.status === 'REVIEW' || task.status === 'COMPLETED'}
                       className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-[#DFD5C6] bg-white text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
@@ -273,24 +338,31 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                     </select>
                   </div>
                 ) : (
-                  <select
-                    value={task.status}
-                    onChange={(e) => handleQuickStatusChange(task.id, e.target.value as TaskStatus)}
-                    className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-[#DFD5C6] bg-white text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
-                  >
-                    <option value="TODO">To Do</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="REVIEW">In Review</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="REVISION_REQUESTED">Revision Requested</option>
-                  </select>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <select
+                      value={task.status}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => handleQuickStatusChange(task.id, e.target.value as TaskStatus)}
+                      className="text-xs font-semibold py-1.5 px-2.5 rounded-xl border border-[#DFD5C6] bg-white text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#BA954F] cursor-pointer shadow-2xs"
+                    >
+                      <option value="TODO">To Do</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="REVIEW">In Review</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="REVISION_REQUESTED">Revision Requested</option>
+                    </select>
+                  </div>
                 )}
 
                 {canManage && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
-                      onClick={() => { setEditingTask(task); setIsModalOpen(true); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTask(task);
+                        setIsModalOpen(true);
+                      }}
                       className="p-1.5 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-lg transition-colors cursor-pointer"
                       title="Edit Task"
                     >
@@ -298,7 +370,10 @@ export const TasksPage: React.FC<TasksPageProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDeletingTask(task)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingTask(task);
+                      }}
                       className="p-1.5 text-[#78716C] hover:text-[#B91C1C] hover:bg-[#FDF2F0] rounded-lg transition-colors cursor-pointer"
                       title="Delete Task"
                     >
@@ -312,44 +387,104 @@ export const TasksPage: React.FC<TasksPageProps> = ({
         </div>
       )}
 
-      {/* Client Task Detail Modal */}
-      {viewingTask && (
-        <ClientTaskDetailModal task={viewingTask} onClose={() => setViewingTask(null)} />
-      )}
-
+      {/* Task Modal */}
       <TaskModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={loadData}
+        onClose={() => { setIsModalOpen(false); setEditingTask(null); }}
         task={editingTask}
         projects={projects}
         users={users}
-      />
-
-      <ImportTasksModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
         onSuccess={loadData}
-        projects={projects}
-        defaultProjectId={projectFilter !== 'ALL' ? projectFilter : undefined}
       />
 
-      {submitTask && (
-        <SubmitTaskModal
-          task={submitTask}
-          onClose={() => setSubmitTask(null)}
-          onSubmitted={async () => { setSubmitTask(null); await loadData(); }}
+      {/* Focus Timer Modal */}
+      {focusTimerTask && (
+        <TaskFocusTimerModal
+          isOpen={isFocusTimerOpen}
+          onClose={() => {
+            setIsFocusTimerOpen(false);
+            setFocusTimerTask(null);
+          }}
+          task={focusTimerTask}
+          onTimeLogged={loadData}
         />
       )}
 
-      <ConfirmDialog
-        isOpen={Boolean(deletingTask)}
-        onClose={() => setDeletingTask(null)}
-        onConfirm={handleDeleteTask}
-        title="Delete Task?"
-        message={`Are you sure you want to delete task "${deletingTask?.title}"?`}
-        isLoading={isDeleting}
+      {/* Import Tasks Modal */}
+      <ImportTasksModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        projects={projects}
+        users={users}
+        onSuccess={loadData}
       />
+
+      {/* Submit Task Modal */}
+      {submitTask && (
+        <SubmitTaskModal
+          isOpen={!!submitTask}
+          onClose={() => setSubmitTask(null)}
+          task={submitTask}
+          onSuccess={loadData}
+        />
+      )}
+
+      {/* Universal Task Detail View Modal */}
+      {viewingTask && (
+        <ClientTaskDetailModal
+          task={viewingTask}
+          isOpen={!!viewingTask}
+          onClose={() => setViewingTask(null)}
+          onApproved={() => {
+            setViewingTask(null);
+            loadData();
+          }}
+          onStartTimer={(t) => {
+            setFocusTimerTask(t);
+            setIsFocusTimerOpen(true);
+          }}
+          onSubmitTask={(t) => {
+            setSubmitTask(t);
+          }}
+          onExplainDelay={(t) => {
+            setOverdueTask(t);
+            setIsOverdueModalOpen(true);
+          }}
+          onEditTask={(t) => {
+            setEditingTask(t);
+            setIsModalOpen(true);
+          }}
+          onStatusChange={async (taskId, status) => {
+            await handleQuickStatusChange(taskId, status);
+            setViewingTask((prev) => (prev && prev.id === taskId ? { ...prev, status } : prev));
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deletingTask}
+        title="Delete Task"
+        message={`Are you sure you want to delete "${deletingTask?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        isDestructive
+        isLoading={isDeleting}
+        onConfirm={handleDeleteTask}
+        onCancel={() => setDeletingTask(null)}
+      />
+
+      {/* Task Overdue Delay Explanation Modal */}
+      {overdueTask && (
+        <TaskOverdueReasonModal
+          isOpen={isOverdueModalOpen}
+          onClose={() => {
+            setIsOverdueModalOpen(false);
+            setOverdueTask(null);
+          }}
+          task={overdueTask}
+          onSuccess={loadData}
+        />
+      )}
     </div>
   );
 };

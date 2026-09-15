@@ -67,6 +67,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setError('Task title is required.');
       return;
     }
+    if (!description.trim()) {
+      setError('Task description is required.');
+      return;
+    }
     if (!projectId) {
       setError('Please select a project.');
       return;
@@ -84,7 +88,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       if (isEditing && task) {
         await api.updateTask(task.id, {
           title: title.trim(),
-          description: description.trim() || undefined,
+          description: description.trim(),
           projectId,
           assignedToId: assignedToId || undefined,
           status,
@@ -94,7 +98,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       } else {
         await api.createTask({
           title: title.trim(),
-          description: description.trim() || undefined,
+          description: description.trim(),
           projectId,
           assignedToId: assignedToId || undefined,
           status,
@@ -193,10 +197,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         {/* Description */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
-            Description
+            Description <span className="text-gold-700">*</span>
           </label>
           <textarea
             rows={3}
+            required
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Detailed task criteria, acceptance specs, or technical notes..."

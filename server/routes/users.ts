@@ -214,6 +214,9 @@ usersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Re
     if (profileImage !== undefined) {
       updates.profileImage = profileImage;
     }
+    if (req.body.skills !== undefined) {
+      updates.skills = req.body.skills;
+    }
     if (password && password.trim().length >= 6) {
       updates.passwordHash = await hashPassword(password);
     }

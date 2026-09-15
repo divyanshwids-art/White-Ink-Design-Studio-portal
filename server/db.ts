@@ -67,6 +67,7 @@ export interface UserRecord {
   passwordHash: string;
   role: Role;
   profileImage?: string | null;
+  skills?: string[] | null;
   fcmToken?: string | null;
   clientId?: string | null;
   mustChangePassword?: boolean;
@@ -155,6 +156,9 @@ export interface TaskRecord {
   clientReviewComments?: string | null;
   reviewedById?: string | null;
   reviewedAt?: string | null;
+  overdueReason?: string | null;
+  overdueReasonSubmittedAt?: string | null;
+  overdueNotifiedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -224,6 +228,8 @@ export interface AttendanceRecord {
   clockIn?: string | null;
   clockOut?: string | null;
   earlyClockOutReason?: string | null;
+  clockInReason?: string | null;
+  clockOutReason?: string | null;
   status: AttendanceStatus;
   totalWorkingMinutes: number;
   totalBreakMinutes: number;
@@ -233,6 +239,46 @@ export interface AttendanceRecord {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TaskTimeLogRecord {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  projectId: string;
+  projectName: string;
+  userId: string;
+  userName?: string;
+  date: string; // YYYY-MM-DD
+  durationMinutes: number;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface EodTaskReportItemRecord {
+  id: string;
+  title: string;
+  projectName?: string;
+  timeSpentMinutes?: number;
+  progress?: number;
+  status?: string;
+  type: 'TASK' | 'TODO';
+}
+
+export interface EodReportRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  date: string; // YYYY-MM-DD
+  totalWorkingMinutes: number;
+  totalBreakMinutes: number;
+  completedTasks: EodTaskReportItemRecord[];
+  inProgressTasks: EodTaskReportItemRecord[];
+  summaryNote?: string | null;
+  blockers?: string | null;
+  submittedAt: string;
+}
+
 
 export interface MeetingRecord {
   id: string;
@@ -431,6 +477,8 @@ export interface DatabaseSchema {
   meetings: MeetingRecord[];
   googleIntegration: GoogleIntegrationRecord | null;
   todos: PersonalTodoRecord[];
+  taskTimeLogs: TaskTimeLogRecord[];
+  eodReports: EodReportRecord[];
 }
 
 export function getTodayDateString(d: Date = new Date()): string {
@@ -483,10 +531,12 @@ class DatabaseService {
     meetings: [],
     googleIntegration: null,
     todos: [],
+    taskTimeLogs: [],
+    eodReports: [],
     settings: {
       id: 'system_config',
-      officeStartTime: '09:30',
-      officeEndTime: '18:30',
+      officeStartTime: '09:00',
+      officeEndTime: '18:00',
       lateThresholdMinutes: 15,
       maxBreakMinutes: 60,
       defaultLeaveAllowance: 20,
@@ -746,6 +796,8 @@ class DatabaseService {
           createdAt: toIsoSafe(t.createdAt),
           updatedAt: toIsoSafe(t.updatedAt),
         })) as PersonalTodoRecord[],
+        taskTimeLogs: this.data?.taskTimeLogs || [],
+        eodReports: this.data?.eodReports || [],
         googleIntegration: googleInt
           ? ({
               ...googleInt,
@@ -846,6 +898,8 @@ class DatabaseService {
       meetings: [],
       googleIntegration: null,
       todos: (seed.todos || []) as PersonalTodoRecord[],
+      taskTimeLogs: (seed.taskTimeLogs || []) as TaskTimeLogRecord[],
+      eodReports: (seed.eodReports || []) as EodReportRecord[],
     };
     this.recalculateAllProjectProgress();
     this.ensureClientAdmins();
@@ -1462,6 +1516,76 @@ class DatabaseService {
     return true;
   }
 
+  public checkAndNotifyOverdueTasks(): number {
+    const now = new Date();
+    const tasks = this.data.tasks.filter((t) => {
+      if (t.status === 'COMPLETED') return false;
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      return !isNaN(due.getTime()) && due < now && !t.overdueNotifiedAt;
+    });
+
+    const admins = this.data.users.filter((u) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN');
+    let count = 0;
+
+    for (const t of tasks) {
+      t.overdueNotifiedAt = now.toISOString();
+      const assignee = t.assignedToId ? this.getUserById(t.assignedToId) : null;
+      const dueStr = new Date(t.dueDate!).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+
+      for (const admin of admins) {
+        this.createNotification({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          userId: admin.id,
+          title: '🚨 Task Deadline Missed / Overdue Alert',
+          message: `Task "${t.title}" assigned to ${assignee?.name || 'Team Member'} has missed its deadline (${dueStr}) and is still incomplete.`,
+          type: 'TASK_STATUS',
+          linkUrl: '/tasks',
+          isRead: false,
+        });
+      }
+      count++;
+    }
+
+    return count;
+  }
+
+  public setTaskOverdueReason(taskId: string, userId: string, reason: string): TaskRecord | null {
+    const task = this.getTaskById(taskId);
+    if (!task) return null;
+
+    const user = this.getUserById(userId);
+    // Only assigned team member, creator, or admin can set delay reason
+    if (task.assignedToId !== userId && task.createdById !== userId && user?.role === 'TEAM_MEMBER') {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    task.overdueReason = reason.trim();
+    task.overdueReasonSubmittedAt = now;
+    task.updatedAt = now;
+
+    // Send notification to Admins
+    const admins = this.data.users.filter((u) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN');
+    for (const admin of admins) {
+      this.createNotification({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: admin.id,
+        title: '📝 Delay Reason Submitted by Team Member',
+        message: `${user?.name || 'Team Member'} submitted delay explanation for task "${task.title}": "${reason.trim()}"`,
+        type: 'TASK_STATUS',
+        linkUrl: '/tasks',
+        isRead: false,
+      });
+    }
+
+    return task;
+  }
+
   // --- COMMENTS ---
   public getComments() {
     return this.data.comments;
@@ -1580,7 +1704,7 @@ class DatabaseService {
     return this.getAttendanceWithDetails(record);
   }
 
-  public clockIn(userId: string, customTimestamp?: string): AttendanceWithDetails {
+  public clockIn(userId: string, customTimestamp?: string, clockInReason?: string): AttendanceWithDetails {
     const now = customTimestamp ? new Date(customTimestamp) : new Date();
     const today = getTodayDateString(now);
 
@@ -1589,7 +1713,7 @@ class DatabaseService {
 
     const settings = this.getSettings();
     const override = this.getScheduleOverrideByUserId(userId);
-    const officeStart = override?.customStartTime || settings?.officeStartTime || '09:30';
+    const officeStart = override?.customStartTime || settings?.officeStartTime || '09:00';
     const graceMinutes = settings?.lateThresholdMinutes !== undefined ? settings.lateThresholdMinutes : 15;
 
     const [startH, startM] = officeStart.split(':').map((v) => parseInt(v, 10) || 0);
@@ -1598,10 +1722,13 @@ class DatabaseService {
     const isLate = actualClockInMins > scheduledStartMins;
     const initialStatus: AttendanceStatus = isLate ? 'LATE' : 'PRESENT';
 
+    const cleanReason = (clockInReason || '').trim() || null;
+
     if (record) {
       if (!record.clockIn) {
         record.clockIn = clockInTimeIso;
         record.status = initialStatus;
+        if (cleanReason) record.clockInReason = cleanReason;
         record.updatedAt = new Date().toISOString();
 
         if (prisma && this.isPrismaActive) {
@@ -1623,6 +1750,7 @@ class DatabaseService {
         date: today,
         clockIn: clockInTimeIso,
         clockOut: null,
+        clockInReason: cleanReason,
         status: initialStatus,
         totalWorkingMinutes: 0,
         totalBreakMinutes: 0,
@@ -1654,7 +1782,7 @@ class DatabaseService {
     return this.getAttendanceWithDetails(record);
   }
 
-  public clockOut(userId: string, customTimestamp?: string, earlyClockOutReason?: string): AttendanceWithDetails {
+  public clockOut(userId: string, customTimestamp?: string, earlyClockOutReason?: string, clockOutReason?: string, tomorrowTask?: string): AttendanceWithDetails {
     const now = customTimestamp ? new Date(customTimestamp) : new Date();
     const today = getTodayDateString(now);
 
@@ -1669,19 +1797,19 @@ class DatabaseService {
 
     const settings = this.getSettings();
     const override = this.getScheduleOverrideByUserId(userId);
-    const officeEnd = override?.customEndTime || settings?.officeEndTime || '18:30';
+    const officeEnd = override?.customEndTime || settings?.officeEndTime || '18:00';
 
     const [endH, endM] = officeEnd.split(':').map((v) => parseInt(v, 10) || 0);
     const scheduledEndMins = endH * 60 + endM;
     const actualClockOutMins = now.getHours() * 60 + now.getMinutes();
     const isEarly = actualClockOutMins < scheduledEndMins;
 
-    const trimmedReason = (earlyClockOutReason || '').trim();
+    const trimmedReason = (earlyClockOutReason || clockOutReason || '').trim();
     if (isEarly && !trimmedReason) {
-      throw new Error('You are clocking out before your regular working time. Please provide a reason.');
+      throw new Error('You are clocking out before your regular working time (6:00 PM). Please provide a reason.');
     }
 
-    const finalReason = isEarly ? trimmedReason : (trimmedReason || null);
+    const finalReason = trimmedReason || null;
     const clockOutIso = now.toISOString();
 
     const activeBreak = this.data.breaks.find((b) => b.attendanceId === record.id && !b.endTime);
@@ -1720,6 +1848,7 @@ class DatabaseService {
 
     record.clockOut = clockOutIso;
     record.earlyClockOutReason = finalReason;
+    record.clockOutReason = finalReason;
     record.totalBreakMinutes = totalBreakMinutes;
     record.totalWorkingMinutes = totalWorkingMinutes;
     record.effectiveWorkingMinutes = effectiveWorkingMinutes;
@@ -1740,6 +1869,31 @@ class DatabaseService {
           } as any,
         })
         .catch(() => {});
+    }
+
+    // Auto-create tomorrow's To-Do and send reminder notification if provided
+    if (tomorrowTask && tomorrowTask.trim()) {
+      try {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowDateStr = getTodayDateString(tomorrow);
+        this.createTodo({
+          title: tomorrowTask.trim(),
+          createdById: userId,
+          assignedToId: userId,
+          dueDate: tomorrowDateStr,
+        });
+        this.createNotification({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          userId,
+          title: '📋 Kal Ka Task Scheduled',
+          message: `Kal ka ye task planned hai: "${tomorrowTask.trim()}". Stay prepared!`,
+          type: 'TASK_ASSIGNED',
+          isRead: false,
+        });
+      } catch (err: any) {
+        console.warn('[TODO/NOTIFICATION] Failed to auto-schedule tomorrow task:', err?.message);
+      }
     }
 
     return this.getAttendanceWithDetails(record);
@@ -1883,15 +2037,11 @@ class DatabaseService {
 
     const weeklyTrend: Array<{ date: string; day: string; present: number; absent: number; late: number }> = [];
     const baseDate = new Date(dateStr);
-    const dayOfWeek = baseDate.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(baseDate);
-    monday.setDate(baseDate.getDate() + mondayOffset);
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() - i);
       const ds = getTodayDateString(d);
       const dRecords = this.data.attendances.filter((a) => a.date === ds);
       const dAttended = new Set(dRecords.map((a) => a.userId));
@@ -1902,7 +2052,7 @@ class DatabaseService {
 
       weeklyTrend.push({
         date: ds,
-        day: dayNames[i],
+        day: dayNames[d.getDay()],
         present: dPresents,
         absent: dAbsents,
         late: dLates,
@@ -1924,6 +2074,247 @@ class DatabaseService {
       statusBreakdown,
       weeklyTrend,
     };
+  }
+
+  // --- TASK TIME LOGGING & DAILY ACTIVITY ---
+  public logTaskTime(data: {
+    taskId: string;
+    userId: string;
+    durationMinutes: number;
+    notes?: string;
+    date?: string;
+  }): TaskTimeLogRecord {
+    const task = this.getTaskById(data.taskId);
+    const user = this.getUserById(data.userId);
+    const project = task ? this.getProjectById(task.projectId) : null;
+    const date = data.date || getTodayDateString();
+
+    const record: TaskTimeLogRecord = {
+      id: `ttl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      taskId: data.taskId,
+      taskTitle: task?.title || 'Untitled Task',
+      projectId: task?.projectId || '',
+      projectName: project?.name || 'General Project',
+      userId: data.userId,
+      userName: user?.name || 'Team Member',
+      date,
+      durationMinutes: Math.max(1, Math.round(data.durationMinutes)),
+      notes: data.notes || null,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (!this.data.taskTimeLogs) this.data.taskTimeLogs = [];
+    this.data.taskTimeLogs.push(record);
+    return record;
+  }
+
+  public getTaskTimeLogs(filters?: { userId?: string; date?: string; taskId?: string }): TaskTimeLogRecord[] {
+    if (!this.data.taskTimeLogs) this.data.taskTimeLogs = [];
+    let list = [...this.data.taskTimeLogs];
+    if (filters?.userId) list = list.filter((l) => l.userId === filters.userId);
+    if (filters?.date) list = list.filter((l) => l.date === filters.date);
+    if (filters?.taskId) list = list.filter((l) => l.taskId === filters.taskId);
+    return list;
+  }
+
+  public getDailyTaskSummary(userId: string, date: string = getTodayDateString()) {
+    const user = this.getUserById(userId);
+    const timeLogs = this.getTaskTimeLogs({ userId, date });
+    const attendance = this.getTodayAttendance(userId, date);
+
+    const allAssignedTasks = this.data.tasks.filter((t) => t.assignedToId === userId);
+    const allAssignedTodos = (this.data.todos || []).filter((t) => t.assignedToId === userId || t.createdById === userId);
+
+    const taskMap = new Map<string, any>();
+
+    // Add logged tasks
+    timeLogs.forEach((log) => {
+      const existing = taskMap.get(log.taskId);
+      if (existing) {
+        existing.totalLoggedMinutes += log.durationMinutes;
+      } else {
+        const task = this.getTaskById(log.taskId);
+        const item = {
+          id: log.taskId,
+          title: log.taskTitle,
+          projectName: log.projectName,
+          projectId: log.projectId,
+          status: task?.status || 'IN_PROGRESS',
+          priority: task?.priority || 'MEDIUM',
+          totalLoggedMinutes: log.durationMinutes,
+          isCompleted: task?.status === 'COMPLETED',
+          type: 'TASK',
+        };
+        taskMap.set(log.taskId, item);
+      }
+    });
+
+    // Add any tasks assigned to this user that are active or completed
+    allAssignedTasks.forEach((t) => {
+      if (!taskMap.has(t.id)) {
+        const p = this.getProjectById(t.projectId);
+        taskMap.set(t.id, {
+          id: t.id,
+          title: t.title,
+          projectName: p?.name || 'Project',
+          projectId: t.projectId,
+          status: t.status,
+          priority: t.priority,
+          totalLoggedMinutes: 0,
+          isCompleted: t.status === 'COMPLETED',
+          type: 'TASK',
+        });
+      }
+    });
+
+    // Add todos
+    allAssignedTodos.forEach((todo) => {
+      taskMap.set(todo.id, {
+        id: todo.id,
+        title: todo.title,
+        projectName: 'Personal Todo',
+        projectId: undefined,
+        status: todo.completed ? 'COMPLETED' : 'TODO',
+        priority: 'MEDIUM',
+        totalLoggedMinutes: 0,
+        isCompleted: todo.completed,
+        type: 'TODO',
+      });
+    });
+
+    const tasksList = Array.from(taskMap.values());
+    const totalLoggedTaskMinutes = timeLogs.reduce((acc, l) => acc + l.durationMinutes, 0);
+    const completedCount = tasksList.filter((t) => t.isCompleted).length;
+    const inProgressCount = tasksList.filter((t) => !t.isCompleted).length;
+
+    return {
+      date,
+      userId,
+      userName: user?.name || 'Team Member',
+      totalWorkingMinutes: attendance?.effectiveWorkingMinutes || attendance?.liveWorkingMinutes || 0,
+      totalLoggedTaskMinutes,
+      completedTasksCount: completedCount,
+      inProgressTasksCount: inProgressCount,
+      tasks: tasksList,
+    };
+  }
+
+  // --- EOD REPORTS ---
+  public submitEodReport(data: {
+    userId: string;
+    date?: string;
+    summaryNote?: string;
+    blockers?: string;
+    completedTasks?: any[];
+    inProgressTasks?: any[];
+    tomorrowTask?: string;
+  }): EodReportRecord {
+    if (!this.data.eodReports) this.data.eodReports = [];
+    const date = data.date || getTodayDateString();
+    const user = this.getUserById(data.userId);
+    const attendance = this.getTodayAttendance(data.userId, date);
+
+    let completedTasks = data.completedTasks;
+    let inProgressTasks = data.inProgressTasks;
+
+    if (!completedTasks || !inProgressTasks) {
+      const summary = this.getDailyTaskSummary(data.userId, date);
+      if (!completedTasks) {
+        completedTasks = summary.tasks
+          .filter((t: any) => t.isCompleted)
+          .map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            projectName: t.projectName,
+            timeSpentMinutes: t.totalLoggedMinutes,
+            status: t.status,
+            type: t.type,
+          }));
+      }
+      if (!inProgressTasks) {
+        inProgressTasks = summary.tasks
+          .filter((t: any) => !t.isCompleted)
+          .map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            projectName: t.projectName,
+            timeSpentMinutes: t.totalLoggedMinutes,
+            status: t.status,
+            type: t.type,
+          }));
+      }
+    }
+
+    const existingIndex = this.data.eodReports.findIndex((r) => r.userId === data.userId && r.date === date);
+    const report: EodReportRecord = {
+      id: existingIndex >= 0 ? this.data.eodReports[existingIndex].id : `eod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: data.userId,
+      userName: user?.name || 'Team Member',
+      userEmail: user?.email || '',
+      date,
+      totalWorkingMinutes: attendance?.effectiveWorkingMinutes || attendance?.liveWorkingMinutes || 0,
+      totalBreakMinutes: attendance?.totalBreakMinutes || attendance?.liveBreakMinutes || 0,
+      completedTasks: completedTasks || [],
+      inProgressTasks: inProgressTasks || [],
+      summaryNote: data.summaryNote || null,
+      blockers: data.blockers || null,
+      submittedAt: new Date().toISOString(),
+    };
+
+    if (existingIndex >= 0) {
+      this.data.eodReports[existingIndex] = report;
+    } else {
+      this.data.eodReports.push(report);
+    }
+
+    if (data.tomorrowTask && data.tomorrowTask.trim()) {
+      try {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowDateStr = getTodayDateString(tomorrow);
+        this.createTodo({
+          title: data.tomorrowTask.trim(),
+          createdById: data.userId,
+          assignedToId: data.userId,
+          dueDate: tomorrowDateStr,
+        });
+        this.createNotification({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          userId: data.userId,
+          title: '📋 Kal Ka Task Scheduled',
+          message: `Kal ka ye task planned hai: "${data.tomorrowTask.trim()}". Stay prepared!`,
+          type: 'TASK_ASSIGNED',
+          isRead: false,
+        });
+      } catch (err: any) {
+        console.warn('[TODO/NOTIFICATION] Failed to auto-schedule tomorrow task in EOD:', err?.message);
+      }
+    }
+
+    return report;
+  }
+
+  public getEodReports(filters?: { userId?: string; date?: string; startDate?: string; endDate?: string }): (EodReportRecord & { user?: any })[] {
+    if (!this.data.eodReports) this.data.eodReports = [];
+    let list = [...this.data.eodReports];
+    if (filters?.userId) list = list.filter((r) => r.userId === filters.userId);
+    if (filters?.date) list = list.filter((r) => r.date === filters.date);
+    if (filters?.startDate) list = list.filter((r) => r.date >= filters.startDate!);
+    if (filters?.endDate) list = list.filter((r) => r.date <= filters.endDate!);
+
+    list.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+    return list.map((r) => {
+      const u = this.getUserById(r.userId);
+      return {
+        ...r,
+        user: u ? { id: u.id, name: u.name, email: u.email, role: u.role, profileImage: u.profileImage } : undefined,
+      };
+    });
+  }
+
+  public getTodayEodReport(userId: string, date: string = getTodayDateString()): EodReportRecord | null {
+    if (!this.data.eodReports) this.data.eodReports = [];
+    return this.data.eodReports.find((r) => r.userId === userId && r.date === date) || null;
   }
 
   // --- MILESTONES ---
