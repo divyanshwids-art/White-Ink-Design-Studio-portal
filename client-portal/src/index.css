@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold-50: #FAF7F0;
+  --color-gold-100: #F5EFE6;
+  --color-gold-200: #EAE0D0;
+  --color-gold-300: #D8C6AD;
+  --color-gold-400: #B89242;
+  --color-gold-500: #BA954F;
+  --color-gold-600: #A17B2F;
+  --color-gold-700: #73551A;
+  --color-gold-800: #574013;
+  --color-gold-900: #3B2A0B;
+  --color-gold-950: #24180A;
+
+  /* Remap indigo and blue to warm gold to eliminate leftover default SaaS theme colors */
+  --color-indigo-50: #FAF7F0;
+  --color-indigo-100: #F5EFE6;
+  --color-indigo-200: #EAE0D0;
+  --color-indigo-300: #D8C6AD;
+  --color-indigo-400: #B89242;
+  --color-indigo-500: #BA954F;
+  --color-indigo-600: #A17B2F;
+  --color-indigo-700: #73551A;
+  --color-indigo-800: #574013;
+  --color-indigo-900: #3B2A0B;
+  --color-indigo-950: #24180A;
+
+  --color-blue-50: #FAF7F0;
+  --color-blue-100: #F5EFE6;
+  --color-blue-200: #EAE0D0;
+  --color-blue-300: #D8C6AD;
+  --color-blue-400: #B89242;
+  --color-blue-500: #BA954F;
+  --color-blue-600: #A17B2F;
+  --color-blue-700: #73551A;
+  --color-blue-800: #574013;
+  --color-blue-900: #3B2A0B;
+
+  --font-serif: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-script: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    background-color: #FAF7F2;
+    color: #1C1917;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar in warm metallic gold and ivory */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #FAF7F2;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D8C6AD;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #BA954F;
+  }
+}
+
+/* Subtle, smooth keyframe animations */
+@keyframes goldFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes liquidSilkWave {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.06);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.animate-gold-fade-in {
+  animation: goldFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Interactive micro-interaction utility classes */
+.card-hover-lift {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -4px rgba(186, 149, 79, 0.14), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+}
+
+.btn-hover-lift {
+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease, background-color 150ms ease;
+}
+.btn-hover-lift:hover {
+  transform: translateY(-1px);
+}
+.btn-hover-lift:active {
+  transform: translateY(0);
+}
+
+/* =============================
+   White Ink Design Studio Tokens
+   ============================= */
+@layer utilities {
+  /* Page background */
+  .bg-page { background-color: #FAF7F2; }
+  /* Card / surface background */
+  .bg-card { background-color: #FFFFFF; }
+  
+  /* Primary metallic bronze gold */
+  .text-primary { color: #BA954F; }
+  .bg-primary { background-color: #BA954F; }
+  .border-primary { border-color: #BA954F; }
+  .hover-primary:hover { color: #A17B2F; background-color: #F5EFE6; }
+
+  /* Typography helpers */
+  .font-brand-display { font-family: var(--font-serif); }
+  .font-brand-script { font-family: var(--font-script); }
+
+  /* Headings & Text */
+  .text-heading { color: #1C1917; }
+  .text-body { color: #292524; }
+  .text-muted { color: #78716C; }
+
+  /* Button styling matching the reference */
+  .btn-gold-primary,
+  .btn-primary,
+  .primary-cta {
+    background-color: #BA954F;
+    color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: 0 2px 8px -1px rgba(186, 149, 79, 0.28);
+    transition: all 180ms ease;
+  }
+  .btn-gold-primary:hover,
+  .btn-primary:hover,
+  .primary-cta:hover {
+    background-color: #A17B2F;
+    box-shadow: 0 4px 12px -1px rgba(186, 149, 79, 0.38);
+  }
+
+  .btn-gold-secondary {
+    background-color: #FFFFFF;
+    color: #443B30;
+    border: 1px solid #DFD5C6;
+    font-weight: 600;
+    transition: all 180ms ease;
+  }
+  .btn-gold-secondary:hover {
+    background-color: #FAF7F2;
+    border-color: #BA954F;
+    color: #BA954F;
+  }
+
+  /* Legacy utility bindings */
+  .border-subtle { border-color: #EDE7DD; }
+  .card-surface {
+    background-color: #FFFFFF;
+    border: 1px solid #EDE7DD;
+    box-shadow: 0 2px 10px -2px rgba(186, 149, 79, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+    border-radius: 1rem;
+  }
+}
+
+/* =============================
+   Typography Scale Utilities
+   ============================= */
+@layer utilities {
+  .title {
+    font-family: var(--font-serif);
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+    font-weight: 700;
+    color: #1C1917;
+    letter-spacing: -0.02em;
+  }
+  .section-heading {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    color: #1C1917;
+    letter-spacing: -0.01em;
+  }
+  .body {
+    font-size: 0.9375rem;
+    line-height: 1.5rem;
+    color: #292524;
+  }
+  .muted {
+    font-size: 0.875rem;
+    color: #78716C;
+  }
+  .table-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #57534E;
+  }
+  .form-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #292524;
+  }
+}

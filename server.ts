@@ -1,8 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { db } from './server/db.ts';
 import { authRouter } from './server/routes/auth.ts';
 import { usersRouter } from './server/routes/users.ts';
@@ -29,22 +28,103 @@ import { googleRouter } from './server/routes/google.ts';
 import { meetingsRouter } from './server/routes/meetings.ts';
 import { todosRouter } from './server/routes/todos.ts';
 
+// Helper to collect all allowed frontend origins from environment or default dev ports
+function getAllowedOrigins(): string[] {
+  const envOrigins: string[] = [];
+
+  const rawFrontendUrl = process.env.FRONTEND_URL;
+  const rawClientUrl = process.env.CLIENT_PORTAL_URL;
+  const rawTeamUrl = process.env.TEAM_PORTAL_URL;
+  const rawAllowedOrigins = process.env.ALLOWED_ORIGINS;
+
+  [rawFrontendUrl, rawClientUrl, rawTeamUrl, rawAllowedOrigins].forEach((entry) => {
+    if (entry) {
+      entry
+        .split(',')
+        .map((s) => s.trim().replace(/\/$/, ''))
+        .filter(Boolean)
+        .forEach((origin) => {
+          if (!envOrigins.includes(origin)) envOrigins.push(origin);
+        });
+    }
+  });
+
+  // Local development default origins
+  const devOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3002',
+  ];
+
+  devOrigins.forEach((origin) => {
+    if (!envOrigins.includes(origin)) envOrigins.push(origin);
+  });
+
+  return envOrigins;
+}
+
 async function startServer() {
   // Initialize database
   await db.init();
 
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
+  const allowedOrigins = getAllowedOrigins();
 
-  // Middlewares
-  app.use(cors());
-  app.use(express.json());
+  // Multi-origin CORS configuration
+  const corsOptions: CorsOptions = {
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
 
-  // API Routes
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+      // In non-production, allow localhost and 127.0.0.1 on any port
+      if (process.env.NODE_ENV !== 'production') {
+        if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+          return callback(null, true);
+        }
+      }
+
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      console.warn(`[CORS] Blocked request from unauthorized origin: ${origin}`);
+      return callback(new Error(`CORS policy does not allow access from origin: ${origin}`), false);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  };
+
+  app.use(cors(corsOptions));
+  app.use(express.json({ limit: '20mb' }));
+
+  // API Health Check
+  app.get('/api/health', (_req, res) => {
+    res.json({
+      status: 'ok',
+      service: 'White Ink Central Backend API',
+      timestamp: new Date().toISOString(),
+      port: PORT,
+    });
   });
 
+  // Root route info for API server
+  app.get('/', (_req, res) => {
+    res.json({
+      name: 'White Ink Design Studio Portal API',
+      version: '1.0.0',
+      status: 'online',
+      endpoints: '/api/*',
+      health: '/api/health',
+    });
+  });
+
+  // Central API Routes
   app.use('/api/auth', authRouter);
   app.use('/api/access-requests', accessRequestsRouter);
   app.use('/api/credentials', credentialsRouter);
@@ -72,30 +152,24 @@ async function startServer() {
   app.use('/api', meetingsRouter);
 
   // Serve Firebase messaging service worker with root service-worker scope
-  app.get('/firebase-messaging-sw.js', (req, res) => {
+  app.get('/firebase-messaging-sw.js', (_req, res) => {
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
     res.setHeader('Service-Worker-Allowed', '/');
     const swPath = path.join(process.cwd(), 'public', 'firebase-messaging-sw.js');
     res.sendFile(swPath);
   });
 
-  // Vite middleware for development / static serving in production
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
+  // Global 404 handler for API routes
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({
+      error: 'Not Found',
+      message: `API endpoint ${req.method} ${req.originalUrl} does not exist on this server.`,
     });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`[White Ink Backend API] Server running on http://0.0.0.0:${PORT}`);
+    console.log(`[White Ink Backend API] Configured CORS allowed origins: ${allowedOrigins.join(', ')}`);
   });
 }
 

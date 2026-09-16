@@ -1,0 +1,12 @@
+{
+  "name": "white-ink-client-portal",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3001",
+    "build": "vite build",
+    "preview": "vite preview --port 3001",
+    "lint": "tsc --noEmit"
+  }
+}

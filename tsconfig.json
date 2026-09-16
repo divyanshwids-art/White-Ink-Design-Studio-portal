@@ -18,6 +18,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@shared": [
+        "./shared/index.ts"
+      ],
+      "@shared/*": [
+        "./shared/*"
       ]
     },
     "allowImportingTsExtensions": true,
@@ -25,10 +31,15 @@
   },
   "include": [
     "src",
+    "shared",
+    "client-portal",
+    "team-portal",
     "server"
   ],
   "exclude": [
     "dist",
+    "client-portal/dist",
+    "team-portal/dist",
     "node_modules"
   ]
 }
