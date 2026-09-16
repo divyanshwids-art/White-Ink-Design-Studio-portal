@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTimer } from '../context/TimerContext';
 import { Task, TaskStatus, Project, User } from '../types';
 import { api } from '../services/api';
 import { PriorityBadge } from '../components/common/PriorityBadge';
@@ -52,6 +53,21 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
   const isAdminOrSuper = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   const isTeamMember = user?.role === 'TEAM_MEMBER';
 
+  const {
+    activeFocusTask,
+    focusTotalSeconds,
+    focusSecondsRemaining,
+    isFocusTimerActive,
+    isFocusAlarmRinging,
+    startFocusTimer,
+    pauseFocusTimer,
+    resumeFocusTimer,
+    resetFocusTimer,
+    setFocusMinutes,
+    stopFocusAlarm,
+    logAndCloseFocusTimer,
+  } = useTimer();
+
   const [task, setTask] = useState<Task | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -64,17 +80,19 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
 
-  // Focus Timer States
+  // Focus Timer Local States
   const [timerMinutes, setTimerMinutes] = useState<number>(25);
   const [customTimerMinutes, setCustomTimerMinutes] = useState<string>('');
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(25 * 60);
-  const [totalSeconds, setTotalSeconds] = useState<number>(25 * 60);
-  const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
-  const [isAlarmRinging, setIsAlarmRinging] = useState<boolean>(false);
   const [timerNotes, setTimerNotes] = useState<string>('');
   const [isLoggingTime, setIsLoggingTime] = useState<boolean>(false);
   const [timeLoggedSuccess, setTimeLoggedSuccess] = useState<boolean>(false);
-  const timerIntervalRef = useRef<any>(null);
+
+  const isCurrentTaskSession = activeFocusTask?.id === task?.id;
+  const isTimerActive = isCurrentTaskSession ? isFocusTimerActive : false;
+  const isAlarmRinging = isCurrentTaskSession ? isFocusAlarmRinging : false;
+  const totalSeconds = isCurrentTaskSession ? focusTotalSeconds : timerMinutes * 60;
+  const secondsRemaining = isCurrentTaskSession ? focusSecondsRemaining : timerMinutes * 60;
+  const currentMinutes = isCurrentTaskSession ? Math.round(focusTotalSeconds / 60) : timerMinutes;
 
   // Deliverable Submission Form State
   const [submissionDescription, setSubmissionDescription] = useState('');
@@ -126,67 +144,32 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
     loadTask();
   }, [loadTask]);
 
-  // Timer Tick
-  useEffect(() => {
-    if (isTimerActive && secondsRemaining > 0) {
-      timerIntervalRef.current = setInterval(() => {
-        setSecondsRemaining((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerIntervalRef.current);
-            setIsTimerActive(false);
-            setIsAlarmRinging(true);
-            soundAlerts.startContinuousAlarm('timer');
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    }
-
-    return () => {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    };
-  }, [isTimerActive, secondsRemaining]);
-
-  // Cleanup sound on unmount
-  useEffect(() => {
-    return () => {
-      soundAlerts.stopAlarm();
-    };
-  }, []);
-
   // Timer controls
   const handleStartTimer = () => {
-    soundAlerts.playBeep(440, 'sine', 0.1, 0.1);
-    setIsTimerActive(true);
-    setIsAlarmRinging(false);
-    soundAlerts.stopAlarm();
+    if (!task) return;
+    if (isCurrentTaskSession) {
+      resumeFocusTimer();
+    } else {
+      startFocusTimer(task, timerMinutes);
+    }
   };
 
   const handlePauseTimer = () => {
-    setIsTimerActive(false);
+    pauseFocusTimer();
   };
 
   const handleResetTimer = () => {
-    setIsTimerActive(false);
-    setIsAlarmRinging(false);
-    soundAlerts.stopAlarm();
-    const s = timerMinutes * 60;
-    setSecondsRemaining(s);
-    setTotalSeconds(s);
+    if (isCurrentTaskSession) {
+      resetFocusTimer(timerMinutes);
+    }
   };
 
   const handleSelectPreset = (mins: number) => {
     setTimerMinutes(mins);
     setCustomTimerMinutes('');
-    setIsTimerActive(false);
-    setIsAlarmRinging(false);
-    soundAlerts.stopAlarm();
-    const s = mins * 60;
-    setSecondsRemaining(s);
-    setTotalSeconds(s);
+    if (isCurrentTaskSession) {
+      setFocusMinutes(mins);
+    }
   };
 
   const handleCustomTimerSubmit = (e: React.FormEvent) => {
@@ -198,8 +181,7 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
   };
 
   const handleStopAlarm = () => {
-    setIsAlarmRinging(false);
-    soundAlerts.stopAlarm();
+    stopFocusAlarm();
   };
 
   const handleLogFocusTime = async () => {
@@ -207,13 +189,17 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
     handleStopAlarm();
     setIsLoggingTime(true);
     try {
-      const elapsedSeconds = totalSeconds - secondsRemaining;
-      const elapsedMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
+      if (isCurrentTaskSession) {
+        await logAndCloseFocusTimer(timerNotes);
+      } else {
+        const elapsedSeconds = totalSeconds - secondsRemaining;
+        const elapsedMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
 
-      await api.logTaskTime(task.id, {
-        durationMinutes: elapsedMinutes,
-        notes: timerNotes.trim() || `Focus Session (${timerMinutes}m target)`,
-      });
+        await api.logTaskTime(task.id, {
+          durationMinutes: elapsedMinutes,
+          notes: timerNotes.trim() || `Focus Session (${currentMinutes}m target)`,
+        });
+      }
 
       setTimeLoggedSuccess(true);
       setTimeout(() => setTimeLoggedSuccess(false), 4000);

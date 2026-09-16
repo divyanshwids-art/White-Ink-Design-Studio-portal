@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, Menu, X } from 'lucide-react';
+import { useTimer } from '../../context/TimerContext';
+import { LogOut, Menu, X, Clock } from 'lucide-react';
 import { NotificationDropdown } from './NotificationDropdown';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -11,6 +12,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) => {
   const { user, logout } = useAuth();
+  const { periodicSecondsLeft, isPeriodicRunning, formatMinSec } = useTimer();
   const isClient = user?.role === 'CLIENT' || user?.role === 'CLIENT_ADMIN';
 
   const roleBadgeMap: Record<string, string> = {
@@ -57,6 +59,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
       {/* Right section */}
       <div className="flex items-center gap-2 sm:gap-4">
+        {/* Live 15m Attendance Focus Check Ticker */}
+        {isPeriodicRunning && (
+          <button
+            type="button"
+            onClick={() => onNavigate?.('/attendance')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF4EC] hover:bg-[#F5ECE0] border border-[#EDE3D4] text-[#BA954F] text-xs font-semibold cursor-pointer shadow-2xs transition-all animate-gold-fade-in"
+            title="15-Minute Focus Check-in (Click to open Attendance)"
+          >
+            <Clock className="h-3.5 w-3.5 stroke-[2]" />
+            <span className="hidden md:inline">15m Focus Check:</span>
+            <strong className="font-mono text-[#1C1917]">{formatMinSec(periodicSecondsLeft)}</strong>
+          </button>
+        )}
+
         <NotificationDropdown onNavigate={onNavigate} />
 
         {user && (

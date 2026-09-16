@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TimerProvider } from './context/TimerContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { BottomNavigation } from './components/layout/BottomNavigation';
@@ -348,7 +349,9 @@ function MainApp() {
 export default function App() {
   return (
     <AuthProvider>
-      <MainApp />
+      <TimerProvider>
+        <MainApp />
+      </TimerProvider>
     </AuthProvider>
   );
 }

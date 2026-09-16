@@ -7,6 +7,7 @@ import {
   TaskStatus,
   PersonalTodo,
   User,
+  Attendance,
 } from '../types';
 import { api } from '../services/api';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -17,6 +18,7 @@ import { TodoModal } from '../components/todos/TodoModal';
 import { DeadlineCountdownBadge } from '../components/tasks/DeadlineCountdownBadge';
 import { TaskFocusTimerModal } from '../components/tasks/TaskFocusTimerModal';
 import { DailyTaskActivityCard } from '../components/dashboard/DailyTaskActivityCard';
+import { QuickActionsCard } from '../components/dashboard/QuickActionsCard';
 import { TaskOverdueReasonModal } from '../components/tasks/TaskOverdueReasonModal';
 import {
   FolderKanban,
@@ -64,6 +66,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
   const [todos, setTodos] = useState<PersonalTodo[]>([]);
   const [internalUsers, setInternalUsers] = useState<User[]>([]);
+  const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
   const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
   const [focusTimerTask, setFocusTimerTask] = useState<any>(null);
   const [isFocusTimerOpen, setIsFocusTimerOpen] = useState(false);
@@ -90,6 +93,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       if (isInternalStaff) {
         promises.push(api.getTodos().catch(() => []));
         promises.push(api.getUsers().catch(() => []));
+        promises.push(api.getTodayAttendance().then((r) => r.attendance).catch(() => null));
       }
       const results = await Promise.all(promises);
       setStats(results[0]);
@@ -102,6 +106,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             (u: User) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN' || u.role === 'TEAM_MEMBER'
           )
         );
+        setTodayAttendance(results[5] || null);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data.');
@@ -483,9 +488,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* Daily Task Activity & Time Tracking Widget — Internal Staff */}
+      {/* Quick Actions & Daily Task Activity Tracker — Internal Staff */}
       {isInternalStaff && (
-        <DailyTaskActivityCard onRefresh={loadDashboardData} isAdmin={isSuperAdminOrAdmin} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+          <div className="lg:col-span-1">
+            <QuickActionsCard
+              attendance={todayAttendance}
+              onAttendanceChange={loadDashboardData}
+              onOpenNewTask={onOpenNewTask}
+              onOpenNewTodo={() => setIsTodoModalOpen(true)}
+              isAdmin={isSuperAdminOrAdmin}
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <DailyTaskActivityCard onRefresh={loadDashboardData} isAdmin={isSuperAdminOrAdmin} />
+          </div>
+        </div>
       )}
 
       {/* Todo List — Internal staff only */}

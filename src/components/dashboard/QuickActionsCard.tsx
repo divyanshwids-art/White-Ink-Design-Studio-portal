@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Attendance, Break } from '../../types';
 import { api } from '../../services/api';
+import { useTimer } from '../../context/TimerContext';
 import { triggerLocalNotification, requestPushPermission } from '../../utils/pushNotifications';
 import {
   CheckSquare,
+  Check,
   Plus,
   Coffee,
   LogOut,
@@ -30,6 +32,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   onOpenNewTodo,
   isAdmin = false,
 }) => {
+  const { setAttendanceActiveState } = useTimer();
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -37,6 +40,14 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   const [showEarlyClockOutModal, setShowEarlyClockOutModal] = useState(false);
   const [showClockInReasonModal, setShowClockInReasonModal] = useState(false);
   const [clockInReasonTitle, setClockInReasonTitle] = useState('Late Arrival');
+
+  useEffect(() => {
+    if (attendance) {
+      const active = !!attendance.clockIn && !attendance.clockOut;
+      const onBrk = !!attendance.breaks?.find((b: Break) => !b.endTime);
+      setAttendanceActiveState(active, onBrk);
+    }
+  }, [attendance, setAttendanceActiveState]);
   const [clockInReason, setClockInReason] = useState('');
   const [earlyReason, setEarlyReason] = useState('');
   const [tomorrowTask, setTomorrowTask] = useState('');
@@ -77,11 +88,14 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
 
   const formatShortTime = (isoString?: string | null) => {
     if (!isoString) return '--:--';
-    return new Date(isoString).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
+    const d = new Date(isoString);
+    let hours = d.getHours();
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const hoursStr = hours.toString().padStart(2, '0');
+    return `${hoursStr}:${minutes} ${ampm}`;
   };
 
   const showToast = (msg: string) => {
@@ -268,29 +282,25 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
     }
   };
 
-  // Format today's date: "11 Sept 2026"
-  const formattedDate = new Date().toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  // Format today's date: "16 Sept 2026"
+  const formattedDate = (() => {
+    const d = new Date();
+    const day = d.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+    return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  })();
 
   return (
-    <div className="bg-white rounded-2xl border border-[#EDE7DD] p-6 shadow-xs flex flex-col justify-between h-full">
+    <div className="bg-white rounded-3xl border border-[#EDE7DD] p-6 shadow-xs flex flex-col justify-between">
       <div>
-        {/* Header - Styled consistently with Dashboard Cards */}
-        <div className="flex items-center gap-3 pb-4 mb-4 border-b border-[#EDE7DD]">
-          <div className="p-2.5 bg-[#FAF4EC] text-[#BA954F] rounded-xl border border-[#EDE3D4] shadow-2xs shrink-0">
-            <Zap className="h-5 w-5 stroke-[1.75]" />
-          </div>
-          <div>
-            <h3 className="text-base font-serif font-bold text-[#1C1917]">
-              Quick Actions
-            </h3>
-            <p className="text-xs text-[#78716C] font-normal mt-0.5">
-              {formattedDate}
-            </p>
-          </div>
+        {/* Header - Clean typography matching reference design */}
+        <div className="mb-4">
+          <h3 className="font-serif text-2xl font-bold text-[#1C1917] tracking-tight">
+            Quick Actions
+          </h3>
+          <p className="text-sm text-[#78716C] font-normal mt-0.5">
+            {formattedDate}
+          </p>
         </div>
 
         {/* Toast message inside card */}
@@ -327,27 +337,25 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
               id="btn-mark-attendance"
               onClick={handleMarkPresent}
               disabled={isProcessing}
-              className="w-full py-3 px-3.5 rounded-xl bg-[#EAF5EC] hover:bg-[#DDF0E0] border border-[#CDE9D4] text-[#1E7444] text-xs font-semibold transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs hover:shadow-xs group"
+              className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#BA954F] text-[#1C1917] text-sm font-semibold transition-all flex items-center gap-3 cursor-pointer shadow-2xs hover:shadow-xs group"
             >
-              <span className="w-4 h-4 flex items-center justify-center shrink-0">
-                <CheckSquare className="h-4 w-4 stroke-[2] text-[#1E7444]" />
+              <span className="w-5 h-5 flex items-center justify-center shrink-0 text-[#78716C] group-hover:text-[#BA954F] font-bold text-base">
+                +
               </span>
               <span className="flex-1 text-left">
                 {isProcessing ? 'Recording Attendance...' : 'Mark Attendance'}
               </span>
             </button>
           ) : (
-            <div className="w-full py-3 px-3.5 rounded-xl bg-[#EAF5EC] border border-[#CDE9D4] text-[#1E7444] text-xs font-semibold flex items-center justify-between gap-2.5 shadow-2xs">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-4 h-4 flex items-center justify-center shrink-0">
-                  <CheckSquare className="h-4 w-4 stroke-[2] text-[#1E7444]" />
-                </span>
-                <span className="truncate">
-                  {isClockedOut
-                    ? `Present · Shift Ended (${formatShortTime(attendance.clockOut)})`
-                    : `Present · Arrived ${formatShortTime(attendance.clockIn)}`}
-                </span>
-              </div>
+            <div className="w-full py-3 px-4 rounded-2xl bg-[#EAF5EC] border border-[#CDE9D4] text-[#1E7444] text-sm font-semibold flex items-center gap-3 shadow-2xs">
+              <span className="w-5 h-5 rounded-md bg-[#22C55E] flex items-center justify-center shrink-0 text-white shadow-2xs">
+                <Check className="h-3.5 w-3.5 stroke-[3]" />
+              </span>
+              <span className="truncate">
+                {isClockedOut
+                  ? `Present · Shift Ended (${formatShortTime(attendance.clockOut)})`
+                  : `Present · Arrived ${formatShortTime(attendance.clockIn)}`}
+              </span>
             </div>
           )}
 
@@ -363,10 +371,10 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
                 onOpenNewTask();
               }
             }}
-            className="w-full py-3 px-3.5 rounded-xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#DFD5C6] text-xs font-semibold text-[#1C1917] transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs hover:shadow-xs group"
+            className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#BA954F] text-sm font-semibold text-[#1C1917] transition-all flex items-center gap-3 cursor-pointer shadow-2xs hover:shadow-xs group"
           >
-            <span className="w-4 h-4 flex items-center justify-center shrink-0 text-[#78716C] group-hover:text-[#BA954F] transition-colors">
-              <Plus className="h-4 w-4 stroke-[2]" />
+            <span className="w-5 h-5 flex items-center justify-center shrink-0 text-[#78716C] group-hover:text-[#BA954F] font-bold text-base">
+              +
             </span>
             <span className="flex-1 text-left">
               Add Today's Task
@@ -378,26 +386,18 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
             type="button"
             onClick={handleBreakToggle}
             disabled={isProcessing || !isClockedIn || isClockedOut}
-            className={`w-full py-3 px-3.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs ${
+            className={`w-full py-3 px-4 rounded-2xl border text-sm font-semibold transition-all flex items-center gap-3 cursor-pointer shadow-2xs ${
               !isClockedIn || isClockedOut
-                ? 'bg-[#FAF7F2]/60 border-[#EDE7DD] text-[#A8A29E] cursor-not-allowed opacity-60'
+                ? 'bg-white/70 border-[#EDE7DD] text-[#A8A29E] cursor-not-allowed opacity-60'
                 : isOnBreak
                 ? 'bg-[#FAF4EC] hover:bg-[#F5ECE0] border-[#E8DCC8] text-[#946B2D]'
-                : 'bg-white hover:bg-[#FAF7F2] border-[#EDE7DD] hover:border-[#DFD5C6] text-[#1C1917] hover:shadow-xs'
+                : 'bg-white hover:bg-[#FAF7F2] border-[#EDE7DD] hover:border-[#BA954F] text-[#1C1917] hover:shadow-xs'
             }`}
           >
-            <span className="w-4 h-4 flex items-center justify-center shrink-0">
-              <Coffee className={`h-4 w-4 stroke-[1.75] ${
-                !isClockedIn || isClockedOut ? 'text-[#A8A29E]' : isOnBreak ? 'text-[#946B2D]' : 'text-[#78716C]'
-              }`} />
+            <span className="w-5 h-5 flex items-center justify-center shrink-0 text-base">
+              ☕
             </span>
-            <span className={`flex-1 text-left ${
-              !isClockedIn || isClockedOut
-                ? 'text-[#A8A29E]'
-                : isOnBreak
-                ? 'text-[#946B2D]'
-                : 'text-[#1C1917]'
-            }`}>
+            <span className="flex-1 text-left">
               {isOnBreak ? 'End Lunch Break' : 'Log Lunch Break'}
             </span>
           </button>
@@ -407,20 +407,16 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
             type="button"
             onClick={handleInitiateClockOut}
             disabled={isProcessing || !isClockedIn || isClockedOut}
-            className={`w-full py-3 px-3.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs ${
+            className={`w-full py-3 px-4 rounded-2xl border text-sm font-semibold transition-all flex items-center gap-3 cursor-pointer shadow-2xs ${
               !isClockedIn || isClockedOut
-                ? 'bg-[#FAF7F2]/60 border-[#EDE7DD] text-[#A8A29E] cursor-not-allowed opacity-60'
-                : 'bg-white hover:bg-[#FAF7F2] border-[#EDE7DD] hover:border-[#DFD5C6] text-[#1C1917] hover:shadow-xs'
+                ? 'bg-white/70 border-[#EDE7DD] text-[#A8A29E] cursor-not-allowed opacity-60'
+                : 'bg-white hover:bg-[#FAF7F2] border-[#EDE7DD] hover:border-[#BA954F] text-[#1C1917] hover:shadow-xs'
             }`}
           >
-            <span className="w-4 h-4 flex items-center justify-center shrink-0">
-              <LogOut className={`h-4 w-4 stroke-[1.75] ${
-                !isClockedIn || isClockedOut ? 'text-[#A8A29E]' : 'text-[#78716C]'
-              }`} />
+            <span className="w-5 h-5 flex items-center justify-center shrink-0 text-base">
+              🚪
             </span>
-            <span className={`flex-1 text-left ${
-              !isClockedIn || isClockedOut ? 'text-[#A8A29E]' : 'text-[#1C1917]'
-            }`}>
+            <span className="flex-1 text-left">
               Mark Exit
             </span>
           </button>
@@ -429,10 +425,10 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
           <button
             type="button"
             onClick={handleTestNotification}
-            className="w-full py-3 px-3.5 rounded-xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#DFD5C6] text-xs font-semibold text-[#1C1917] transition-all flex items-center gap-2.5 cursor-pointer shadow-2xs hover:shadow-xs group"
+            className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-[#FAF7F2] border border-[#EDE7DD] hover:border-[#BA954F] text-sm font-semibold text-[#1C1917] transition-all flex items-center gap-3 cursor-pointer shadow-2xs hover:shadow-xs group"
           >
-            <span className="w-4 h-4 flex items-center justify-center shrink-0 text-[#78716C] group-hover:text-[#BA954F] transition-colors">
-              <Bell className="h-4 w-4 stroke-[1.75]" />
+            <span className="w-5 h-5 flex items-center justify-center shrink-0 text-base">
+              🔔
             </span>
             <span className="flex-1 text-left">
               Test Notification
