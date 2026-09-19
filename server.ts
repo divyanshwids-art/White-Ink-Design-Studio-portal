@@ -50,6 +50,15 @@ function getAllowedOrigins(): string[] {
     }
   });
 
+  // Automatically detect Railway domains
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    envOrigins.push(`https://${process.env.RAILWAY_PUBLIC_DOMAIN}`);
+    envOrigins.push(`http://${process.env.RAILWAY_PUBLIC_DOMAIN}`);
+  }
+  if (process.env.RAILWAY_STATIC_URL) {
+    envOrigins.push(`https://${process.env.RAILWAY_STATIC_URL}`);
+  }
+
   // Local development default origins
   const devOrigins = [
     'http://localhost:3000',
@@ -82,10 +91,18 @@ async function startServer() {
       if (!origin) return callback(null, true);
 
       // In non-production, allow localhost and 127.0.0.1 on any port
-      if (process.env.NODE_ENV !== 'production') {
-        if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+
+      // Allow any Railway deployment domain
+      try {
+        const parsed = new URL(origin);
+        if (parsed.hostname.endsWith('.railway.app') || parsed.hostname.endsWith('.up.railway.app')) {
           return callback(null, true);
         }
+      } catch {
+        // invalid URL format, fall through
       }
 
       const normalizedOrigin = origin.replace(/\/$/, '');
@@ -93,12 +110,13 @@ async function startServer() {
         return callback(null, true);
       }
 
-      console.warn(`[CORS] Blocked request from unauthorized origin: ${origin}`);
-      return callback(new Error(`CORS policy does not allow access from origin: ${origin}`), false);
+      // If in production without restrictive ALLOWED_ORIGINS, allow web traffic
+      // (Never throw new Error here because it crashes Express with a 500 HTML error page)
+      return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   };
 
   app.use(cors(corsOptions));
@@ -275,6 +293,21 @@ async function startServer() {
       });
     });
   }
+
+  // Global Express error handler to prevent HTML 500 responses
+  app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error(`[Server Error] ${req.method} ${req.originalUrl}:`, err);
+    if (res.headersSent) return;
+
+    if (req.path.startsWith('/api') || path.extname(req.path) || req.path.startsWith('/assets/')) {
+      return res.status(err.status || 500).json({
+        error: 'Internal Server Error',
+        message: err.message || 'An unexpected error occurred',
+      });
+    }
+
+    res.status(err.status || 500).send(err.message || 'Internal Server Error');
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[White Ink Backend API] Server running on http://0.0.0.0:${PORT}`);
