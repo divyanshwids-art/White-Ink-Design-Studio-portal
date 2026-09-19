@@ -29,7 +29,26 @@ import {
   SubmitEodInput,
 } from '../types';
 
-const API_BASE = '/api';
+function getApiBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_API_URL || '').trim();
+
+  // In production, never allow localhost / 127.0.0.1 addresses to prevent broken API calls in client browser
+  if (import.meta.env.PROD) {
+    if (!envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1')) {
+      return '/api';
+    }
+  }
+
+  if (envUrl) {
+    const trimmed = envUrl.replace(/\/$/, '');
+    // Ensure '/api' suffix if host URL provided without it
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+  }
+
+  return '/api';
+}
+
+const API_BASE = getApiBaseUrl();
 
 let inMemoryToken: string | null = null;
 
