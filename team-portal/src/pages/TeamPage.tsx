@@ -45,11 +45,12 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
     name: '',
     email: '',
     password: '',
-    role: (role === 'SUPER_ADMIN' ? 'ADMIN' : 'TEAM_MEMBER') as Role,
   });
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [addError, setAddError] = useState('');
   const [showAddPassword, setShowAddPassword] = useState(false);
+
+  const hasAdmin = teamWorkload.some((m) => m.user.role === 'ADMIN');
 
   const fetchTeam = async () => {
     try {
@@ -70,20 +71,28 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddError('');
-    if (!addForm.name || !addForm.email || !addForm.password) {
+    if (!addForm.name.trim() || !addForm.email.trim() || !addForm.password.trim()) {
       setAddError('All fields are required.');
       return;
     }
+
+    const targetRole = (role === 'SUPER_ADMIN' ? 'ADMIN' : 'TEAM_MEMBER') as Role;
+    if (targetRole === 'ADMIN' && hasAdmin) {
+      setAddError('Only 1 Admin is allowed in the portal. An Admin account already exists.');
+      return;
+    }
+
     try {
       setAddSubmitting(true);
       await api.createUser({
-        name: addForm.name,
-        email: addForm.email,
-        password: addForm.password,
-        role: addForm.role,
+        name: addForm.name.trim(),
+        email: addForm.email.trim(),
+        password: addForm.password.trim(),
+        role: targetRole,
       });
       setIsAddModalOpen(false);
       setShowAddPassword(false);
+      setAddForm({ name: '', email: '', password: '' });
       fetchTeam();
     } catch (err: any) {
       setAddError(err.message || 'Failed to create user');
@@ -157,20 +166,26 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
         {canManage && (
           <button
             type="button"
+            disabled={role === 'SUPER_ADMIN' && hasAdmin}
             onClick={() => {
+              if (role === 'SUPER_ADMIN' && hasAdmin) return;
               setAddForm({
                 name: '',
                 email: '',
                 password: '',
-                role: (role === 'SUPER_ADMIN' ? 'ADMIN' : 'TEAM_MEMBER') as Role,
               });
               setAddError('');
               setIsAddModalOpen(true);
             }}
-            className="btn-primary btn-hover-lift inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg shadow-sm transition-colors ${
+              role === 'SUPER_ADMIN' && hasAdmin
+                ? 'bg-gold-100 text-gold-700 border border-gold-300 cursor-not-allowed opacity-75'
+                : 'btn-primary btn-hover-lift cursor-pointer'
+            }`}
+            title={role === 'SUPER_ADMIN' && hasAdmin ? 'Only 1 Admin is allowed in the portal. Admin already exists.' : undefined}
           >
             <Plus className="h-4 w-4" />
-            Add Team Member
+            {role === 'SUPER_ADMIN' ? (hasAdmin ? 'Admin Configured (1 Max)' : 'Add Admin') : 'Add Team Member'}
           </button>
         )}
       </div>
@@ -312,10 +327,17 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
           <div className="bg-card rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gold-300 space-y-4">
             <div className="flex items-center justify-between border-b border-gold-200 pb-3">
-              <h2 className="text-lg font-bold text-heading flex items-center gap-2">
-                <Users className="h-5 w-5 text-gold-600" />
-                Add Team Member
-              </h2>
+              <div>
+                <h2 className="text-lg font-bold text-heading flex items-center gap-2">
+                  <Users className="h-5 w-5 text-gold-600" />
+                  {role === 'SUPER_ADMIN' ? 'Add Admin' : 'Add Team Member'}
+                </h2>
+                <p className="text-xs text-gold-700 mt-0.5">
+                  {role === 'SUPER_ADMIN'
+                    ? 'Create the system Admin account (Limit: strictly 1 Admin in portal).'
+                    : 'Create a new team member account.'}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
@@ -339,7 +361,7 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Jordan Miller"
+                  placeholder={role === 'SUPER_ADMIN' ? 'e.g. Admin Name' : 'e.g. Jordan Miller'}
                   value={addForm.name}
                   onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
                   className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden"
@@ -353,7 +375,7 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
                 <input
                   type="email"
                   required
-                  placeholder="jordan@company.com"
+                  placeholder={role === 'SUPER_ADMIN' ? 'admin@company.com' : 'jordan@company.com'}
                   value={addForm.email}
                   onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
                   className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden"
@@ -382,23 +404,6 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
                     {showAddPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="form-label block mb-1">
-                  Role Assignment *
-                </label>
-                <select
-                  value={addForm.role}
-                  onChange={(e) => setAddForm({ ...addForm, role: e.target.value as Role })}
-                  className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden cursor-pointer"
-                >
-                  {role === 'SUPER_ADMIN' ? (
-                    <option value="ADMIN">Admin (Studio Manager)</option>
-                  ) : (
-                    <option value="TEAM_MEMBER">Team Member (Developer, Designer, QA)</option>
-                  )}
-                </select>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-gold-200">

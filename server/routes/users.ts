@@ -65,31 +65,56 @@ usersRouter.get('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) 
   return res.json(sanitizeUser(user));
 });
 
-// POST /api/users (Tier 2 direct member creation with auto-generated passwords)
+// POST /api/users (Direct member creation with auto-generated or custom passwords)
 usersRouter.post(
   '/',
   requireAuth,
-  requireRoles(['ADMIN']),
+  requireRoles(['SUPER_ADMIN', 'ADMIN']),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const currentUser = req.user!;
-      const { name, email, role, profileImage } = req.body;
+      const { name, email, profileImage, password } = req.body;
+      let requestedRole = req.body.role;
 
-      if (!name || !email || !role) {
-        return res.status(400).json({ message: 'Name, email, and role are required.' });
+      if (!name || !email) {
+        return res.status(400).json({ message: 'Name and email are required.' });
       }
 
-      // Enforce strict tier-2 creation hierarchy:
+      // Role determination based on hierarchy:
+      let assignedRole: Role;
       let assignedClientId: string | null = null;
 
-      if (currentUser.role === 'ADMIN') {
-        if (role !== 'TEAM_MEMBER') {
+      if (currentUser.role === 'SUPER_ADMIN') {
+        // Super Admin defaults to creating ADMIN unless TEAM_MEMBER requested
+        if (!requestedRole || requestedRole === 'ADMIN') {
+          assignedRole = 'ADMIN';
+        } else if (requestedRole === 'TEAM_MEMBER') {
+          assignedRole = 'TEAM_MEMBER';
+        } else {
+          return res.status(403).json({
+            message: 'Forbidden: Super Admin can only create Admin or Team Member accounts.',
+          });
+        }
+      } else if (currentUser.role === 'ADMIN') {
+        // Admin can only create Team Members
+        if (requestedRole && requestedRole !== 'TEAM_MEMBER') {
           return res.status(403).json({
             message: 'Forbidden: Admins can only create Team Member accounts.',
           });
         }
+        assignedRole = 'TEAM_MEMBER';
       } else {
-        return res.status(403).json({ message: 'Forbidden: Direct user creation is restricted to Admins.' });
+        return res.status(403).json({ message: 'Forbidden: Direct user creation is restricted.' });
+      }
+
+      // Enforce strict system limits: Exactly 1 ADMIN across the portal
+      if (assignedRole === 'ADMIN') {
+        const adminCount = db.getUsers().filter((u) => u.role === 'ADMIN').length;
+        if (adminCount >= 1) {
+          return res.status(400).json({
+            message: 'Only 1 Admin is allowed in the portal. An Admin account already exists.',
+          });
+        }
       }
 
       const cleanEmail = email.trim().toLowerCase();
@@ -98,8 +123,11 @@ usersRouter.post(
         return res.status(409).json({ message: 'A user with this email address already exists.' });
       }
 
-      // Auto-generate strong password server-side
-      const plaintextPassword = generateStrongPassword(12);
+      // Use provided password or auto-generate strong password
+      const plaintextPassword =
+        password && typeof password === 'string' && password.trim().length >= 6
+          ? password.trim()
+          : generateStrongPassword(12);
       const passwordHash = await hashPassword(plaintextPassword);
       const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
@@ -108,10 +136,10 @@ usersRouter.post(
         name: name.trim(),
         email: cleanEmail,
         passwordHash,
-        role: role as Role,
+        role: assignedRole,
         clientId: assignedClientId,
         profileImage: profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name.trim())}`,
-        mustChangePassword: role === 'CLIENT' || role === 'CLIENT_ADMIN' ? false : true,
+        mustChangePassword: password ? false : true,
       });
 
       // Archive generated credentials in vault
@@ -193,6 +221,21 @@ usersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Re
         }
       } else {
         return res.status(403).json({ message: 'Forbidden: You cannot change user roles.' });
+      }
+
+      // Enforce system limits on role changes:
+      if (role === 'SUPER_ADMIN') {
+        const existingSuperAdmin = db.getUsers().find((u) => u.role === 'SUPER_ADMIN' && u.id !== id);
+        if (existingSuperAdmin) {
+          return res.status(400).json({ message: 'Only 1 Super Admin is allowed in the portal.' });
+        }
+      }
+
+      if (role === 'ADMIN') {
+        const existingAdmin = db.getUsers().find((u) => u.role === 'ADMIN' && u.id !== id);
+        if (existingAdmin) {
+          return res.status(400).json({ message: 'Only 1 Admin is allowed in the portal. An Admin account already exists.' });
+        }
       }
     }
 

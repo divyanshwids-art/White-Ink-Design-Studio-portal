@@ -122,6 +122,15 @@ accessRequestsRouter.post(
         });
       }
 
+      if (accessRequest.requestedRole === 'ADMIN') {
+        const adminCount = db.getUsers().filter((u) => u.role === 'ADMIN').length;
+        if (adminCount >= 1) {
+          return res.status(409).json({
+            message: 'Only 1 Admin is allowed in the portal. An Admin account already exists.',
+          });
+        }
+      }
+
       // Auto-generate strong random password (12 characters)
       const plaintextPassword = generateStrongPassword(12);
       const passwordHash = await hashPassword(plaintextPassword);

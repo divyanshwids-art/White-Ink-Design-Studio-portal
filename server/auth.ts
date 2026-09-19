@@ -82,19 +82,31 @@ export function sanitizeUser(user: UserRecord) {
 }
 
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  let authHeader = (req.headers.authorization || req.headers['x-access-token']) as string | undefined;
+  if (!authHeader) {
     return res.status(401).json({ message: 'Authentication required. Missing or malformed token.' });
   }
 
-  const token = authHeader.substring(7);
-  const payload = verifyToken(token);
+  let token = authHeader.trim();
+  if (token.toLowerCase().startsWith('bearer ')) {
+    token = token.slice(7).trim();
+  }
+  // Sanitize wrapping single or double quotes
+  token = token.replace(/^["']|["']$/g, '').trim();
 
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication required. Missing or malformed token.' });
+  }
+
+  const payload = verifyToken(token);
   if (!payload) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
 
-  const user = db.getUserById(payload.userId);
+  let user = db.getUserById(payload.userId);
+  if (!user && payload.email) {
+    user = db.getUserByEmail(payload.email);
+  }
   if (!user) {
     return res.status(401).json({ message: 'User account not found.' });
   }

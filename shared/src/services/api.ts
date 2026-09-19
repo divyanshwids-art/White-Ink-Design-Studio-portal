@@ -31,8 +31,34 @@ import {
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
+let inMemoryToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  inMemoryToken = token ? token.replace(/^["']|["']$/g, '').trim() : null;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    if (inMemoryToken) {
+      localStorage.setItem('pms_auth_token', inMemoryToken);
+    } else {
+      localStorage.removeItem('pms_auth_token');
+    }
+  }
+}
+
+export function getStoredToken(): string | null {
+  if (inMemoryToken) return inMemoryToken;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const raw = localStorage.getItem('pms_auth_token');
+    if (raw) {
+      const clean = raw.replace(/^["']|["']$/g, '').trim();
+      inMemoryToken = clean;
+      return clean;
+    }
+  }
+  return null;
+}
+
 function getAuthHeader(): Record<string, string> {
-  const token = localStorage.getItem('pms_auth_token');
+  const token = getStoredToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -49,8 +75,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers,
   });
 
-  if (response.status === 401) {
-    localStorage.removeItem('pms_auth_token');
+  if (response.status === 401 && !cleanEndpoint.includes('/auth/login')) {
+    setAuthToken(null);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('pms:unauthorized'));
+    }
   }
 
   const data = await response.json().catch(() => ({}));
@@ -66,6 +95,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 export const api = {
   // Base configuration
   getBaseUrl: () => API_BASE,
+  setAuthToken,
+  getToken: getStoredToken,
 
   // Auth
   login: (credentials: { email: string; password: string }) =>

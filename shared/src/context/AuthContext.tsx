@@ -18,23 +18,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('pms_auth_token'));
+  const [token, setToken] = useState<string | null>(() => api.getToken());
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const refreshUser = useCallback(async () => {
-    const savedToken = localStorage.getItem('pms_auth_token');
+    const savedToken = api.getToken();
     if (!savedToken) {
+      api.setAuthToken(null);
       setToken(null);
       setUser(null);
       setIsLoading(false);
       return;
     }
     try {
+      api.setAuthToken(savedToken);
       const res = await api.getMe();
       setToken(savedToken);
       setUser(res.user);
     } catch {
-      localStorage.removeItem('pms_auth_token');
+      api.setAuthToken(null);
       setToken(null);
       setUser(null);
     } finally {
@@ -45,6 +47,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setToken(null);
+      setUser(null);
+    };
+    window.addEventListener('pms:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('pms:unauthorized', handleUnauthorized);
+  }, []);
 
   const login = async (email: string, password?: string) => {
     setIsLoading(true);
@@ -60,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       const response = await api.login({ email, password: pwd });
-      localStorage.setItem('pms_auth_token', response.token);
+      api.setAuthToken(response.token);
       setToken(response.token);
       setUser({
         ...response.user,
@@ -85,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('pms_auth_token');
+    api.setAuthToken(null);
     setToken(null);
     setUser(null);
   };
