@@ -158,52 +158,111 @@ async function startServer() {
   });
 
   // Frontend Static Files & SPA Wildcard Fallback
-  if (process.env.NODE_ENV === 'production') {
-    const rootDir = process.cwd();
-    const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
+  const rootDir = process.cwd();
+  const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
 
-    const candidateDirs = [
-      process.env.FRONTEND_DIST,
-      process.env.CLIENT_DIST_DIR,
-      process.env.STATIC_DIR,
-      path.resolve(rootDir, 'dist'),
-      path.resolve(rootDir, 'dist', 'client'),
-      path.resolve(rootDir, 'client-portal', 'dist'),
-      path.resolve(currentDir, 'client'),
-      path.resolve(currentDir, 'client-portal', 'dist'),
-      path.resolve(currentDir, '..', 'client-portal', 'dist'),
-      path.resolve(currentDir, '..', 'dist'),
-    ].filter(Boolean) as string[];
+  const candidateDirs = [
+    process.env.FRONTEND_DIST,
+    process.env.CLIENT_DIST_DIR,
+    process.env.STATIC_DIR,
+    path.resolve(rootDir, 'client-portal', 'dist'),
+    path.resolve(currentDir, '..', 'client-portal', 'dist'),
+    path.resolve(currentDir, 'client-portal', 'dist'),
+    path.resolve(rootDir, 'dist'),
+    path.resolve(rootDir, 'dist', 'client'),
+    path.resolve(currentDir, 'dist'),
+    path.resolve(currentDir, '..', 'dist'),
+    path.resolve(currentDir, '.'),
+    path.resolve(rootDir, 'team-portal', 'dist'),
+    path.resolve(currentDir, '..', 'team-portal', 'dist'),
+  ].filter(Boolean) as string[];
 
-    const staticDir = candidateDirs.find((dir) => {
-      try {
-        return fs.existsSync(path.join(dir, 'index.html'));
-      } catch {
-        return false;
+  // Remove duplicates while preserving priority order
+  const uniqueCandidateDirs = Array.from(new Set(candidateDirs));
+
+  // Find the primary frontend directory that has index.html
+  let primaryIndexHtml: string | null = null;
+  let primaryStaticDir: string | null = null;
+
+  for (const dir of uniqueCandidateDirs) {
+    const candidateIndex = path.join(dir, 'index.html');
+    if (fs.existsSync(candidateIndex)) {
+      primaryIndexHtml = candidateIndex;
+      primaryStaticDir = dir;
+      break;
+    }
+  }
+
+  // Find all existing candidate directories to serve static assets from
+  const existingStaticDirs = uniqueCandidateDirs.filter((dir) => {
+    try {
+      return fs.existsSync(dir) && fs.statSync(dir).isDirectory();
+    } catch {
+      return false;
+    }
+  });
+
+  const shouldServeFrontend = process.env.NODE_ENV === 'production' || !!primaryIndexHtml;
+
+  if (shouldServeFrontend && existingStaticDirs.length > 0) {
+    console.log(`[White Ink Server] Primary frontend build: ${primaryStaticDir || 'unknown'}`);
+    console.log(`[White Ink Server] Static asset directories: ${existingStaticDirs.join(', ')}`);
+
+    // 1. Explicitly serve hashed assets folder from all matching dist directories
+    for (const dir of existingStaticDirs) {
+      const assetsDir = path.join(dir, 'assets');
+      if (fs.existsSync(assetsDir)) {
+        app.use('/assets', express.static(assetsDir, {
+          maxAge: '1y',
+          immutable: true,
+        }));
       }
+    }
+
+    // 2. Serve all static files (images, favicon, manifest, sw, etc.)
+    for (const dir of existingStaticDirs) {
+      app.use(express.static(dir, {
+        maxAge: '1d',
+        index: false,
+      }));
+    }
+
+    // 3. Serve root index.html
+    app.get('/', (_req, res) => {
+      if (primaryIndexHtml && fs.existsSync(primaryIndexHtml)) {
+        return res.sendFile(primaryIndexHtml);
+      }
+      res.json({
+        name: 'White Ink Design Studio Portal API',
+        version: '1.0.0',
+        status: 'online',
+        endpoints: '/api/*',
+        health: '/api/health',
+      });
     });
 
-    if (staticDir) {
-      console.log(`[White Ink Server] Serving frontend static files from: ${staticDir}`);
-      app.use(express.static(staticDir));
-
-      // Fallback wildcard route for React Router client-side navigation
-      app.get('*', (_req, res) => {
-        res.sendFile(path.join(staticDir, 'index.html'));
-      });
-    } else {
-      console.warn('[White Ink Server] NODE_ENV=production but no frontend directory containing index.html was found.');
-      app.get('/', (_req, res) => {
-        res.json({
-          name: 'White Ink Design Studio Portal API',
-          version: '1.0.0',
-          status: 'online',
-          endpoints: '/api/*',
-          health: '/api/health',
-          warning: 'Frontend static build not found. Ensure frontend build exists.',
+    // 4. Fallback wildcard route for React Router client-side SPA navigation
+    app.get('*', (req, res, next) => {
+      // Skip API routes: return JSON 404
+      if (req.path.startsWith('/api/') || req.path === '/api') {
+        return res.status(404).json({
+          error: 'Not Found',
+          message: `API endpoint ${req.method} ${req.originalUrl} does not exist on this server.`,
         });
-      });
-    }
+      }
+
+      // Skip static asset requests: NEVER return index.html for missing .js, .css, .png, etc.
+      if (path.extname(req.path) || req.path.startsWith('/assets/')) {
+        return res.status(404).type('text/plain').send(`Static asset not found: ${req.path}`);
+      }
+
+      // Serve index.html for client-side routing paths (e.g. /login, /dashboard, /projects)
+      if (primaryIndexHtml && fs.existsSync(primaryIndexHtml)) {
+        return res.sendFile(primaryIndexHtml);
+      }
+
+      next();
+    });
   } else {
     // Non-production root info endpoint
     app.get('/', (_req, res) => {
