@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors, { CorsOptions } from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { db } from './server/db.ts';
 import { authRouter } from './server/routes/auth.ts';
 import { usersRouter } from './server/routes/users.ts';
@@ -113,17 +114,6 @@ async function startServer() {
     });
   });
 
-  // Root route info for API server
-  app.get('/', (_req, res) => {
-    res.json({
-      name: 'White Ink Design Studio Portal API',
-      version: '1.0.0',
-      status: 'online',
-      endpoints: '/api/*',
-      health: '/api/health',
-    });
-  });
-
   // Central API Routes
   app.use('/api/auth', authRouter);
   app.use('/api/access-requests', accessRequestsRouter);
@@ -166,6 +156,66 @@ async function startServer() {
       message: `API endpoint ${req.method} ${req.originalUrl} does not exist on this server.`,
     });
   });
+
+  // Frontend Static Files & SPA Wildcard Fallback
+  if (process.env.NODE_ENV === 'production') {
+    const rootDir = process.cwd();
+    const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
+
+    const candidateDirs = [
+      process.env.FRONTEND_DIST,
+      process.env.CLIENT_DIST_DIR,
+      process.env.STATIC_DIR,
+      path.resolve(rootDir, 'dist'),
+      path.resolve(rootDir, 'dist', 'client'),
+      path.resolve(rootDir, 'client-portal', 'dist'),
+      path.resolve(currentDir, 'client'),
+      path.resolve(currentDir, 'client-portal', 'dist'),
+      path.resolve(currentDir, '..', 'client-portal', 'dist'),
+      path.resolve(currentDir, '..', 'dist'),
+    ].filter(Boolean) as string[];
+
+    const staticDir = candidateDirs.find((dir) => {
+      try {
+        return fs.existsSync(path.join(dir, 'index.html'));
+      } catch {
+        return false;
+      }
+    });
+
+    if (staticDir) {
+      console.log(`[White Ink Server] Serving frontend static files from: ${staticDir}`);
+      app.use(express.static(staticDir));
+
+      // Fallback wildcard route for React Router client-side navigation
+      app.get('*', (_req, res) => {
+        res.sendFile(path.join(staticDir, 'index.html'));
+      });
+    } else {
+      console.warn('[White Ink Server] NODE_ENV=production but no frontend directory containing index.html was found.');
+      app.get('/', (_req, res) => {
+        res.json({
+          name: 'White Ink Design Studio Portal API',
+          version: '1.0.0',
+          status: 'online',
+          endpoints: '/api/*',
+          health: '/api/health',
+          warning: 'Frontend static build not found. Ensure frontend build exists.',
+        });
+      });
+    }
+  } else {
+    // Non-production root info endpoint
+    app.get('/', (_req, res) => {
+      res.json({
+        name: 'White Ink Design Studio Portal API',
+        version: '1.0.0',
+        status: 'online',
+        endpoints: '/api/*',
+        health: '/api/health',
+      });
+    });
+  }
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[White Ink Backend API] Server running on http://0.0.0.0:${PORT}`);
