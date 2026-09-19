@@ -179,10 +179,17 @@ async function startServer() {
   const rootDir = process.cwd();
   const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
 
+  const isTeamPortal = process.env.PORTAL_TYPE === 'team' || process.env.PORTAL === 'team';
+
   const candidateDirs = [
-    process.env.FRONTEND_DIST,
-    process.env.CLIENT_DIST_DIR,
-    process.env.STATIC_DIR,
+    process.env.FRONTEND_DIST ? path.resolve(rootDir, process.env.FRONTEND_DIST) : null,
+    process.env.CLIENT_DIST_DIR ? path.resolve(rootDir, process.env.CLIENT_DIST_DIR) : null,
+    process.env.STATIC_DIR ? path.resolve(rootDir, process.env.STATIC_DIR) : null,
+    // If PORTAL_TYPE=team, prioritize team-portal
+    isTeamPortal ? path.resolve(rootDir, 'team-portal', 'dist') : null,
+    isTeamPortal ? path.resolve(currentDir, '..', 'team-portal', 'dist') : null,
+    isTeamPortal ? path.resolve(currentDir, 'team-portal', 'dist') : null,
+    // Otherwise prioritize client-portal
     path.resolve(rootDir, 'client-portal', 'dist'),
     path.resolve(currentDir, '..', 'client-portal', 'dist'),
     path.resolve(currentDir, 'client-portal', 'dist'),
