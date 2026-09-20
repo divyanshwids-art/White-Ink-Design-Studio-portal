@@ -368,6 +368,7 @@ export const api = {
     priority?: TaskPriority;
     progress?: number;
     dueDate?: string;
+    allocatedMinutes?: number | null;
   }) =>
     request<Task>('/tasks', {
       method: 'POST',
@@ -385,6 +386,7 @@ export const api = {
       priority: TaskPriority;
       progress: number;
       dueDate?: string;
+      allocatedMinutes?: number | null;
     }>
   ) =>
     request<Task>(`/tasks/${id}`, {
@@ -403,11 +405,16 @@ export const api = {
       method: 'PATCH',
     }),
 
-  submitTask: (id: string, payload: { submissionDescription: string; proofDetails: string; deliverableUrl?: string; file?: File }) => {
+  adminApproveTask: (id: string) =>
+    request<Task>(`/tasks/${id}/admin-approve`, {
+      method: 'PATCH',
+    }),
+
+  submitTask: (id: string, payload: { submissionDescription: string; proofDetails?: string; deliverableUrl?: string; file?: File }) => {
     if (payload.file) {
       const formData = new FormData();
       formData.append('submissionDescription', payload.submissionDescription);
-      formData.append('proofDetails', payload.proofDetails);
+      if (payload.proofDetails) formData.append('proofDetails', payload.proofDetails);
       if (payload.deliverableUrl) formData.append('deliverableUrl', payload.deliverableUrl);
       formData.append('file', payload.file);
 

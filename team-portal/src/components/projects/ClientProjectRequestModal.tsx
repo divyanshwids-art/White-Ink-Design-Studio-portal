@@ -313,30 +313,6 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-semibold text-[#44403C]">
-                    Estimated Budget
-                  </label>
-                  <span className="border border-[#D8D3C8] text-[#8C867A] text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    OPTIONAL
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#8C867A]">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="100"
-                    value={estimatedBudget}
-                    onChange={(e) => setEstimatedBudget(e.target.value)}
-                    placeholder="50,000"
-                    className="w-full pl-8 pr-4 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium placeholder-[#A8A29E] focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all"
-                  />
-                </div>
-              </div>
             </div>
           </div>
 

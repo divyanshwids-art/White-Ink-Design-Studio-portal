@@ -6,6 +6,7 @@ import { requireAuth, requireRoles, AuthenticatedRequest, sanitizeUser } from '.
 import { ensureProjectFolderStructure, uploadFileToDrive, deleteDriveFile } from '../services/google/drive.ts';
 import { createGoogleMeeting } from '../services/google/calendar.ts';
 import { sendClientProjectConfirmationEmail, sendProjectStatusChangedEmail } from '../email.ts';
+import { broadcastUpdate } from '../events.ts';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -362,6 +363,8 @@ projectsRouter.post('/client-request', requireAuth, async (req: AuthenticatedReq
       });
     }
 
+    broadcastUpdate('projects', 'create', newProject);
+
     return res.status(201).json({
       project: newProject,
       meetingLink: meetingLink || null,
@@ -375,42 +378,33 @@ projectsRouter.post('/client-request', requireAuth, async (req: AuthenticatedReq
 });
 
 // POST /api/projects (SUPER_ADMIN, ADMIN)
-projectsRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) => {
-  const currentUser = req.user!;
-
-  if (currentUser.role === 'CLIENT' || currentUser.role === 'CLIENT_ADMIN') {
-    return res.status(403).json({ message: 'Clients must use POST /api/projects/client-request to submit project requests.' });
-  }
-  if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'ADMIN') {
-    return res.status(403).json({ message: 'Forbidden: Only admins can create projects.' });
-  }
-
+projectsRouter.post('/', requireAuth, requireRoles(['SUPER_ADMIN', 'ADMIN']), (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { name, description, clientId, startDate, dueDate, status, priority, memberIds } = req.body;
+    const currentUser = req.user!;
+    const { name, description, clientId, startDate, dueDate, status, priority, handoverNote, driveUrl, memberIds } = req.body;
 
     if (!name || !clientId) {
-      return res.status(400).json({ message: 'Project name and Client are required.' });
+      return res.status(400).json({ message: 'Project name and client are required.' });
     }
 
     const client = db.getClientById(clientId);
     if (!client) {
-      return res.status(400).json({ message: 'Selected client does not exist.' });
+      return res.status(400).json({ message: 'Client does not exist.' });
     }
 
     const newProject = db.createProject({
-      id: `proj_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       name: name.trim(),
       description: description ? description.trim() : null,
       clientId,
       createdById: currentUser.id,
       startDate: startDate || null,
       dueDate: dueDate || null,
-      status: (status as ProjectStatus) || 'PLANNING',
-      priority: (priority as ProjectPriority) || 'MEDIUM',
-      progress: 0,
+      status: status || 'PLANNING',
+      priority: priority || 'MEDIUM',
+      handoverNote: handoverNote ? handoverNote.trim() : null,
+      driveUrl: driveUrl ? driveUrl.trim() : null,
     });
 
-    // Assign initial members if provided
     if (Array.isArray(memberIds)) {
       memberIds.forEach((uid) => {
         if (typeof uid === 'string') {
@@ -425,6 +419,8 @@ projectsRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response)
       name: newProject.name,
       clientId: newProject.clientId,
     }).catch((err) => console.warn('[DRIVE] Admin project folder setup skipped/failed:', err?.message));
+
+    broadcastUpdate('projects', 'create', newProject);
 
     return res.status(201).json(newProject);
   } catch (error: any) {
@@ -488,6 +484,8 @@ projectsRouter.patch('/:id', requireAuth, (req: AuthenticatedRequest, res: Respo
       }
     }
 
+    broadcastUpdate('projects', 'update', updated);
+
     return res.json(updated);
   } catch (error: any) {
     console.error('Error updating project:', error);
@@ -507,6 +505,8 @@ projectsRouter.delete('/:id', requireAuth, requireRoles(['SUPER_ADMIN', 'ADMIN']
   if (!success) {
     return res.status(500).json({ message: 'Failed to delete project.' });
   }
+
+  broadcastUpdate('projects', 'delete', { id });
 
   return res.json({ message: 'Project and associated tasks/comments deleted successfully.', deletedId: id });
 });

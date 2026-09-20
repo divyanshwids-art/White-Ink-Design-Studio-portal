@@ -28,6 +28,7 @@ import { credentialsRouter } from './server/routes/credentials.ts';
 import { googleRouter } from './server/routes/google.ts';
 import { meetingsRouter } from './server/routes/meetings.ts';
 import { todosRouter } from './server/routes/todos.ts';
+import { handleSSEConnection } from './server/events.ts';
 
 // Helper to collect all allowed frontend origins from environment or default dev ports
 function getAllowedOrigins(): string[] {
@@ -158,6 +159,9 @@ async function startServer() {
   app.use('/api/push', pushRouter);
   app.use('/api/google', googleRouter);
   app.use('/api', meetingsRouter);
+
+  // Real-time SSE event stream
+  app.get('/api/events', handleSSEConnection);
 
   // Serve Firebase messaging service worker with root service-worker scope
   app.get('/firebase-messaging-sw.js', (_req, res) => {

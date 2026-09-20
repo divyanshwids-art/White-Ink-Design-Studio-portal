@@ -65,8 +65,16 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
     resetFocusTimer,
     setFocusMinutes,
     stopFocusAlarm,
+    snoozeFocusTimer,
     logAndCloseFocusTimer,
   } = useTimer();
+
+  // Redirect SUPER_ADMIN away from worker task detail page
+  useEffect(() => {
+    if (user?.role === 'SUPER_ADMIN') {
+      onBack();
+    }
+  }, [user?.role, onBack]);
 
   const [task, setTask] = useState<Task | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -211,16 +219,12 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
     }
   };
 
-  // Submit Deliverable with Proof
+  // Submit Deliverable for Internal Review
   const handleSubmitDeliverable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!task) return;
     if (!submissionDescription.trim()) {
       setSubmissionError('Please describe what was completed in this task.');
-      return;
-    }
-    if (!proofDetails.trim()) {
-      setSubmissionError('Please provide proof of work (checklist, testing details, or evidence).');
       return;
     }
 
@@ -229,7 +233,6 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
     try {
       await api.submitTask(task.id, {
         submissionDescription: submissionDescription.trim(),
-        proofDetails: proofDetails.trim(),
         deliverableUrl: deliverableUrl.trim() || undefined,
       });
       setSubmissionSuccess(true);
@@ -239,6 +242,21 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
       setSubmissionError(err.message || 'Failed to submit deliverable.');
     } finally {
       setIsSubmittingProof(false);
+    }
+  };
+
+  // Admin Internal Review Approve & Send to Client
+  const handleAdminApprove = async () => {
+    if (!task) return;
+    if (!window.confirm(`Approve deliverable and forward "${task.title}" to client for sign-off?`)) return;
+    setIsApproving(true);
+    try {
+      await api.adminApproveTask(task.id);
+      await loadTask();
+    } catch (err) {
+      console.error('Failed to approve task for client:', err);
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -630,7 +648,7 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
               {submissionSuccess && (
                 <div className="p-4 bg-[#F0F7F2] border border-[#D1E7DD] text-[#2D6A4F] text-xs sm:text-sm font-semibold rounded-2xl flex items-center gap-2">
                   <Check className="h-4 w-4" />
-                  Task deliverable submitted successfully! Awaiting client review.
+                  Task deliverable submitted successfully! Awaiting internal review.
                 </div>
               )}
 
@@ -644,7 +662,7 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
               <form onSubmit={handleSubmitDeliverable} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                    1. Completion Summary / Description *
+                    Completion Summary / Description *
                   </label>
                   <textarea
                     rows={3}
@@ -658,21 +676,7 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                    2. Proof of Work Details *
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={proofDetails}
-                    onChange={(e) => setProofDetails(e.target.value)}
-                    placeholder="Provide proof of work (e.g. tested on Chrome/Safari, verified all 5 viewports, export file size 12MB, client specs checked)..."
-                    className="w-full px-4 py-3 text-xs sm:text-sm bg-white border border-[#DFD5C6] rounded-2xl text-[#1C1917] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#BA954F]/20 focus:border-[#BA954F] leading-relaxed"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#1C1917] mb-1.5">
-                    3. Deliverable Asset / Preview Link (Optional)
+                    Deliverable Asset / Preview Link (Optional)
                   </label>
                   <input
                     type="url"
@@ -690,14 +694,43 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
                     className="w-full sm:w-auto px-6 py-3 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs sm:text-sm font-bold rounded-2xl shadow-xs transition-all cursor-pointer btn-hover-lift flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <Send className="h-4 w-4" />
-                    {isSubmittingProof ? 'Submitting Deliverable...' : 'Submit Deliverable for Client Approval'}
+                    {isSubmittingProof ? 'Submitting Deliverable...' : 'Submit Deliverable for Internal Review'}
                   </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* Section 4: Client Review & Approvals (For Client Role) */}
+          {/* Section 4a: Internal Admin Review (For Admin when status is INTERNAL_REVIEW) */}
+          {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && task.clientApprovalStatus === 'INTERNAL_REVIEW' && (
+            <div className="bg-[#FAF4EC] rounded-3xl p-6 sm:p-7 border-2 border-[#BA954F]/40 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-[#EDE3D4] pb-3">
+                <h2 className="text-sm sm:text-base font-serif font-bold text-[#1C1917] flex items-center gap-2">
+                  <FileCheck className="h-4 w-4 text-[#BA954F]" />
+                  Internal Admin Review Required
+                </h2>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8] uppercase tracking-wider">
+                  Internal Verification
+                </span>
+              </div>
+              <p className="text-xs text-[#443B30] leading-relaxed">
+                The assigned team member has finished work on this task and submitted it for internal quality review. Review the deliverable above. When verified, approve it to forward to the client for final sign-off.
+              </p>
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleAdminApprove}
+                  disabled={isApproving}
+                  className="px-6 py-3 bg-[#BA954F] hover:bg-[#A17B2F] text-white font-bold text-xs sm:text-sm rounded-2xl shadow-xs transition-all cursor-pointer btn-hover-lift inline-flex items-center gap-2 disabled:opacity-50"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {isApproving ? 'Approving & Forwarding...' : 'Approve & Send to Client for Sign-Off'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Section 4b: Client Review & Approvals (For Client Role) */}
           {isClient && (
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDE7DD] shadow-xs space-y-4">
               <h2 className="text-sm sm:text-base font-serif font-bold text-[#1C1917] flex items-center gap-2 border-b border-[#EDE7DD] pb-3">
@@ -708,7 +741,12 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
               {!isSubmitted ? (
                 <div className="p-4 bg-[#FAF7F2] border border-[#EDE7DD] rounded-2xl text-xs text-[#78716C] font-medium flex items-center gap-2">
                   <Clock className="h-4 w-4 text-[#BA954F] shrink-0" />
-                  <span>The assigned team member has not submitted proof for this task yet.</span>
+                  <span>The assigned team member has not submitted a deliverable for this task yet.</span>
+                </div>
+              ) : task.clientApprovalStatus === 'INTERNAL_REVIEW' ? (
+                <div className="p-4 bg-[#FAF4EC] border border-[#EDE3D4] rounded-2xl text-xs text-[#946B2D] font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-[#BA954F] shrink-0" />
+                  <span>The deliverable is currently undergoing internal quality review by the studio lead before being submitted to you.</span>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -817,11 +855,21 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
 
               {/* Preset Selector */}
               <div className="space-y-2">
-                <span className="text-[11px] font-bold text-[#78716C] uppercase tracking-wider block">
-                  Target Session Duration:
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#78716C] uppercase tracking-wider block">
+                    Target Session Duration:
+                  </span>
+                  {task?.allocatedMinutes && task.allocatedMinutes > 0 && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
+                      Allocated: {task.allocatedMinutes}m
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-4 gap-2">
-                  {[15, 25, 45, 60].map((mins) => (
+                  {Array.from(new Set([
+                    ...(task?.allocatedMinutes && task.allocatedMinutes > 0 ? [task.allocatedMinutes] : []),
+                    15, 25, 45, 60
+                  ])).sort((a, b) => a - b).slice(0, 4).map((mins) => (
                     <button
                       key={mins}
                       type="button"
@@ -903,14 +951,26 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
               {/* Timer Buttons */}
               <div className="flex items-center justify-center gap-3">
                 {isAlarmRinging ? (
-                  <button
-                    type="button"
-                    onClick={handleStopAlarm}
-                    className="flex-1 py-2.5 rounded-xl bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer animate-pulse"
-                  >
-                    <BellOff className="h-4 w-4" />
-                    Stop Alarm
-                  </button>
+                  <div className="flex items-center gap-2 w-full">
+                    <button
+                      type="button"
+                      onClick={handleStopAlarm}
+                      className="flex-1 py-2.5 rounded-xl bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer animate-pulse"
+                    >
+                      <BellOff className="h-4 w-4" />
+                      Stop Alarm
+                    </button>
+                    {user?.role === 'TEAM_MEMBER' && (
+                      <button
+                        type="button"
+                        onClick={() => snoozeFocusTimer(15)}
+                        className="flex-1 py-2.5 rounded-xl bg-[#BA954F] hover:bg-[#A17B2F] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer btn-hover-lift"
+                      >
+                        <Clock className="h-4 w-4" />
+                        Snooze 15m
+                      </button>
+                    )}
+                  </div>
                 ) : !isTimerActive ? (
                   <button
                     type="button"
@@ -978,43 +1038,6 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
               </div>
             </div>
           )}
-
-          {/* Task Quick Info Card */}
-          <div className="bg-white rounded-3xl p-6 border border-[#EDE7DD] shadow-xs space-y-3.5 text-xs text-[#78716C]">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#1C1917] border-b border-[#EDE7DD] pb-2">
-              Task Properties
-            </h3>
-            <div className="flex items-center justify-between">
-              <span>Task ID:</span>
-              <span className="font-mono text-[#1C1917] truncate max-w-[180px]">{task.id}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Created At:</span>
-              <span className="font-mono text-[#1C1917]">
-                {new Date(task.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            {task.updatedAt && (
-              <div className="flex items-center justify-between">
-                <span>Last Updated:</span>
-                <span className="font-mono text-[#1C1917]">
-                  {new Date(task.updatedAt).toLocaleDateString()}
-                </span>
-              </div>
-            )}
-            {isOverdue && isAssignee && (
-              <div className="pt-2 border-t border-[#EDE7DD]">
-                <button
-                  type="button"
-                  onClick={() => setIsOverdueModalOpen(true)}
-                  className="w-full py-2 px-3 text-xs font-semibold text-[#B91C1C] hover:text-[#991B1B] bg-[#FDF2F0] hover:bg-[#FBE8E6] border border-[#F5D5D0] rounded-xl transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  <span>{task.overdueReason ? 'Edit Overdue Reason' : 'Explain Delay to Admin'}</span>
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

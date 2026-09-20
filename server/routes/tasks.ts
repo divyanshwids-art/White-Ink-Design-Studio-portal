@@ -9,6 +9,7 @@ import {
   sendRevisionRequestedEmail,
   sendApprovalDecisionEmail,
 } from '../email.ts';
+import { broadcastUpdate } from '../events.ts';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -417,12 +418,7 @@ tasksRouter.get('/', requireAuth, (req: AuthenticatedRequest, res: Response) => 
     const allowedProjectIds = new Set(clientProjects.map((p) => p.id));
     allTasks = allTasks.filter((t) => allowedProjectIds.has(t.projectId));
   } else if (currentUser.role === 'TEAM_MEMBER') {
-    const assignedProjectIds = new Set(
-      db.getProjectMembersByUserId(currentUser.id).map((pm) => pm.projectId)
-    );
-    allTasks = allTasks.filter(
-      (t) => t.assignedToId === currentUser.id || assignedProjectIds.has(t.projectId)
-    );
+    allTasks = allTasks.filter((t) => t.assignedToId === currentUser.id);
   }
 
   // Filters
@@ -534,7 +530,7 @@ tasksRouter.get('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) 
 tasksRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   try {
     const currentUser = req.user!;
-    const { title, description, projectId, assignedToId, status, priority, progress, dueDate } = req.body;
+    const { title, description, projectId, assignedToId, status, priority, progress, dueDate, allocatedMinutes } = req.body;
 
     if (!title || !title.trim() || !description || !description.trim() || !projectId) {
       return res.status(400).json({ message: 'Task title, description, and Project are required.' });
@@ -559,6 +555,8 @@ tasksRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =>
       }
     }
 
+    const parsedAllocated = typeof allocatedMinutes === 'number' ? allocatedMinutes : (allocatedMinutes ? Number(allocatedMinutes) : null);
+
     const newTask = db.createTask({
       id: `tsk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       title: title.trim(),
@@ -570,6 +568,7 @@ tasksRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =>
       priority: (priority as TaskPriority) || 'MEDIUM',
       progress: typeof progress === 'number' ? progress : 0,
       dueDate: dueDate || null,
+      allocatedMinutes: parsedAllocated,
     });
 
     // Notify project members & admins when client creates a task
@@ -600,6 +599,8 @@ tasksRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =>
 
     const assigned = newTask.assignedToId ? db.getUserById(newTask.assignedToId) : null;
 
+    broadcastUpdate('tasks', 'create', newTask);
+
     return res.status(201).json({
       ...newTask,
       project: { id: project.id, name: project.name },
@@ -616,7 +617,7 @@ tasksRouter.patch('/:id', requireAuth, (req: AuthenticatedRequest, res: Response
   try {
     const currentUser = req.user!;
     const { id } = req.params;
-    const { title, description, projectId, assignedToId, status, priority, progress, dueDate } = req.body;
+    const { title, description, projectId, assignedToId, status, priority, progress, dueDate, allocatedMinutes } = req.body;
 
     const existing = db.getTaskById(id);
     if (!existing) {
@@ -657,11 +658,16 @@ tasksRouter.patch('/:id', requireAuth, (req: AuthenticatedRequest, res: Response
     if (priority) updates.priority = priority;
     if (typeof progress === 'number') updates.progress = progress;
     if (dueDate !== undefined) updates.dueDate = dueDate;
+    if (allocatedMinutes !== undefined) {
+      updates.allocatedMinutes = typeof allocatedMinutes === 'number' ? allocatedMinutes : (allocatedMinutes ? Number(allocatedMinutes) : null);
+    }
 
     const updated = db.updateTask(id, updates);
     if (!updated) {
       return res.status(500).json({ message: 'Failed to update task.' });
     }
+
+    broadcastUpdate('tasks', 'update', updated);
 
     const project = db.getProjectById(updated.projectId);
     const assignedTo = updated.assignedToId ? db.getUserById(updated.assignedToId) : null;
@@ -853,11 +859,10 @@ tasksRouter.patch('/:id/approve', requireAuth, (req: AuthenticatedRequest, res: 
     task.progress !== 100 ||
     !task.submittedAt ||
     !task.submissionDescription?.trim() ||
-    !task.proofDetails?.trim() ||
     task.clientApprovalStatus !== 'PENDING'
   ) {
     return res.status(400).json({
-      message: 'Only submitted tasks at 100% completion with submission description and proof details can be approved.',
+      message: 'Only submitted tasks at 100% completion with submission description can be approved.',
     });
   }
 
@@ -925,6 +930,65 @@ tasksRouter.patch('/:id/approve', requireAuth, (req: AuthenticatedRequest, res: 
       });
   }
 
+  broadcastUpdate('tasks', 'approve', updated);
+  broadcastUpdate('approvals', 'update', updated);
+
+  return res.json(updated);
+});
+
+// PATCH /api/tasks/:id/admin-approve (SUPER_ADMIN, ADMIN only)
+tasksRouter.patch('/:id/admin-approve', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  const currentUser = req.user!;
+  const { id } = req.params;
+
+  if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'ADMIN') {
+    return res.status(403).json({ message: 'Only admins can approve internal review.' });
+  }
+
+  const task = db.getTaskById(id);
+  if (!task) return res.status(404).json({ message: 'Task not found.' });
+
+  if (task.clientApprovalStatus !== 'INTERNAL_REVIEW') {
+    return res.status(400).json({ message: 'Task is not awaiting internal studio review.' });
+  }
+
+  const updated = db.updateTask(id, {
+    clientApprovalStatus: 'PENDING',
+    reviewedById: currentUser.id,
+    reviewedAt: new Date().toISOString(),
+  });
+
+  const project = db.getProjectById(task.projectId);
+  if (project) {
+    const client = db.getClientById(project.clientId);
+    const clientUser = client ? db.getUsers().find((u) => u.clientId === client.id || u.email.toLowerCase() === client.email.toLowerCase()) : null;
+    if (clientUser) {
+      db.createNotification({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: clientUser.id,
+        title: 'Task Deliverable Ready for Approval',
+        message: `Studio Admin approved deliverable for "${task.title}". It is now ready for your final review.`,
+        type: 'APPROVAL_REQUESTED',
+        linkUrl: `/projects/${task.projectId}`,
+        isRead: false,
+      });
+
+      if (clientUser.email) {
+        sendTaskSubmittedForReviewEmail({
+          toEmail: clientUser.email,
+          clientName: clientUser.name,
+          taskTitle: task.title,
+          projectName: project.name,
+          submissionDescription: task.submissionDescription || '',
+          deliverableUrl: task.deliverableUrl || undefined,
+        }).catch((err) => console.warn('[EMAIL] Client review email failed:', err?.message));
+      }
+    }
+  }
+
+  broadcastUpdate('tasks', 'admin-approve', updated);
+  broadcastUpdate('approvals', 'update', updated);
+
   return res.json(updated);
 });
 
@@ -959,6 +1023,7 @@ tasksRouter.patch('/:id/status', requireAuth, (req: AuthenticatedRequest, res: R
   }
 
   const updated = db.updateTask(id, { status: status as TaskStatus });
+  broadcastUpdate('tasks', 'status', updated);
   return res.json(updated);
 });
 
@@ -986,6 +1051,7 @@ tasksRouter.patch('/:id/progress', requireAuth, (req: AuthenticatedRequest, res:
   }
 
   const updated = db.updateTask(id, { progress: Math.round(progress) });
+  broadcastUpdate('tasks', 'progress', updated);
   return res.json(updated);
 });
 
@@ -998,15 +1064,15 @@ tasksRouter.post('/:id/submit', requireAuth, upload.single('file'), async (req: 
   if (currentUser.role !== 'TEAM_MEMBER') {
     return res.status(403).json({ message: 'Only the assigned team member can submit this task.' });
   }
-  if (!submissionDescription?.trim() || !proofDetails?.trim()) {
-    return res.status(400).json({ message: 'Completion description and proof details are required.' });
+  if (!submissionDescription?.trim()) {
+    return res.status(400).json({ message: 'Completion description is required.' });
   }
 
   const task = db.getTaskById(id);
   if (!task) return res.status(404).json({ message: 'Task not found.' });
   if (task.assignedToId !== currentUser.id) return res.status(403).json({ message: 'You can only submit tasks assigned to you.' });
-  if (task.status === 'REVIEW' && task.clientApprovalStatus === 'PENDING') {
-    return res.status(400).json({ message: 'This task is already awaiting client approval.' });
+  if (task.status === 'REVIEW' && (task.clientApprovalStatus === 'PENDING' || task.clientApprovalStatus === 'INTERNAL_REVIEW')) {
+    return res.status(400).json({ message: 'This task is already awaiting approval review.' });
   }
   if (task.clientApprovalStatus === 'APPROVED') {
     return res.status(400).json({ message: 'This task has already been approved.' });
@@ -1061,9 +1127,9 @@ tasksRouter.post('/:id/submit', requireAuth, upload.single('file'), async (req: 
   const updated = db.updateTask(id, {
     status: 'REVIEW',
     progress: 100,
-    clientApprovalStatus: 'PENDING',
+    clientApprovalStatus: 'INTERNAL_REVIEW', // Two-tier flow: Studio Admin reviews first
     submissionDescription: submissionDescription.trim(),
-    proofDetails: proofDetails.trim(),
+    proofDetails: (proofDetails && proofDetails.trim()) || 'Task completed and verified.',
     deliverableUrl: deliverableUrl?.trim() || fileDeliverableUrl || null,
     driveFileId: driveFileId || undefined,
     driveFileName: driveFileName || undefined,
@@ -1085,34 +1151,26 @@ tasksRouter.post('/:id/submit', requireAuth, upload.single('file'), async (req: 
     entityType: 'TASK',
     entityId: id,
     details: isRevisionSubmission
-      ? `Submitted revised work for task "${task.title}"`
-      : `Submitted task proof for "${task.title}"`,
+      ? `Submitted revised work for task "${task.title}" (Awaiting Admin Review)`
+      : `Submitted task for internal review "${task.title}"`,
   });
 
-  if (project) {
-    const client = db.getClientById(project.clientId);
-    const clientUser = client ? db.getUsers().find((u) => u.clientId === client.id || u.email.toLowerCase() === client.email.toLowerCase()) : null;
-    if (clientUser) {
-      db.createNotification({
-        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        userId: clientUser.id,
-        title: isRevisionSubmission ? 'Task Revision Submitted for Approval' : 'Task Submitted for Approval',
-        message: `Task "${task.title}" has been submitted for review.`,
-        type: 'APPROVAL_REQUESTED',
-        linkUrl: `/projects/${task.projectId}`,
-        isRead: false,
-      });
-
-      sendTaskSubmittedForReviewEmail({
-        toEmail: clientUser.email,
-        clientName: clientUser.name,
-        taskTitle: task.title,
-        projectName: project.name,
-        submissionDescription: submissionDescription.trim(),
-        deliverableUrl: deliverableUrl?.trim() || fileDeliverableUrl || null,
-      }).catch((emailErr) => console.warn('[EMAIL] Task submission review email dispatch failed:', emailErr?.message));
-    }
+  // Notify Admins and Super Admins for internal review before dispatching to client
+  const adminRecipients = db.getUsers().filter((u) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN');
+  for (const admin of adminRecipients) {
+    db.createNotification({
+      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: admin.id,
+      title: isRevisionSubmission ? 'Task Revision Submitted for Internal Review' : 'Task Deliverable Submitted for Internal Review',
+      message: `${currentUser.name} submitted task "${task.title}" for studio review before sending to client.`,
+      type: 'APPROVAL_REQUESTED',
+      linkUrl: `/projects/${task.projectId}`,
+      isRead: false,
+    });
   }
+
+  broadcastUpdate('tasks', 'submit', updated);
+  broadcastUpdate('approvals', 'submit', updated);
 
   return res.json(updated);
 });
@@ -1135,6 +1193,8 @@ tasksRouter.delete('/:id', requireAuth, (req: AuthenticatedRequest, res: Respons
   if (!success) {
     return res.status(500).json({ message: 'Failed to delete task.' });
   }
+
+  broadcastUpdate('tasks', 'delete', { id });
 
   return res.json({ message: 'Task deleted successfully.', deletedId: id });
 });

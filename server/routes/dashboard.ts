@@ -30,8 +30,7 @@ dashboardRouter.get('/stats', requireAuth, (req: AuthenticatedRequest, res: Resp
     );
     tasks.filter((t) => t.assignedToId === currentUser.id).forEach((t) => memberProjectIds.add(t.projectId));
     projects = projects.filter((p) => memberProjectIds.has(p.id));
-    const projectIds = new Set(projects.map((p) => p.id));
-    tasks = tasks.filter((t) => projectIds.has(t.projectId));
+    tasks = tasks.filter((t) => t.assignedToId === currentUser.id);
   }
 
   const teamMembers = users.filter((u) => u.role === 'TEAM_MEMBER' || u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
@@ -118,10 +117,7 @@ dashboardRouter.get('/recent-tasks', requireAuth, (req: AuthenticatedRequest, re
     const allowedProjects = new Set(db.getProjects().filter((p) => clientIds.has(p.clientId)).map((p) => p.id));
     tasks = tasks.filter((t) => allowedProjects.has(t.projectId));
   } else if (currentUser.role === 'TEAM_MEMBER') {
-    const memberProjectIds = new Set(
-      db.getProjectMembersByUserId(currentUser.id).map((pm) => pm.projectId)
-    );
-    tasks = tasks.filter((t) => t.assignedToId === currentUser.id || memberProjectIds.has(t.projectId));
+    tasks = tasks.filter((t) => t.assignedToId === currentUser.id);
   }
 
   tasks.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());

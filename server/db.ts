@@ -9,7 +9,7 @@ export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'COMPLETED' | 'REVI
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'ON_LEAVE';
 export type MilestoneStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'OVERDUE';
-export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type ApprovalStatus = 'INTERNAL_REVIEW' | 'PENDING' | 'APPROVED' | 'REJECTED';
 export type LeaveType =
   | 'CASUAL'
   | 'SICK'
@@ -142,6 +142,7 @@ export interface TaskRecord {
   priority: TaskPriority;
   progress: number;
   dueDate?: string | null;
+  allocatedMinutes?: number | null;
   revisionRequest?: string | null; // JSON string of RevisionRequest
   submissionDescription?: string | null;
   proofDetails?: string | null;

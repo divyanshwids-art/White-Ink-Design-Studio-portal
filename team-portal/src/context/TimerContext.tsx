@@ -61,6 +61,7 @@ interface TimerContextType {
   setFocusMinutes: (minutes: number) => void;
   setFocusNotes: (notes: string) => void;
   stopFocusAlarm: () => void;
+  snoozeFocusTimer: (minutes?: number) => void;
   logAndCloseFocusTimer: (customNotes?: string) => Promise<void>;
   openFocusModal: (task?: Task | PersonalTodo | null) => void;
   closeFocusModal: () => void;
@@ -356,8 +357,13 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isPeriodicAlarmActive]);
 
   // Focus Timer handlers
-  const startFocusTimer = useCallback((task: Task | PersonalTodo, minutes = 25) => {
-    const totalSec = minutes * 60;
+  const startFocusTimer = useCallback((task: Task | PersonalTodo, minutes?: number) => {
+    const taskAllocated =
+      'allocatedMinutes' in task && typeof task.allocatedMinutes === 'number' && task.allocatedMinutes > 0
+        ? task.allocatedMinutes
+        : null;
+    const initialMins = minutes !== undefined ? minutes : (taskAllocated || 25);
+    const totalSec = initialMins * 60;
     const targetEnd = Date.now() + totalSec * 1000;
     targetEndTsRef.current = targetEnd;
 
@@ -468,6 +474,20 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [activeFocusTask, focusTotalSeconds, focusNotes, saveFocusState]);
 
+  const snoozeFocusTimer = useCallback((minutes = 15) => {
+    if (!activeFocusTask) return;
+    soundAlerts.stopAlarm();
+    setIsFocusAlarmRinging(false);
+    const totalSec = minutes * 60;
+    const targetEnd = Date.now() + totalSec * 1000;
+    targetEndTsRef.current = targetEnd;
+    setFocusTotalSeconds(totalSec);
+    setFocusSecondsRemaining(totalSec);
+    setIsFocusTimerActive(true);
+    soundAlerts.playBeep(440, 'sine', 0.1, 0.1);
+    saveFocusState(activeFocusTask, targetEnd, totalSec, totalSec, true, focusNotes, false);
+  }, [activeFocusTask, focusNotes, saveFocusState]);
+
   const cancelFocusTimer = useCallback(() => {
     setIsFocusTimerActive(false);
     setIsFocusAlarmRinging(false);
@@ -551,6 +571,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setFocusMinutes,
         setFocusNotes,
         stopFocusAlarm,
+        snoozeFocusTimer,
         logAndCloseFocusTimer,
         openFocusModal,
         closeFocusModal,
@@ -797,14 +818,26 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               {/* Action Buttons */}
               <div className="flex items-center justify-center gap-3">
                 {isFocusAlarmRinging ? (
-                  <button
-                    type="button"
-                    onClick={stopFocusAlarm}
-                    className="px-6 py-3 rounded-2xl bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer animate-pulse"
-                  >
-                    <BellOff className="h-5 w-5" />
-                    Stop Alarm
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={stopFocusAlarm}
+                      className="px-5 py-3 rounded-2xl bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer animate-pulse"
+                    >
+                      <BellOff className="h-5 w-5" />
+                      Stop Alarm
+                    </button>
+                    {isTeamMember && (
+                      <button
+                        type="button"
+                        onClick={() => snoozeFocusTimer(15)}
+                        className="px-5 py-3 rounded-2xl bg-[#BA954F] hover:bg-[#A17B2F] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer btn-hover-lift"
+                      >
+                        <Timer className="h-5 w-5" />
+                        Snooze 15m
+                      </button>
+                    )}
+                  </div>
                 ) : !isFocusTimerActive ? (
                   <button
                     type="button"

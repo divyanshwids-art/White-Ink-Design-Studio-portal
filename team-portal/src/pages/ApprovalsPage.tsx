@@ -74,7 +74,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
           search: search || undefined,
         }),
         api.getProjects(),
-        isClient
+        isClient || isSuperAdminOrAdmin
           ? api.getTasks({ projectId: selectedProject, search: search || undefined })
           : Promise.resolve([] as Task[]),
       ]);
@@ -84,7 +84,10 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
         tasksRes.filter(
           (task) =>
             Boolean(task.submittedAt) &&
-            ['REVIEW', 'REVISION_REQUESTED', 'COMPLETED'].includes(task.status)
+            (task.clientApprovalStatus === 'INTERNAL_REVIEW' ||
+             task.clientApprovalStatus === 'PENDING' ||
+             task.clientApprovalStatus === 'APPROVED' ||
+             ['REVIEW', 'REVISION_REQUESTED', 'COMPLETED'].includes(task.status))
         )
       );
     } catch (err) {
@@ -96,6 +99,13 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     loadData();
+    const handleDataUpdated = () => {
+      loadData();
+    };
+    window.addEventListener('portal:data-updated', handleDataUpdated);
+    return () => {
+      window.removeEventListener('portal:data-updated', handleDataUpdated);
+    };
   }, [selectedProject, selectedStatus, search]);
 
   const handleOpenSubmit = () => {
@@ -184,11 +194,10 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
     if (
       task.progress !== 100 ||
       !task.submittedAt ||
-      !task.submissionDescription?.trim() ||
-      !task.proofDetails?.trim()
+      !task.submissionDescription?.trim()
     ) {
       alert(
-        'Task must reach 100% completion with submission description and proof details before approval.'
+        'Task must reach 100% completion with a submission description before approval.'
       );
       return;
     }
@@ -204,9 +213,23 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleAdminApproveTask = async (task: Task) => {
+    if (!window.confirm(`Approve deliverable and forward "${task.title}" to client for final sign-off?`)) return;
+    try {
+      setTaskActionLoading(task.id);
+      await api.adminApproveTask(task.id);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to approve task internally');
+    } finally {
+      setTaskActionLoading(null);
+    }
+  };
+
   const taskStatus = (task: Task): ApprovalStatus => {
     if (task.clientApprovalStatus === 'APPROVED') return 'APPROVED';
     if (task.status === 'REVISION_REQUESTED') return 'REJECTED';
+    if (task.clientApprovalStatus === 'INTERNAL_REVIEW') return 'INTERNAL_REVIEW';
     return 'PENDING';
   };
 
@@ -232,7 +255,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
   const totalCount = approvals.length + filteredTaskApprovals.length;
   const pendingCount =
     approvals.filter((a) => a.status === 'PENDING').length +
-    filteredTaskApprovals.filter((t) => taskStatus(t) === 'PENDING').length;
+    filteredTaskApprovals.filter((t) => taskStatus(t) === 'PENDING' || taskStatus(t) === 'INTERNAL_REVIEW').length;
   const approvedCount =
     approvals.filter((a) => a.status === 'APPROVED').length +
     filteredTaskApprovals.filter((t) => taskStatus(t) === 'APPROVED').length;
@@ -255,10 +278,16 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
             <XCircle className="h-3.5 w-3.5" /> Needs Revisions
           </span>
         );
+      case 'INTERNAL_REVIEW':
+        return (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8]">
+            <Clock className="h-3.5 w-3.5 text-[#946B2D]" /> Internal Review
+          </span>
+        );
       default:
         return (
           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
-            <Clock className="h-3.5 w-3.5" /> Pending Review
+            <Clock className="h-3.5 w-3.5" /> Pending Client Review
           </span>
         );
     }
@@ -473,8 +502,12 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                             <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EDE7DD] text-xs mt-2 space-y-1">
                               <div className="font-semibold text-[#1C1917]">Completion details</div>
                               <p className="text-[#57534E] font-normal">{task.submissionDescription}</p>
-                              <div className="font-semibold text-[#1C1917] pt-1">Proof</div>
-                              <p className="text-[#57534E] font-normal">{task.proofDetails}</p>
+                              {task.proofDetails && (
+                                <>
+                                  <div className="font-semibold text-[#1C1917] pt-1">Proof</div>
+                                  <p className="text-[#57534E] font-normal">{task.proofDetails}</p>
+                                </>
+                              )}
                               {task.deliverableUrl && (
                                 <a
                                   href={
@@ -502,7 +535,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                           )}
                         </div>
 
-                        {isClient && (
+                        {isClient ? (
                           <div
                             className="flex items-center gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#EDE7DD]"
                             onClick={(e) => e.stopPropagation()}
@@ -514,7 +547,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                             >
                               Review Details
                             </button>
-                            {isPending && (
+                            {isPending && task.clientApprovalStatus === 'PENDING' && (
                               <>
                                 <button
                                   type="button"
@@ -523,7 +556,6 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                                     taskActionLoading === task.id ||
                                     !task.submittedAt ||
                                     !task.submissionDescription?.trim() ||
-                                    !task.proofDetails?.trim() ||
                                     task.status !== 'REVIEW' ||
                                     task.clientApprovalStatus !== 'PENDING'
                                   }
@@ -553,7 +585,31 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                               </>
                             )}
                           </div>
-                        )}
+                        ) : isSuperAdminOrAdmin ? (
+                          <div
+                            className="flex items-center gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#EDE7DD]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setClientViewTask(task)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-[#FAF7F2] text-[#443B30] border border-[#DFD5C6] text-xs font-semibold rounded-xl transition-colors cursor-pointer shadow-2xs"
+                            >
+                              View Deliverable
+                            </button>
+                            {task.clientApprovalStatus === 'INTERNAL_REVIEW' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdminApproveTask(task)}
+                                disabled={taskActionLoading === task.id}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 btn-hover-lift"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {taskActionLoading === task.id ? 'Forwarding...' : 'Approve & Send to Client'}
+                              </button>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}

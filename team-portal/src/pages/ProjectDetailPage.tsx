@@ -454,15 +454,7 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             <h3 className="text-sm font-serif font-bold text-[#1C1917]">Project Deliverables & Tasks</h3>
             {canManage && (
               <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setIsImportModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#443B30] bg-white hover:bg-[#FAF7F2] border border-[#DFD5C6] rounded-xl transition-colors cursor-pointer shadow-2xs"
-                  title="Import multiple tasks from Excel file"
-                >
-                  <FileSpreadsheet className="h-3.5 w-3.5 text-[#BA954F]" />
-                  Import from Excel
-                </button>
+
                 <button
                   type="button"
                   onClick={() => {

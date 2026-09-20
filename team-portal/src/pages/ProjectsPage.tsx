@@ -76,6 +76,13 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
 
   useEffect(() => {
     loadData();
+    const handleDataUpdated = () => {
+      loadData();
+    };
+    window.addEventListener('portal:data-updated', handleDataUpdated);
+    return () => {
+      window.removeEventListener('portal:data-updated', handleDataUpdated);
+    };
   }, [loadData]);
 
   const handleDeleteProject = async () => {

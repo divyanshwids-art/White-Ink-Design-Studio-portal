@@ -109,6 +109,19 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
     }
   };
 
+  const handleAdminApprove = async () => {
+    if (!task) return;
+    setIsApproving(true);
+    try {
+      await api.adminApproveTask(task.id);
+      onApproved?.();
+    } catch {
+      // silently fail
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleString('en-US', {
@@ -123,7 +136,7 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
   const isAlreadyApproved = task.clientApprovalStatus === 'APPROVED';
   const isRevisionRequested = task.status === 'REVISION_REQUESTED';
   const isSubmitted = Boolean(task.submittedAt);
-  const hasSubmissionDetails = Boolean(task.submissionDescription?.trim()) && Boolean(task.proofDetails?.trim());
+  const hasSubmissionDetails = Boolean(task.submissionDescription?.trim());
   const canApprove =
     isSubmitted &&
     hasSubmissionDetails &&
@@ -150,6 +163,21 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
                 </span>
                 <PriorityBadge priority={task.priority} size="sm" />
                 <StatusBadge status={task.status} size="sm" />
+                {task.clientApprovalStatus === 'INTERNAL_REVIEW' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8]">
+                    Pending Admin Review
+                  </span>
+                )}
+                {task.clientApprovalStatus === 'PENDING' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8]">
+                    Awaiting Client Sign-Off
+                  </span>
+                )}
+                {task.clientApprovalStatus === 'APPROVED' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD]">
+                    Client Approved
+                  </span>
+                )}
                 {task.dueDate && (
                   <DeadlineCountdownBadge dueDate={task.dueDate} status={task.status} size="sm" />
                 )}
@@ -250,7 +278,7 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
                   title="Submit completed work with proof & deliverable link"
                 >
                   <Send className="h-4 w-4" />
-                  <span>Submit Task with Proof</span>
+                  <span>Submit Deliverable for Internal Review</span>
                 </button>
               )}
 
@@ -396,13 +424,50 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
             </div>
           )}
 
+          {/* Admin Internal Review Action Panel (For Admins / Super Admin) */}
+          {isAdminOrSuper && task.clientApprovalStatus === 'INTERNAL_REVIEW' && (
+            <div className="pt-4 space-y-3">
+              <div className="p-4 rounded-2xl bg-[#FAF4EC] border-2 border-[#BA954F]/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#BA954F] uppercase tracking-wider flex items-center gap-1.5">
+                    <FileCheck2 className="h-4 w-4" />
+                    Internal Admin Review Required
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8] uppercase tracking-wider">
+                    Internal Verification
+                  </span>
+                </div>
+                <p className="text-xs text-[#443B30] leading-relaxed">
+                  The team member submitted this deliverable for internal quality review. When verified, approve and forward it to the client for final sign-off.
+                </p>
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleAdminApprove}
+                    disabled={isApproving}
+                    className="px-5 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer btn-hover-lift inline-flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {isApproving ? 'Forwarding...' : 'Approve & Send to Client for Sign-Off'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Client Approval / Rejection Action Panel (For Clients) */}
           {isClient && (
             <div className="pt-4 space-y-3">
               <span className="text-xs font-bold text-[#8C7E72] uppercase tracking-wider block">
                 Client Review & Sign-Off
               </span>
-              <div className="grid grid-cols-2 gap-3">
+              {task.clientApprovalStatus === 'INTERNAL_REVIEW' ? (
+                <div className="p-4 rounded-xl bg-[#FAF4EC] border border-[#EDE3D4] text-xs text-[#946B2D] flex items-center gap-2 font-medium">
+                  <Clock className="h-4 w-4 text-[#BA954F] shrink-0" />
+                  <span>The deliverable is currently undergoing internal review by the studio lead.</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={handleApprove}
@@ -435,6 +500,7 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
                   {isRevisionRequested ? 'Revision Requested' : 'Request Changes'}
                 </button>
               </div>
+              )}
             </div>
           )}
 

@@ -38,6 +38,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [status, setStatus] = useState<TaskStatus>('TODO');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [dueDate, setDueDate] = useState('');
+  const [allocatedMinutes, setAllocatedMinutes] = useState<number | ''>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +51,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setStatus(task.status || 'TODO');
       setPriority(task.priority || 'MEDIUM');
       setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
+      setAllocatedMinutes(task.allocatedMinutes ? task.allocatedMinutes : '');
     } else {
       setTitle('');
       setDescription('');
@@ -58,6 +60,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setStatus(defaultStatus || 'TODO');
       setPriority('MEDIUM');
       setDueDate('');
+      setAllocatedMinutes('');
     }
     setError(null);
   }, [task, projects, defaultProjectId, defaultStatus, isOpen]);
@@ -86,6 +89,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     setError(null);
 
     try {
+      const allocatedNum = allocatedMinutes !== '' ? Number(allocatedMinutes) : null;
       if (isEditing && task) {
         await api.updateTask(task.id, {
           title: title.trim(),
@@ -95,6 +99,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           status: isClient ? task.status : status,
           priority,
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          allocatedMinutes: allocatedNum,
         });
       } else {
         await api.createTask({
@@ -105,6 +110,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           status: isClient ? 'TODO' : status,
           priority,
           dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          allocatedMinutes: allocatedNum,
         });
       }
 
@@ -305,6 +311,32 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             />
           </div>
         </div>
+
+        {/* Target Allocated Duration for Smart Focus Timer */}
+        {!isClient && (
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
+              Target Allocated Duration (Minutes)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="1"
+                max="480"
+                value={allocatedMinutes}
+                onChange={(e) => setAllocatedMinutes(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                placeholder="e.g. 25, 45, 60, 90"
+                className="w-full px-3.5 py-2 text-sm bg-white border border-gold-300 rounded-lg text-black font-semibold placeholder-black/40 focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-black/50 font-medium">
+                minutes
+              </span>
+            </div>
+            <p className="text-[11px] text-[#78716C] mt-1">
+              Pre-sets the Smart Focus Timer and alarm for the assigned team member.
+            </p>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-gold-200">

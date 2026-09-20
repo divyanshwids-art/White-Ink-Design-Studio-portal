@@ -90,6 +90,13 @@ export const TasksPage: React.FC<TasksPageProps> = ({
 
   useEffect(() => {
     loadData();
+    const handleDataUpdated = () => {
+      loadData();
+    };
+    window.addEventListener('portal:data-updated', handleDataUpdated);
+    return () => {
+      window.removeEventListener('portal:data-updated', handleDataUpdated);
+    };
   }, [loadData]);
 
   const handleQuickStatusChange = async (taskId: string, newStatus: TaskStatus) => {
@@ -208,7 +215,15 @@ export const TasksPage: React.FC<TasksPageProps> = ({
             <div
               key={task.id}
               className="p-4 sm:p-5 hover:bg-[#FAF7F2] transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer group"
-              onClick={() => onNavigate ? onNavigate(`/tasks/${task.id}`) : setViewingTask(task)}
+              onClick={() => {
+                if (user?.role === 'SUPER_ADMIN') {
+                  setViewingTask(task);
+                } else if (onNavigate) {
+                  onNavigate(`/tasks/${task.id}`);
+                } else {
+                  setViewingTask(task);
+                }
+              }}
             >
               <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">

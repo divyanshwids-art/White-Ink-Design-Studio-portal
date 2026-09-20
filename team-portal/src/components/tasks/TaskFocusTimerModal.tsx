@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Task, PersonalTodo } from '../../types';
 import { useTimer } from '../../context/TimerContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Timer,
   Play,
@@ -11,6 +12,7 @@ import {
   CheckCircle2,
   X,
   Volume2,
+  Clock,
 } from 'lucide-react';
 
 interface TaskFocusTimerModalProps {
@@ -26,6 +28,8 @@ export const TaskFocusTimerModal: React.FC<TaskFocusTimerModalProps> = ({
   task,
   onTimeLogged,
 }) => {
+  const { user } = useAuth();
+  const isTeamMember = user?.role === 'TEAM_MEMBER';
   const {
     activeFocusTask,
     focusTotalSeconds,
@@ -40,6 +44,7 @@ export const TaskFocusTimerModal: React.FC<TaskFocusTimerModalProps> = ({
     setFocusMinutes,
     setFocusNotes,
     stopFocusAlarm,
+    snoozeFocusTimer,
     logAndCloseFocusTimer,
   } = useTimer();
 
@@ -50,7 +55,7 @@ export const TaskFocusTimerModal: React.FC<TaskFocusTimerModalProps> = ({
   useEffect(() => {
     if (isOpen && task) {
       if (!activeFocusTask || activeFocusTask.id !== task.id) {
-        startFocusTimer(task, 25);
+        startFocusTimer(task);
       }
     }
   }, [isOpen, task, activeFocusTask, startFocusTimer]);
@@ -141,9 +146,19 @@ export const TaskFocusTimerModal: React.FC<TaskFocusTimerModalProps> = ({
         <div className="p-6 space-y-6">
           {/* Preset Buttons */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-[#78716C]">Session Target:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-[#78716C]">Session Target:</span>
+              {task && 'allocatedMinutes' in task && task.allocatedMinutes && task.allocatedMinutes > 0 && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
+                  Allocated: {task.allocatedMinutes}m
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              {[15, 25, 45, 60].map((mins) => (
+              {Array.from(new Set([
+                ...(task && 'allocatedMinutes' in task && task.allocatedMinutes && task.allocatedMinutes > 0 ? [task.allocatedMinutes] : []),
+                15, 25, 45, 60
+              ])).sort((a, b) => a - b).map((mins) => (
                 <button
                   key={mins}
                   type="button"
@@ -213,14 +228,26 @@ export const TaskFocusTimerModal: React.FC<TaskFocusTimerModalProps> = ({
           {/* Action Buttons */}
           <div className="flex items-center justify-center gap-3">
             {isFocusAlarmRinging ? (
-              <button
-                type="button"
-                onClick={stopFocusAlarm}
-                className="px-6 py-3 rounded-2xl bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer animate-pulse"
-              >
-                <BellOff className="h-5 w-5" />
-                Stop Alarm
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={stopFocusAlarm}
+                  className="px-5 py-3 rounded-2xl bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer animate-pulse"
+                >
+                  <BellOff className="h-5 w-5" />
+                  Stop Alarm
+                </button>
+                {isTeamMember && (
+                  <button
+                    type="button"
+                    onClick={() => snoozeFocusTimer(15)}
+                    className="px-5 py-3 rounded-2xl bg-[#BA954F] hover:bg-[#A17B2F] text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer btn-hover-lift"
+                  >
+                    <Clock className="h-5 w-5" />
+                    Snooze 15m
+                  </button>
+                )}
+              </div>
             ) : !isFocusTimerActive ? (
               <button
                 type="button"

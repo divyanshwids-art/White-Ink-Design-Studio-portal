@@ -43,6 +43,13 @@ export const DashboardTodayTasksCard: React.FC<DashboardTodayTasksCardProps> = (
 
   useEffect(() => {
     loadSummary();
+    const handleDataUpdated = () => {
+      loadSummary();
+    };
+    window.addEventListener('portal:data-updated', handleDataUpdated);
+    return () => {
+      window.removeEventListener('portal:data-updated', handleDataUpdated);
+    };
   }, []);
 
   const handleOpenTimer = (task: DailyActivityTaskItem) => {
@@ -55,10 +62,18 @@ export const DashboardTodayTasksCard: React.FC<DashboardTodayTasksCardProps> = (
     if (onRefreshParent) onRefreshParent();
   };
 
-  // Strictly filter out any Personal Todos - only show actual assigned project tasks
-  const projectTasks = (summary?.tasks || []).filter(
-    (t) => t.type === 'TASK' || (!t.type && t.projectName !== 'Personal Todo')
-  );
+  const handleTaskClick = (task: DailyActivityTaskItem) => {
+    if (task.type === 'TODO' || task.projectName === 'Personal Todo') {
+      onNavigate('/todos');
+    } else if (user?.role === 'SUPER_ADMIN') {
+      onNavigate('/tasks');
+    } else {
+      onNavigate(`/tasks/${task.id}`);
+    }
+  };
+
+  // Show all tasks: both personal todos and project tasks
+  const allTasks = summary?.tasks || [];
 
   return (
     <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs p-3.5 sm:p-4 space-y-3 flex flex-col justify-between">
@@ -83,75 +98,84 @@ export const DashboardTodayTasksCard: React.FC<DashboardTodayTasksCardProps> = (
         <div className="divide-y divide-[#F5EFE6] max-h-[260px] overflow-y-auto pr-1">
           {isLoading ? (
             <div className="py-8 text-center text-xs text-[#78716C]">Loading today's tasks...</div>
-          ) : projectTasks.length === 0 ? (
+          ) : allTasks.length === 0 ? (
             <div className="py-6 text-center text-xs text-[#78716C] space-y-1.5">
               <div className="w-8 h-8 rounded-full bg-[#FAF7F2] border border-[#EDE7DD] flex items-center justify-center mx-auto text-[#BA954F]">
                 <CheckCircle2 className="h-4 w-4" />
               </div>
               <p className="font-semibold text-[#1C1917] text-xs">No active tasks assigned yet for today</p>
-              <p className="text-[11px] text-[#A8A29E]">Assigned project tasks will appear here.</p>
+              <p className="text-[11px] text-[#A8A29E]">Assigned project tasks and personal todos will appear here.</p>
             </div>
           ) : (
-            projectTasks.slice(0, 5).map((task) => (
-              <div
-                key={task.id}
-                className="py-2.5 hover:bg-[#FAF7F2]/60 transition-colors flex items-center justify-between gap-3 group"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider bg-[#FAF7F2] text-[#78716C] border border-[#EDE7DD]">
-                      {task.projectName || 'PROJECT'}
-                    </span>
-                    {task.isCompleted || task.status === 'COMPLETED' ? (
-                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD] inline-flex items-center gap-1">
-                        <span className="h-1 w-1 rounded-full bg-[#2D6A4F]" />
-                        Done
+            allTasks.slice(0, 8).map((task) => {
+              const isTodo = task.type === 'TODO' || task.projectName === 'Personal Todo';
+              return (
+                <div
+                  key={task.id}
+                  className="py-2.5 hover:bg-[#FAF7F2]/60 transition-colors flex items-center justify-between gap-3 group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      {isTodo ? (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
+                          Personal Todo
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider bg-[#FAF7F2] text-[#78716C] border border-[#EDE7DD]">
+                          {task.projectName || 'PROJECT'}
+                        </span>
+                      )}
+                      {task.isCompleted || task.status === 'COMPLETED' ? (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD] inline-flex items-center gap-1">
+                          <span className="h-1 w-1 rounded-full bg-[#2D6A4F]" />
+                          Done
+                        </span>
+                      ) : task.status === 'IN_PROGRESS' ? (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] inline-flex items-center gap-1">
+                          <span className="h-1 w-1 rounded-full bg-[#BA954F]" />
+                          In Progress
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#FAF7F2] text-[#78716C] border border-[#EDE7DD] inline-flex items-center gap-1">
+                          <span className="h-1 w-1 rounded-full bg-[#78716C]" />
+                          To Do
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleTaskClick(task)}
+                      className="text-left font-semibold text-xs sm:text-sm text-[#1C1917] group-hover:text-[#BA954F] hover:underline transition-colors cursor-pointer block truncate"
+                      title={`View details for ${task.title}`}
+                    >
+                      {task.title}
+                    </button>
+
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#78716C] mt-0.5 font-normal">
+                      <Clock className="h-2.5 w-2.5 text-[#BA954F]" />
+                      <span>
+                        {task.totalLoggedMinutes > 0
+                          ? `${task.totalLoggedMinutes}m logged today`
+                          : 'No time logged yet'}
                       </span>
-                    ) : task.status === 'IN_PROGRESS' ? (
-                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4] inline-flex items-center gap-1">
-                        <span className="h-1 w-1 rounded-full bg-[#BA954F]" />
-                        In Progress
-                      </span>
-                    ) : (
-                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#FAF7F2] text-[#78716C] border border-[#EDE7DD] inline-flex items-center gap-1">
-                        <span className="h-1 w-1 rounded-full bg-[#78716C]" />
-                        To Do
-                      </span>
-                    )}
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => onNavigate(`/tasks/${task.id}`)}
-                    className="text-left font-semibold text-xs sm:text-sm text-[#1C1917] group-hover:text-[#BA954F] hover:underline transition-colors cursor-pointer block truncate"
-                    title={`View details for ${task.title}`}
-                  >
-                    {task.title}
-                  </button>
-
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#78716C] mt-0.5 font-normal">
-                    <Clock className="h-2.5 w-2.5 text-[#BA954F]" />
-                    <span>
-                      {task.totalLoggedMinutes > 0
-                        ? `${task.totalLoggedMinutes}m logged today`
-                        : 'No time logged yet'}
-                    </span>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenTimer(task)}
+                      className="px-2.5 py-1 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all inline-flex items-center gap-1 cursor-pointer btn-hover-lift"
+                      title="Start Focus Timer"
+                    >
+                      <Play className="h-3 w-3 fill-current" />
+                      <span>Focus Timer</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="shrink-0 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenTimer(task)}
-                    className="px-2.5 py-1 text-xs font-semibold text-white bg-[#BA954F] hover:bg-[#A17B2F] rounded-xl shadow-xs transition-all inline-flex items-center gap-1 cursor-pointer btn-hover-lift"
-                    title="Start Focus Timer"
-                  >
-                    <Play className="h-3 w-3 fill-current" />
-                    <span>Focus Timer</span>
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

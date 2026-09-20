@@ -62,6 +62,50 @@ function TeamPortalMain() {
     }
   }, [user]);
 
+  // Real-time server events listener (SSE) for automatic live updates across all tabs & roles
+  useEffect(() => {
+    if (!user) return;
+
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/events');
+
+      eventSource.addEventListener('update', (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          window.dispatchEvent(new CustomEvent('portal:data-updated', { detail: payload }));
+        } catch {
+          window.dispatchEvent(new CustomEvent('portal:data-updated', { detail: {} }));
+        }
+      });
+
+      eventSource.onerror = () => {
+        // SSE handles reconnection automatically
+      };
+    } catch (e) {
+      console.warn('Live event connection failed, using focus sync:', e);
+    }
+
+    const handleFocus = () => {
+      window.dispatchEvent(new CustomEvent('portal:data-updated', { detail: { type: 'focus' } }));
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user]);
+
+  // Redirect SUPER_ADMIN away from worker task detail page to tasks list
+  useEffect(() => {
+    if (user?.role === 'SUPER_ADMIN' && currentPath.startsWith('/tasks/')) {
+      setCurrentPath('/tasks');
+    }
+  }, [user?.role, currentPath]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center">
@@ -112,9 +156,9 @@ function TeamPortalMain() {
   const projectDetailMatch = currentPath.match(/^\/projects\/([a-zA-Z0-9_-]+)$/);
   const activeProjectId = projectDetailMatch ? projectDetailMatch[1] : null;
 
-  // Parse task detail route: /tasks/:id
+  // Parse task detail route: /tasks/:id (SUPER_ADMIN cannot enter worker task execution page)
   const taskDetailMatch = currentPath.match(/^\/tasks\/([a-zA-Z0-9_-]+)$/);
-  const activeTaskId = taskDetailMatch ? taskDetailMatch[1] : null;
+  const activeTaskId = taskDetailMatch && user?.role !== 'SUPER_ADMIN' ? taskDetailMatch[1] : null;
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1C1917] flex flex-col antialiased selection:bg-[#EAE0D0] selection:text-[#1C1917]">
