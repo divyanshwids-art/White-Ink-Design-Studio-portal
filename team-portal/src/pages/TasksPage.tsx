@@ -62,6 +62,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({
   const [isOverdueModalOpen, setIsOverdueModalOpen] = useState(false);
 
   const isClient = user?.role === 'CLIENT' || user?.role === 'CLIENT_ADMIN';
+  const isSuperAdminOrAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   const canManage = !isClient;
 
   const loadData = useCallback(async () => {
@@ -128,17 +129,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          {canManage && (
-            <button
-              type="button"
-              onClick={() => setIsImportModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-[#FAF7F2] text-[#443B30] text-xs font-semibold rounded-xl border border-[#DFD5C6] transition-colors shrink-0 cursor-pointer shadow-2xs"
-              title="Bulk import tasks from Excel file (.xlsx, .xls)"
-            >
-              <FileSpreadsheet className="h-4 w-4 text-[#BA954F]" />
-              Import from Excel
-            </button>
-          )}
           <button
             type="button"
             onClick={() => { setEditingTask(null); setIsModalOpen(true); }}
@@ -211,8 +201,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({
           title="No tasks found"
           description="There are no tasks matching your filters. Create a new task to assign work."
           icon={CheckSquare}
-          actionLabel={canManage ? 'Create New Task' : undefined}
-          onAction={() => { setEditingTask(null); setIsModalOpen(true); }}
         />
       ) : (
         <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-xs divide-y divide-[#F5EFE6] overflow-hidden">

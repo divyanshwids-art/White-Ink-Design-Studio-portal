@@ -16,6 +16,7 @@ import {
   Trash2,
   TrendingUp,
   X,
+  User as UserIcon,
 } from 'lucide-react';
 
 interface MilestonesPageProps {
@@ -212,6 +213,110 @@ export const MilestonesPage: React.FC<MilestonesPageProps> = ({ onNavigate }) =>
     }
   };
 
+  const renderMilestoneCard = (m: Milestone, roleLabel: string, roleColor: string) => {
+    const project = m.project || projects.find((p) => p.id === m.projectId);
+    const progress = m.progress || (m.status === 'COMPLETED' ? 100 : 0);
+    const handlerName = project?.createdBy?.name || user?.name || 'Studio Lead';
+
+    return (
+      <div
+        key={m.id}
+        className="bg-white rounded-xl border border-[#EDE7DD] p-3.5 shadow-2xs hover:border-[#BA954F] transition-all flex flex-col justify-between gap-2.5"
+      >
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1 min-w-0 flex-1">
+              {project && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate && onNavigate(`/projects/${project.id}`)}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-[#443B30] bg-[#FAF4EC] hover:bg-[#F2E8D8] px-1.5 py-0.5 rounded border border-[#EDE3D4] transition-colors cursor-pointer truncate max-w-full"
+                >
+                  <FolderKanban className="h-3 w-3 text-[#BA954F] shrink-0" />
+                  <span className="truncate">{project.name}</span>
+                </button>
+              )}
+              <h4 className="text-xs sm:text-sm font-bold text-[#1C1917] leading-tight pt-0.5 line-clamp-2">
+                {m.name}
+              </h4>
+            </div>
+
+            {canManage && (
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEdit(m)}
+                  className="p-1 text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF7F2] rounded-md transition-colors cursor-pointer"
+                  title="Edit Milestone"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(m.id, m.name)}
+                  className="p-1 text-[#78716C] hover:text-[#B91C1C] hover:bg-[#FDF2F0] rounded-md transition-colors cursor-pointer"
+                  title="Delete Milestone"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {m.description && (
+            <p className="text-[11px] text-[#78716C] line-clamp-2 leading-relaxed mt-1.5 font-normal">
+              {m.description}
+            </p>
+          )}
+        </div>
+
+        {/* Handler & Target */}
+        <div className="pt-2 border-t border-[#F5EFE6] space-y-2">
+          <div className={`text-[11px] font-semibold flex items-center gap-1.5 ${roleColor}`}>
+            <UserIcon className="h-3.5 w-3.5 shrink-0 text-[#BA954F]" />
+            <span className="truncate">{roleLabel}: <span className="font-bold text-[#1C1917]">{handlerName}</span></span>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-[#78716C]">
+            <div className="flex items-center gap-1 font-medium">
+              <Calendar className="h-3 w-3 text-[#BA954F]" />
+              <span>{m.dueDate ? new Date(m.dueDate).toLocaleDateString() : 'No date'}</span>
+            </div>
+            <span className="font-bold text-[#1C1917] font-mono">{progress}%</span>
+          </div>
+
+          <div className="w-full bg-[#FAF7F2] h-1.5 rounded-full overflow-hidden border border-[#EDE7DD]">
+            <div
+              className={`h-full rounded-full transition-all ${
+                m.status === 'COMPLETED'
+                  ? 'bg-[#2D6A4F]'
+                  : m.status === 'OVERDUE'
+                  ? 'bg-[#B91C1C]'
+                  : 'bg-[#BA954F]'
+              }`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <div className="pt-1 flex items-center justify-between gap-2">
+            {canUpdateProgress && (
+              <select
+                value={m.status}
+                onChange={(e) => handleQuickStatusChange(m, e.target.value as MilestoneStatus)}
+                className="text-[10px] font-semibold py-1 px-2 border border-[#EDE7DD] rounded-lg bg-[#FAF7F2] hover:bg-white text-[#1C1917] cursor-pointer w-full focus:ring-1 focus:ring-[#BA954F]"
+              >
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="DELAYED">Delayed</option>
+              </select>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header */}
@@ -219,7 +324,7 @@ export const MilestonesPage: React.FC<MilestonesPageProps> = ({ onNavigate }) =>
         <div>
           <h1 className="section-heading text-heading flex items-center gap-2.5">
             <Flag className="h-6 w-6 text-gold-600" />
-            Project Milestones
+            Group Milestones
           </h1>
           <p className="muted mt-1">
             Track key studio checkpoints, client sign-offs, and drawing package deliverables
@@ -236,49 +341,6 @@ export const MilestonesPage: React.FC<MilestonesPageProps> = ({ onNavigate }) =>
             New Milestone
           </button>
         )}
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex items-center gap-3 card-hover-lift">
-          <div className="p-2.5 bg-gold-100 text-gold-800 rounded-lg shrink-0 border border-gold-300">
-            <Flag className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-gold-700">Total Milestones</div>
-            <div className="text-xl font-extrabold text-heading">{totalCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex items-center gap-3 card-hover-lift">
-          <div className="p-2.5 bg-gold-200 text-black rounded-lg shrink-0 border border-gold-400">
-            <CheckCircle2 className="h-5 w-5 text-gold-800" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-gold-700">Completed</div>
-            <div className="text-xl font-extrabold text-heading">{completedCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex items-center gap-3 card-hover-lift">
-          <div className="p-2.5 bg-gold-100 text-gold-800 rounded-lg shrink-0 border border-gold-300">
-            <TrendingUp className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-gold-700">In Progress</div>
-            <div className="text-xl font-extrabold text-heading">{inProgressCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-card p-4 rounded-xl border border-gold-200 shadow-xs flex items-center gap-3 card-hover-lift">
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg shrink-0 border border-rose-200">
-            <AlertTriangle className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-gold-700">Overdue / Delayed</div>
-            <div className="text-xl font-extrabold text-heading">{delayedCount}</div>
-          </div>
-        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -327,145 +389,124 @@ export const MilestonesPage: React.FC<MilestonesPageProps> = ({ onNavigate }) =>
         </div>
       </div>
 
-      {/* Milestones List */}
+      {/* 4 Vertical Columns Board */}
       {loading ? (
-        <div className="p-12 text-center text-gold-700 bg-card rounded-xl border border-gold-200">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gold-500 border-t-transparent mb-3" />
-          <p className="text-sm font-medium">Loading milestones...</p>
-        </div>
-      ) : milestones.length === 0 ? (
-        <div className="p-12 text-center text-gold-700 bg-card rounded-xl border border-gold-200">
-          <Flag className="h-10 w-10 text-gold-400 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-heading">No milestones found</h3>
-          <p className="text-xs text-gold-700 mt-1 max-w-sm mx-auto">
-            {search || selectedProject !== 'ALL' || selectedStatus !== 'ALL'
-              ? 'No milestones match the current filters. Try changing your search query.'
-              : 'Start by creating major targets and milestone checkpoints for your projects.'}
-          </p>
-          {canManage && (
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="btn-primary btn-hover-lift mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add First Milestone
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {milestones.map((m) => {
-            const project = m.project || projects.find((p) => p.id === m.projectId);
-            const progress = m.progress || (m.status === 'COMPLETED' ? 100 : 0);
-
-            return (
-              <div
-                key={m.id}
-                className="bg-card rounded-xl border border-gold-200 p-5 shadow-xs hover:border-gold-400 card-hover-lift transition-all flex flex-col justify-between"
-              >
-                <div>
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {project && (
-                          <button
-                            type="button"
-                            onClick={() => onNavigate && onNavigate(`/projects/${project.id}`)}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-black bg-gold-100 hover:bg-gold-200 px-2 py-0.5 rounded border border-gold-300 transition-colors cursor-pointer"
-                          >
-                            <FolderKanban className="h-3 w-3 text-gold-700" />
-                            <span className="truncate max-w-[140px]">{project.name}</span>
-                          </button>
-                        )}
-                        {getStatusBadge(m.status, m.dueDate)}
-                      </div>
-                      <h3 className="text-base font-bold text-heading leading-snug pt-1">
-                        {m.name}
-                      </h3>
-                    </div>
-
-                    {canManage && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(m)}
-                          className="p-1.5 text-black/50 hover:text-black hover:bg-gold-100 rounded-lg transition-colors cursor-pointer"
-                          title="Edit Milestone"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(m.id, m.name)}
-                          className="p-1.5 text-black/40 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                          title="Delete Milestone"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
+        <div className="p-12 text-center text-[#78716C] bg-white rounded-2xl border border-[#EDE7DD]">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#BA954F] border-t-transparent mb-3" />
+            <p className="text-sm font-medium">Loading milestones...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+            {/* Column 1: Total Milestones */}
+            <div className="bg-[#FAF7F2] rounded-2xl border border-[#EDE7DD] p-3.5 space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between pb-2 border-b border-[#EDE7DD]">
+                <div className="flex items-center gap-2 font-bold text-xs text-[#1C1917]">
+                  <div className="p-1.5 rounded-lg bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
+                    <Flag className="h-3.5 w-3.5 stroke-[2]" />
                   </div>
-
-                  {/* Description */}
-                  {m.description && (
-                    <p className="muted line-clamp-2 leading-relaxed mb-4 text-xs">
-                      {m.description}
-                    </p>
-                  )}
+                  <span>Total Milestones</span>
                 </div>
-
-                {/* Progress Bar & Footer */}
-                <div className="pt-3 border-t border-gold-100 mt-2 space-y-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-gold-800">Progress</span>
-                      <span className="font-extrabold text-heading">{progress}%</span>
-                    </div>
-                    <div className="w-full bg-gold-100 h-2 rounded-full overflow-hidden border border-gold-200">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          m.status === 'COMPLETED'
-                            ? 'bg-gold-500'
-                            : m.status === 'DELAYED'
-                            ? 'bg-rose-500'
-                            : 'bg-gold-400'
-                        }`}
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 text-xs text-gold-700">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <Calendar className="h-3.5 w-3.5 text-gold-600" />
-                      {m.dueDate ? (
-                        <span>Target: {new Date(m.dueDate).toLocaleDateString()}</span>
-                      ) : (
-                        <span>No due date</span>
-                      )}
-                    </div>
-
-                    {canUpdateProgress && (
-                      <select
-                        value={m.status}
-                        onChange={(e) => handleQuickStatusChange(m, e.target.value as MilestoneStatus)}
-                        className="text-[11px] font-semibold py-1 px-2 border border-gold-300 rounded-md bg-gold-50/50 hover:bg-gold-100 text-heading cursor-pointer focus:ring-1 focus:ring-gold-500"
-                      >
-                        <option value="PENDING">Pending</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="DELAYED">Delayed</option>
-                      </select>
-                    )}
-                  </div>
-                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-[#BA954F] border border-[#EDE7DD] shadow-2xs">
+                  {milestones.length}
+                </span>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="space-y-2.5 max-h-[620px] overflow-y-auto pr-1">
+                {milestones.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-[#78716C]">No milestones</div>
+                ) : (
+                  milestones.map((m) => renderMilestoneCard(m, 'Handled by', 'text-[#78716C]'))
+                )}
+              </div>
+            </div>
+
+            {/* Column 2: Completed */}
+            <div className="bg-[#FAF7F2] rounded-2xl border border-[#EDE7DD] p-3.5 space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between pb-2 border-b border-[#EDE7DD]">
+                <div className="flex items-center gap-2 font-bold text-xs text-[#1C1917]">
+                  <div className="p-1.5 rounded-lg bg-[#F0FDF4] text-[#16A34A] border border-[#DCFCE7]">
+                    <CheckCircle2 className="h-3.5 w-3.5 stroke-[2]" />
+                  </div>
+                  <span>Completed</span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-[#16A34A] border border-[#EDE7DD] shadow-2xs">
+                  {milestones.filter((m) => m.status === 'COMPLETED').length}
+                </span>
+              </div>
+              <div className="space-y-2.5 max-h-[620px] overflow-y-auto pr-1">
+                {milestones.filter((m) => m.status === 'COMPLETED').length === 0 ? (
+                  <div className="py-8 text-center text-xs text-[#78716C]">No completed milestones</div>
+                ) : (
+                  milestones
+                    .filter((m) => m.status === 'COMPLETED')
+                    .map((m) => renderMilestoneCard(m, 'Completed by', 'text-[#2D6A4F]'))
+                )}
+              </div>
+            </div>
+
+            {/* Column 3: In Progress */}
+            <div className="bg-[#FAF7F2] rounded-2xl border border-[#EDE7DD] p-3.5 space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between pb-2 border-b border-[#EDE7DD]">
+                <div className="flex items-center gap-2 font-bold text-xs text-[#1C1917]">
+                  <div className="p-1.5 rounded-lg bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
+                    <TrendingUp className="h-3.5 w-3.5 stroke-[2]" />
+                  </div>
+                  <span>In Progress</span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-[#BA954F] border border-[#EDE7DD] shadow-2xs">
+                  {milestones.filter((m) => m.status === 'IN_PROGRESS').length}
+                </span>
+              </div>
+              <div className="space-y-2.5 max-h-[620px] overflow-y-auto pr-1">
+                {milestones.filter((m) => m.status === 'IN_PROGRESS').length === 0 ? (
+                  <div className="py-8 text-center text-xs text-[#78716C]">No milestones in progress</div>
+                ) : (
+                  milestones
+                    .filter((m) => m.status === 'IN_PROGRESS')
+                    .map((m) => renderMilestoneCard(m, 'Working on it', 'text-[#BA954F]'))
+                )}
+              </div>
+            </div>
+
+            {/* Column 4: Overdue / Delayed */}
+            <div className="bg-[#FAF7F2] rounded-2xl border border-[#EDE7DD] p-3.5 space-y-3 shadow-2xs">
+              <div className="flex items-center justify-between pb-2 border-b border-[#EDE7DD]">
+                <div className="flex items-center gap-2 font-bold text-xs text-[#1C1917]">
+                  <div className="p-1.5 rounded-lg bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0]">
+                    <AlertTriangle className="h-3.5 w-3.5 stroke-[2]" />
+                  </div>
+                  <span>Overdue / Delayed</span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-[#B91C1C] border border-[#EDE7DD] shadow-2xs">
+                  {
+                    milestones.filter(
+                      (m) =>
+                        m.status === 'OVERDUE' ||
+                        (m.dueDate && new Date(m.dueDate).getTime() < Date.now() && m.status !== 'COMPLETED')
+                    ).length
+                  }
+                </span>
+              </div>
+              <div className="space-y-2.5 max-h-[620px] overflow-y-auto pr-1">
+                {milestones.filter(
+                  (m) =>
+                    m.status === 'OVERDUE' ||
+                    (m.dueDate && new Date(m.dueDate).getTime() < Date.now() && m.status !== 'COMPLETED')
+                ).length === 0 ? (
+                  <div className="py-8 text-center text-xs text-[#78716C]">No overdue milestones</div>
+                ) : (
+                  milestones
+                    .filter(
+                      (m) =>
+                        m.status === 'OVERDUE' ||
+                        (m.dueDate && new Date(m.dueDate).getTime() < Date.now() && m.status !== 'COMPLETED')
+                    )
+                    .map((m) => renderMilestoneCard(m, 'Responsible', 'text-[#B91C1C]'))
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* Create / Edit Milestone Modal */}
       {isModalOpen && (

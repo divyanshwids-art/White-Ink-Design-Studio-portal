@@ -342,15 +342,6 @@ export const SOPPage: React.FC = () => {
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             type="button"
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-[#FAF7F2] text-[#1C1917] text-xs font-semibold rounded-xl border border-[#DFD5C6] shadow-2xs transition-colors cursor-pointer"
-          >
-            <Download className="h-4 w-4 text-[#BA954F]" />
-            Export Catalog
-          </button>
-
-          <button
-            type="button"
             onClick={handleOpenCreate}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer btn-hover-lift"
           >
@@ -489,14 +480,6 @@ export const SOPPage: React.FC = () => {
               ? 'Upload your official brand guidelines, PDFs, color palette hex codes, and logo assets.'
               : 'Standard operating procedures and client brand guidelines will appear here.'}
           </p>
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer btn-hover-lift"
-          >
-            <Plus className="h-3.5 w-3.5 stroke-[2]" />
-            {isClient ? 'Upload First Brand Asset' : 'Create First Document'}
-          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

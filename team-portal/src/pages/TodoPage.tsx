@@ -11,7 +11,6 @@ import {
   ListTodo,
   Plus,
   Search,
-  RotateCw,
   Clock,
   CheckCircle2,
   UserCheck,
@@ -135,6 +134,8 @@ export const TodoPage: React.FC = () => {
     },
   ];
 
+  const isSuperAdminOrAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
       {/* Header Banner */}
@@ -153,14 +154,6 @@ export const TodoPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={loadTodos}
-            className="btn-gold-secondary p-2.5 rounded-xl"
-            title="Refresh todos"
-          >
-            <RotateCw className="h-4 w-4 text-[#BA954F]" />
-          </button>
           <button
             type="button"
             onClick={() => {
@@ -191,44 +184,6 @@ export const TodoPage: React.FC = () => {
           </button>
         </div>
       )}
-
-      {/* Stats Bento */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-5 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
-          <div className="text-xs font-medium text-neutral-500">Total Todos</div>
-          <div className="text-2xl font-bold font-serif text-neutral-900 mt-1">{stats.total}</div>
-          <div className="text-[11px] text-neutral-400 font-medium mt-0.5">All active & finished</div>
-        </div>
-
-        <div className="p-5 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
-          <div className="text-xs font-medium text-neutral-500 flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-[#B45309]" />
-            <span>Pending</span>
-          </div>
-          <div className="text-2xl font-bold font-serif text-neutral-900 mt-1">{stats.pending}</div>
-          <div className="text-[11px] text-neutral-400 font-medium mt-0.5">Needs action</div>
-        </div>
-
-        <div className="p-5 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
-          <div className="text-xs font-medium text-neutral-500 flex items-center gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5 text-[#2D6A4F]" />
-            <span>Completed</span>
-          </div>
-          <div className="text-2xl font-bold font-serif text-neutral-900 mt-1">{stats.completed}</div>
-          <div className="text-[11px] text-neutral-400 font-medium mt-0.5">
-            {stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}% done
-          </div>
-        </div>
-
-        <div className="p-5 bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
-          <div className="text-xs font-medium text-neutral-500 flex items-center gap-1.5">
-            <UserCheck className="h-3.5 w-3.5 text-[#BA954F]" />
-            <span>Assigned to Me</span>
-          </div>
-          <div className="text-2xl font-bold font-serif text-neutral-900 mt-1">{stats.assignedToMe}</div>
-          <div className="text-[11px] text-neutral-400 font-medium mt-0.5">From team members</div>
-        </div>
-      </div>
 
       {/* Main Section: Search, Tabs & Todo List */}
       <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">

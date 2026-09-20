@@ -30,6 +30,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const role = user?.role || 'TEAM_MEMBER';
   const isClient = role === 'CLIENT' || role === 'CLIENT_ADMIN';
+  const isSuperAdminOrAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
   const canRequestApproval = !isClient;
   const canDelete = role === 'SUPER_ADMIN' || role === 'ADMIN';
 
@@ -396,10 +397,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
           {renderKPISummary()}
         </>
       ) : (
-        <>
-          {renderKPISummary()}
-          {renderFilterToolbar()}
-        </>
+        renderFilterToolbar()
       )}
 
       {/* Deliverables List */}
@@ -416,16 +414,6 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
               ? 'No approval requests match the selected filters.'
               : 'Deliverables requested for sign-off will appear here.'}
           </p>
-          {canRequestApproval && (
-            <button
-              type="button"
-              onClick={handleOpenSubmit}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer btn-hover-lift"
-            >
-              <Plus className="h-3.5 w-3.5 stroke-[2]" />
-              Submit First Deliverable
-            </button>
-          )}
         </div>
       ) : (
         <div className="space-y-4">

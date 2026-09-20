@@ -299,63 +299,12 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={handleExportCSV}
-            className="btn-gold-secondary px-4 py-2 text-xs font-semibold inline-flex items-center gap-2"
-          >
-            <Download className="h-3.5 w-3.5 text-[#BA954F]" />
-            <span>Export CSV</span>
-          </button>
-          <button
-            type="button"
             onClick={handleOpenApply}
             className="btn-gold-primary px-4 py-2 text-xs font-semibold inline-flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             <span>Apply for Leave</span>
           </button>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex items-center gap-4">
-          <div className="p-3 bg-[#FAF7F2] text-[#BA954F] rounded-xl border border-[#EDE7DD] shrink-0">
-            <CalendarDays className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-neutral-500">Total Applications</div>
-            <div className="text-2xl font-bold font-serif text-neutral-900 mt-0.5">{totalCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex items-center gap-4">
-          <div className="p-3 bg-[#FDF6E9] text-[#B45309] rounded-xl border border-[#F9E2AF] shrink-0">
-            <Clock className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-neutral-500">Pending Review</div>
-            <div className="text-2xl font-bold font-serif text-neutral-900 mt-0.5">{pendingCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex items-center gap-4">
-          <div className="p-3 bg-[#EBF3ED] text-[#2D6A4F] rounded-xl border border-[#D1E7D8] shrink-0">
-            <CheckCircle2 className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-neutral-500">Approved Leaves</div>
-            <div className="text-2xl font-bold font-serif text-neutral-900 mt-0.5">{approvedCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] flex items-center gap-4">
-          <div className="p-3 bg-[#FAF7F2] text-[#BA954F] rounded-xl border border-[#EDE7DD] shrink-0">
-            <Briefcase className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-neutral-500">Total Approved Days</div>
-            <div className="text-2xl font-bold font-serif text-neutral-900 mt-0.5">{totalDaysTaken} Days</div>
-          </div>
         </div>
       </div>
 
@@ -434,14 +383,6 @@ export const LeavesPage: React.FC<LeavesPageProps> = ({ onNavigate }) => {
               ? 'No records match the active filter criteria.'
               : 'Submitted leave requests and time-off tracking records will appear here.'}
           </p>
-          <button
-            type="button"
-            onClick={handleOpenApply}
-            className="btn-gold-primary mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Apply for Leave
-          </button>
         </div>
       ) : (
         <div className="space-y-4">

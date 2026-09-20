@@ -234,14 +234,6 @@ export const PerformancePage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gold-50 text-heading text-sm font-semibold rounded-lg border border-gold-300 shadow-2xs transition-colors cursor-pointer"
-          >
-            <Download className="h-4 w-4 text-gold-700" />
-            Export CSV
-          </button>
           {isAdminOrManager && (
             <button
               type="button"
@@ -335,16 +327,6 @@ export const PerformancePage: React.FC = () => {
               ? 'No evaluations match your search query.'
               : 'Quarterly or annual performance evaluations will appear here.'}
           </p>
-          {isAdminOrManager && (
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="btn-primary btn-hover-lift mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Conduct First Review
-            </button>
-          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

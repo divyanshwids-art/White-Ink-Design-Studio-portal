@@ -114,16 +114,6 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
               <span>Team EOD Reports</span>
             </button>
           )}
-
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="btn-gold-secondary px-4 py-2 text-xs font-semibold inline-flex items-center gap-2"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 text-[#BA954F] ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Sync Records</span>
-          </button>
         </div>
       </div>
 
@@ -172,19 +162,6 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
             </span>
           </button>
         )}
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('analytics')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
-            activeTab === 'analytics'
-              ? 'border-[#BA954F] text-neutral-900 bg-white shadow-2xs rounded-t-xl'
-              : 'border-transparent text-neutral-500 hover:text-neutral-900'
-          }`}
-        >
-          <TrendingUp className="h-4 w-4 text-[#BA954F]" />
-          <span>Analytics & Trends</span>
-        </button>
       </div>
 
       {/* TAB CONTENT: CLOCK IN / OVERVIEW */}
@@ -199,23 +176,6 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
           <AttendanceOverviewChart stats={stats} />
 
           {/* Quick Recent Activity preview */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-serif text-lg font-bold text-neutral-900">Recent Attendance Logs</h3>
-              <button
-                type="button"
-                onClick={() => setActiveTab('history')}
-                className="text-xs font-semibold text-[#BA954F] hover:underline cursor-pointer"
-              >
-                View Full Logs →
-              </button>
-            </div>
-            <AttendanceHistoryTable
-              records={historyRecords.slice(0, 5)}
-              isLoading={isLoading}
-              showUserColumn={false}
-            />
-          </div>
         </div>
       )}
 
@@ -257,16 +217,6 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
             </p>
           </div>
           <TeamAttendanceView teamMembers={teamMembers} />
-        </div>
-      )}
-
-      {/* TAB CONTENT: ANALYTICS */}
-      {activeTab === 'analytics' && (
-        <div className="space-y-6">
-          <AttendanceOverviewChart stats={stats} />
-          {isAdminOrSuperAdmin && (
-            <TeamAttendanceView teamMembers={teamMembers} />
-          )}
         </div>
       )}
 

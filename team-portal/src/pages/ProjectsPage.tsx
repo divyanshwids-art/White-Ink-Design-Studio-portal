@@ -118,9 +118,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C1917]">
               Projects
             </h1>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
-              {projects.length} Total
-            </span>
+
           </div>
           <p className="text-xs sm:text-sm text-[#78716C] font-normal mt-1">
             Manage creative deliverables, track milestone progress, and allocate team talent.
@@ -155,53 +153,10 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
         </div>
       </div>
 
-      {/* Quick KPI Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-white p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5 shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-[#FAF4EC] border border-[#EAE0D0] flex items-center justify-center text-[#BA954F] shrink-0">
-            <Layers className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-[#1C1917]">{metrics.total}</div>
-            <div className="text-xs text-[#78716C] font-medium">Total Workspaces</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5 shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7] flex items-center justify-center text-[#16A34A] shrink-0">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-[#1C1917]">{metrics.active}</div>
-            <div className="text-xs text-[#78716C] font-medium">In Active Execution</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5 shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center text-[#2563EB] shrink-0">
-            <Clock className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-[#1C1917]">{metrics.planning}</div>
-            <div className="text-xs text-[#78716C] font-medium">Planning &amp; Setup</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-[#EDE7DD] flex items-center gap-3.5 shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-[#FAF5FF] border border-[#F3E8FF] flex items-center justify-center text-[#9333EA] shrink-0">
-            <CheckCircle2 className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-[#1C1917]">{metrics.completed}</div>
-            <div className="text-xs text-[#78716C] font-medium">Fully Completed</div>
-          </div>
-        </div>
-      </div>
-
       {/* Filter & Search Bar */}
       <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-[#EDE7DD] shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
         {/* Search */}
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A8A29E]" />
           <input
             type="text"
@@ -219,27 +174,6 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
               <X className="h-3.5 w-3.5" />
             </button>
           )}
-        </div>
-
-        {/* Status Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          {statusPills.map((pill) => {
-            const isActive = statusFilter === pill.value;
-            return (
-              <button
-                key={pill.value}
-                type="button"
-                onClick={() => setStatusFilter(pill.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0] shadow-2xs'
-                    : 'bg-transparent text-[#78716C] hover:bg-[#FAF7F2] hover:text-[#1C1917] border border-transparent'
-                }`}
-              >
-                {pill.label}
-              </button>
-            );
-          })}
         </div>
 
         {/* Priority Filter */}
