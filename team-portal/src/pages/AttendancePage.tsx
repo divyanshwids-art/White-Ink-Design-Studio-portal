@@ -92,9 +92,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ currentUser }) =
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-semibold tracking-widest uppercase text-[#BA954F]">
-            Time & Presence Tracking
-          </span>
+
           <h1 className="font-serif text-3xl font-bold text-neutral-900 tracking-tight mt-1">
             Studio Attendance
           </h1>

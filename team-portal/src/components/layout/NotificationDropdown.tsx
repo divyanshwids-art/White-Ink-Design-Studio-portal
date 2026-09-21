@@ -14,7 +14,8 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { api } from '../../services/api';
-import { Notification, NotificationType } from '../../types';
+import type { Notification, NotificationType } from '../../types';
+import { subscribeToWebPush } from '../../utils/pushNotifications';
 
 interface NotificationDropdownProps {
   onNavigate?: (path: string) => void;
@@ -42,8 +43,20 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onNa
 
   useEffect(() => {
     fetchNotifications();
+
+    const handleDataUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.entity === 'notification') {
+        fetchNotifications();
+      }
+    };
+    window.addEventListener('portal:data-updated', handleDataUpdated);
+
     const interval = setInterval(fetchNotifications, 30000); // 30s polling
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener('portal:data-updated', handleDataUpdated);
+      clearInterval(interval);
+    };
   }, []);
 
   // Close dropdown on click outside
@@ -183,6 +196,25 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onNa
               </button>
             )}
           </div>
+
+          {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && (
+            <div className="bg-[#FAF4EC] px-4 py-2 border-b border-[#EDE3D4] flex items-center justify-between gap-2">
+              <span className="text-[11px] text-[#78716C]">
+                Get Chrome alerts even when the portal is closed:
+              </span>
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await subscribeToWebPush();
+                  fetchNotifications();
+                }}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-[#1C1917] hover:bg-[#3D3A37] text-white rounded-lg shadow-2xs cursor-pointer shrink-0 transition-colors"
+              >
+                Turn On
+              </button>
+            </div>
+          )}
 
           {/* List */}
           <div className="max-h-[380px] overflow-y-auto divide-y divide-[#F5EFE6]">

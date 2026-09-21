@@ -82,12 +82,38 @@ export const ChatPage: React.FC = () => {
     if (!currentChannel) return;
     loadMessages();
 
-    // Polling every 4 seconds for chat updates
+    // Listen to real-time chat SSE updates
+    const handleDataUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const detail = customEvent.detail;
+      if (detail?.entity === 'chat') {
+        if (detail.action === 'message' && detail.data) {
+          const msg = detail.data;
+          const cleanMsgCh = (msg.channel || '').replace(/^#/, '').trim().toLowerCase();
+          const cleanCurCh = (currentChannel || '').replace(/^#/, '').trim().toLowerCase();
+          if (cleanMsgCh === cleanCurCh) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === msg.id)) return prev;
+              return [...prev, msg];
+            });
+            scrollToBottom();
+          }
+        } else if (detail.action === 'delete' && detail.data?.id) {
+          setMessages((prev) => prev.filter((m) => m.id !== detail.data.id));
+        }
+      }
+    };
+    window.addEventListener('portal:data-updated', handleDataUpdated);
+
+    // Polling every 5 seconds for chat updates fallback
     const interval = setInterval(() => {
       loadMessages(true);
-    }, 4000);
+    }, 5000);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener('portal:data-updated', handleDataUpdated);
+      clearInterval(interval);
+    };
   }, [currentChannel]);
 
   useEffect(() => {
@@ -182,13 +208,6 @@ export const ChatPage: React.FC = () => {
       const newMsg = res.chatMessage || res;
       setMessages((prev) => [...prev, newMsg]);
       scrollToBottom();
-
-      // If mentions current user, trigger local notification
-      if (textToSend && (textToSend.includes('@' + user?.name) || textToSend.includes('@all'))) {
-        triggerLocalNotification('New Workspace Mention', {
-          body: `${user?.name || 'Someone'} mentioned you in #${currentChannel}`,
-        });
-      }
     } catch (err: any) {
       alert(err.message || 'Failed to send message');
       // Restore on failure

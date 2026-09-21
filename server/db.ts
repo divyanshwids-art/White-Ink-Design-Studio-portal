@@ -1,6 +1,8 @@
 import { prisma, isPrismaConfigured } from './prisma.ts';
 import { runSeed, getSeedData } from '../prisma/seed.ts';
 import { sendFcmPushNotification } from './firebase.ts';
+import { sendWebPushToUser } from './services/webpush.ts';
+import { broadcastUpdate } from './events.ts';
 
 export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'TEAM_MEMBER' | 'CLIENT' | 'CLIENT_ADMIN';
 export type ProjectStatus = 'PENDING' | 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
@@ -1518,13 +1520,22 @@ class DatabaseService {
     return true;
   }
 
+  public isTaskOverdue(dueDate?: string | null, status?: string | null): boolean {
+    if (!dueDate || status === 'COMPLETED') return false;
+    const due = new Date(dueDate);
+    if (isNaN(due.getTime())) return false;
+    let effectiveDue = due;
+    if (dueDate.includes('T00:00:00') || /^\d{4}-\d{2}-\d{2}$/.test(dueDate.trim())) {
+      effectiveDue = new Date(due);
+      effectiveDue.setHours(23, 59, 59, 999);
+    }
+    return effectiveDue.getTime() < Date.now();
+  }
+
   public checkAndNotifyOverdueTasks(): number {
     const now = new Date();
     const tasks = this.data.tasks.filter((t) => {
-      if (t.status === 'COMPLETED') return false;
-      if (!t.dueDate) return false;
-      const due = new Date(t.dueDate);
-      return !isNaN(due.getTime()) && due < now && !t.overdueNotifiedAt;
+      return this.isTaskOverdue(t.dueDate, t.status) && !t.overdueNotifiedAt;
     });
 
     const admins = this.data.users.filter((u) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN');
@@ -2587,7 +2598,21 @@ class DatabaseService {
         });
     }
 
-    // Dispatch FCM push notification to recipient's device if token is registered
+    // 1. Dispatch native W3C Web Push via VAPID (wakes Chrome even if closed)
+    sendWebPushToUser(newNotif.userId, {
+      title: newNotif.title,
+      body: newNotif.message,
+      linkUrl: newNotif.linkUrl || '/chat',
+      data: {
+        notificationId: newNotif.id,
+        type: newNotif.type,
+        linkUrl: newNotif.linkUrl || '/chat',
+      },
+    }).catch((err) => {
+      console.warn('[WebPush] Error sending background push:', err?.message || err);
+    });
+
+    // 2. Dispatch FCM push notification if device token is registered
     const recipient = this.getUserById(newNotif.userId);
     if (recipient && recipient.fcmToken) {
       sendFcmPushNotification(recipient.fcmToken, {
@@ -2613,6 +2638,8 @@ class DatabaseService {
           console.error('[FCM Notification] Unexpected error sending push notification:', err);
         });
     }
+
+    broadcastUpdate('notification', 'create', newNotif);
 
     return newNotif;
   }
@@ -2755,9 +2782,7 @@ class DatabaseService {
     const reviewTasks = tasks.filter((t) => t.status === 'REVIEW').length;
     const completedTasks = tasks.filter((t) => t.status === 'COMPLETED').length;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-    const overdueTasks = tasks.filter(
-      (t) => t.status !== 'COMPLETED' && t.dueDate && new Date(t.dueDate).getTime() < Date.now()
-    ).length;
+    const overdueTasks = tasks.filter((t) => this.isTaskOverdue(t.dueDate, t.status)).length;
 
     const taskPriorityCounts: Record<TaskPriority, number> = {
       LOW: tasks.filter((t) => t.priority === 'LOW').length,
@@ -3402,38 +3427,89 @@ class DatabaseService {
       prisma.chatMessage.create({ data: newMsg as any }).catch(() => {});
     }
 
-    // Handle @mentions or @all notifications
+    // Dispatch WhatsApp-group style notification to all eligible channel members (excluding sender)
     const sender = this.getUserById(newMsg.senderId);
-    const content = newMsg.content;
+    const content = (newMsg.content || '').trim();
+    const contentLower = content.toLowerCase();
+    const isAllMention = contentLower.includes('@all') || contentLower.includes('@everyone');
 
-    if (content.includes('@all')) {
-      const allUsers = this.data.users.filter((u) => u.id !== newMsg.senderId && u.role !== 'CLIENT');
-      for (const target of allUsers) {
-        this.createNotification({
-          id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          userId: target.id,
-          title: `Mention in #${newMsg.channel}`,
-          message: `${sender?.name || 'Someone'} broadcast in #${newMsg.channel}: "${content.slice(0, 80)}"`,
-          type: 'CHAT_MENTION',
-          linkUrl: '/chat',
-          isRead: false,
-        });
+    const cleanChannel = (newMsg.channel || 'internal').replace(/^#/, '').trim().toLowerCase();
+
+    let channelDisplay = cleanChannel === 'internal' ? 'Team Chat' : `#${newMsg.channel}`;
+    if (cleanChannel.startsWith('client-')) {
+      const clientId = cleanChannel.replace('client-', '');
+      const client = this.getClientById(clientId);
+      if (client) {
+        channelDisplay = client.company || client.name;
       }
+    }
+
+    const textPreview = content.length > 0
+      ? (content.length > 120 ? content.slice(0, 117) + '...' : content)
+      : 'Shared an attachment';
+
+    let recipients: UserRecord[] = [];
+
+    if (cleanChannel === 'internal' || !cleanChannel.startsWith('client-')) {
+      // Internal Team Chat or general team channels: all staff members (excluding sender)
+      recipients = this.data.users.filter(
+        (u) => u.id !== newMsg.senderId && (u.role === 'SUPER_ADMIN' || u.role === 'ADMIN' || u.role === 'TEAM_MEMBER')
+      );
     } else {
-      // Check for specific user mentions
-      for (const user of this.data.users) {
-        if (user.id !== newMsg.senderId && content.toLowerCase().includes(`@${user.name.toLowerCase()}`)) {
-          this.createNotification({
-            id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            userId: user.id,
-            title: `Mentioned by ${sender?.name || 'a teammate'}`,
-            message: `${sender?.name || 'Teammate'} mentioned you in #${newMsg.channel}: "${content.slice(0, 80)}"`,
-            type: 'CHAT_MENTION',
-            linkUrl: '/chat',
-            isRead: false,
-          });
+      const clientId = cleanChannel.replace('client-', '');
+      recipients = this.data.users.filter((u) => {
+        if (u.id === newMsg.senderId) return false;
+        if (u.role === 'SUPER_ADMIN' || u.role === 'ADMIN') return true;
+        if (u.role === 'CLIENT' || u.role === 'CLIENT_ADMIN') {
+          return u.clientId === clientId || u.id === clientId;
         }
+        if (u.role === 'TEAM_MEMBER') {
+          return this.getAccessibleClientIdsForTeamMember(u.id).includes(clientId);
+        }
+        return false;
+      });
+    }
+
+    for (const recipient of recipients) {
+      const fullName = (recipient.name || '').trim().toLowerCase();
+      const firstName = fullName.split(/\s+/)[0];
+      const emailPrefix = (recipient.email || '').split('@')[0].toLowerCase();
+
+      let isSpecificMention = false;
+      if (fullName && contentLower.includes(`@${fullName}`)) {
+        isSpecificMention = true;
+      } else if (firstName && firstName.length >= 2) {
+        const regex = new RegExp(`(?:^|[\\s,.:;!?])@${firstName.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(?:[\\s,.:;!?]|$)`, 'i');
+        if (regex.test(content)) isSpecificMention = true;
+      } else if (emailPrefix && emailPrefix.length >= 2) {
+        const regex = new RegExp(`(?:^|[\\s,.:;!?])@${emailPrefix.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(?:[\\s,.:;!?]|$)`, 'i');
+        if (regex.test(content)) isSpecificMention = true;
       }
+
+      let title: string;
+      let message: string;
+
+      if (isSpecificMention) {
+        title = `Mentioned by ${sender?.name || 'Teammate'} in ${channelDisplay}`;
+        message = `${sender?.name || 'Teammate'}: "${textPreview}"`;
+      } else if (isAllMention) {
+        title = `Broadcast from ${sender?.name || 'Teammate'} in ${channelDisplay}`;
+        message = `${sender?.name || 'Teammate'}: "${textPreview}"`;
+      } else {
+        // WhatsApp Group style message notification for all channel members
+        title = `New message from ${sender?.name || 'Teammate'}`;
+        message = `${sender?.name || 'Teammate'} (${channelDisplay}): ${textPreview}`;
+      }
+
+      this.createNotification({
+        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId: recipient.id,
+        title,
+        message,
+        type: 'CHAT_MENTION',
+        linkUrl: '/chat',
+        isRead: false,
+      });
     }
 
     return {

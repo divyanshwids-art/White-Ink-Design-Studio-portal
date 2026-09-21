@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth, LoadingSpinner, Client, Project, User, api } from '@shared';
+import {
+  AuthProvider,
+  useAuth,
+  LoadingSpinner,
+  Client,
+  Project,
+  User,
+  api,
+  triggerLocalNotification,
+  initAndRegisterFcmToken,
+  requestPushPermission,
+} from '@shared';
 import { TimerProvider } from './context/TimerContext';
 import { Navbar } from './components/layout/Navbar';
+import { PushNotificationBanner } from './components/common/PushNotificationBanner';
 import { Sidebar } from './components/layout/Sidebar';
 import { BottomNavigation } from './components/layout/BottomNavigation';
 import { LoginPage } from './pages/LoginPage';
@@ -62,6 +74,16 @@ function TeamPortalMain() {
     }
   }, [user]);
 
+  // Initialize FCM and Desktop Notifications for user once on login
+  useEffect(() => {
+    if (user?.id) {
+      initAndRegisterFcmToken().catch((err) => {
+        console.warn('FCM registration:', err);
+      });
+      requestPushPermission().catch(() => {});
+    }
+  }, [user?.id]);
+
   // Real-time server events listener (SSE) for automatic live updates across all tabs & roles
   useEffect(() => {
     if (!user) return;
@@ -74,6 +96,18 @@ function TeamPortalMain() {
         try {
           const payload = JSON.parse(event.data);
           window.dispatchEvent(new CustomEvent('portal:data-updated', { detail: payload }));
+
+          // Dispatch desktop/external notifications ONLY for genuine notifications that go into the bell icon
+          if (payload.entity === 'notification' && payload.data) {
+            const notif = payload.data;
+            if (notif.userId === user.id) {
+              triggerLocalNotification(notif.title || 'White Ink Design Studio', {
+                body: notif.message,
+                tag: notif.id,
+                data: { linkUrl: notif.linkUrl || '/chat' },
+              });
+            }
+          }
         } catch {
           window.dispatchEvent(new CustomEvent('portal:data-updated', { detail: {} }));
         }
@@ -97,7 +131,7 @@ function TeamPortalMain() {
       }
       window.removeEventListener('focus', handleFocus);
     };
-  }, [user]);
+  }, [user?.id]);
 
   // Redirect SUPER_ADMIN away from worker task detail page to tasks list
   useEffect(() => {
@@ -164,6 +198,9 @@ function TeamPortalMain() {
     <div className="min-h-screen bg-[#FAF7F2] text-[#1C1917] flex flex-col antialiased selection:bg-[#EAE0D0] selection:text-[#1C1917]">
       {/* Top Navigation */}
       <Navbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} onNavigate={navigate} />
+
+      {/* Push Notification Banner */}
+      <PushNotificationBanner />
 
       {/* Body Layout */}
       <div className="flex-1 flex">

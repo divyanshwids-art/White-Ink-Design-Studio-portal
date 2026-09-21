@@ -1,8 +1,19 @@
 import { Router, Response } from 'express';
 import { db } from '../db.ts';
 import { requireAuth, AuthenticatedRequest } from '../auth.ts';
+import { getVapidPublicKey, sendWebPushToUser } from '../services/webpush.ts';
 
 export const pushRouter = Router();
+
+// GET /vapid-key - Return public VAPID key for browser push subscription
+pushRouter.get('/vapid-key', (_req, res: Response) => {
+  try {
+    const publicKey = getVapidPublicKey();
+    return res.status(200).json({ publicKey });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Failed to get VAPID key.' });
+  }
+});
 
 pushRouter.use(requireAuth);
 
@@ -37,5 +48,19 @@ pushRouter.post('/unsubscribe', (req: AuthenticatedRequest, res: Response) => {
     return res.status(200).json({ message: 'Push notifications unsubscribed.' });
   } catch (err: any) {
     return res.status(400).json({ message: err.message || 'Failed to unsubscribe.' });
+  }
+});
+
+// POST /test-push - Test push notification for logged-in user
+pushRouter.post('/test-push', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const result = await sendWebPushToUser(req.user!.id, {
+      title: req.body.title || 'White Ink Design Studio',
+      body: req.body.body || 'Test desktop push notification received successfully!',
+      linkUrl: req.body.linkUrl || '/chat',
+    });
+    return res.status(200).json({ success: true, ...result });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Failed to send test push.' });
   }
 });

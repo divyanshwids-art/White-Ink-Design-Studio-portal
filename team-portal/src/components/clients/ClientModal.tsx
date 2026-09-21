@@ -272,10 +272,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
-            Phone Number
+            Phone Number <span className="text-rose-500">*</span>
           </label>
           <input
             type="tel"
+            required
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="e.g., +1 (555) 234-5678"

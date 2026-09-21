@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTimer } from '../../context/TimerContext';
-import { LogOut, Menu, X, Clock } from 'lucide-react';
+import { LogOut, Menu, X, Clock, Timer } from 'lucide-react';
 import { NotificationDropdown } from './NotificationDropdown';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -12,7 +12,16 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) => {
   const { user, logout } = useAuth();
-  const { periodicSecondsLeft, isPeriodicRunning, formatMinSec } = useTimer();
+  const {
+    periodicSecondsLeft,
+    isPeriodicRunning,
+    formatMinSec,
+    activeFocusTask,
+    focusSecondsRemaining,
+    isFocusTimerActive,
+    isFocusAlarmRinging,
+    openFocusModal,
+  } = useTimer();
   const isClient = user?.role === 'CLIENT' || user?.role === 'CLIENT_ADMIN';
 
   const roleBadgeMap: Record<string, string> = {
@@ -59,6 +68,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onNavigate }) =
 
       {/* Right section */}
       <div className="flex items-center gap-2 sm:gap-4">
+        {/* Live Active Task Focus Timer Ticker */}
+        {activeFocusTask && (
+          <button
+            type="button"
+            onClick={() => openFocusModal(activeFocusTask)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer shadow-2xs transition-all animate-gold-fade-in ${
+              isFocusAlarmRinging
+                ? 'bg-[#FDF2F0] text-[#B91C1C] border-[#F5D5D0] animate-pulse'
+                : isFocusTimerActive
+                ? 'bg-[#FAF4EC] text-[#BA954F] border-[#EDE3D4]'
+                : 'bg-[#FAF7F2] text-[#78716C] border-[#EDE7DD]'
+            }`}
+            title={`Focus Timer for: ${activeFocusTask.title} (Click to open controls)`}
+          >
+            <Timer className="h-3.5 w-3.5 stroke-[2]" />
+            <span className="hidden lg:inline truncate max-w-[120px]">{activeFocusTask.title}:</span>
+            <strong className="font-mono text-[#1C1917]">{formatMinSec(focusSecondsRemaining)}</strong>
+          </button>
+        )}
+
         {/* Live 15m Attendance Focus Check Ticker */}
         {isPeriodicRunning && (
           <button

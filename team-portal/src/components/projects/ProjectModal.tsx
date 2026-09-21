@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Project, Client, User, ProjectStatus, ProjectPriority } from '../../types';
 import { api } from '../../services/api';
+import { normalizeDateToDayEnd } from '@shared';
 import {
   Briefcase,
   Building2,
@@ -141,7 +142,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           description: description.trim() || undefined,
           clientId,
           startDate: startDate ? new Date(startDate).toISOString() : undefined,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          dueDate: normalizeDateToDayEnd(dueDate),
           status,
           priority,
           handoverNote: handoverNote.trim() || undefined,
@@ -165,7 +166,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           description: description.trim() || undefined,
           clientId,
           startDate: startDate ? new Date(startDate).toISOString() : undefined,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          dueDate: normalizeDateToDayEnd(dueDate),
           status,
           priority,
           memberIds: selectedMemberIds,
@@ -301,10 +302,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-[#44403C] mb-1">
-                Project Description
+                Project Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 rows={2}
+                required
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Briefly outline project scope, creative direction, and targets..."
@@ -368,10 +370,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-[#44403C] mb-1">
-                  Start Date
+                  Start Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
+                  required
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all cursor-pointer"
@@ -380,10 +383,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-[#44403C] mb-1">
-                  Due Date / Deadline
+                  Due Date / Deadline <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
+                  required
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-[#F8F8FA] border border-[#E5E2DA] rounded-xl text-[#1F1D1A] font-medium focus:outline-none focus:ring-1.5 focus:ring-[#BA954F] focus:bg-white transition-all cursor-pointer"

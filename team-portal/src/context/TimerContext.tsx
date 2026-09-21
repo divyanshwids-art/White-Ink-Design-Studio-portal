@@ -80,15 +80,22 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 const PERIODIC_CHECKIN_STORAGE_KEY = 'white_ink_periodic_checkin_target_ts';
 const FOCUS_TIMER_STORAGE_KEY = 'white_ink_focus_timer_state';
+const ATTENDANCE_CLOCKED_IN_KEY = 'white_ink_is_clocked_in';
+const ATTENDANCE_ON_BREAK_KEY = 'white_ink_is_on_break';
 const PERIODIC_CYCLE_SECONDS = 15 * 60; // 15 minutes = 900 seconds
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const isStaff = user && (user.role === 'TEAM_MEMBER' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
   const isTeamMember = user?.role === 'TEAM_MEMBER';
 
   // Attendance states for 15-minute check-in
-  const [isClockedIn, setIsClockedIn] = useState<boolean>(false);
-  const [isOnBreak, setIsOnBreak] = useState<boolean>(false);
+  const [isClockedIn, setIsClockedIn] = useState<boolean>(() => {
+    return localStorage.getItem(ATTENDANCE_CLOCKED_IN_KEY) === 'true';
+  });
+  const [isOnBreak, setIsOnBreak] = useState<boolean>(() => {
+    return localStorage.getItem(ATTENDANCE_ON_BREAK_KEY) === 'true';
+  });
   const [periodicSecondsLeft, setPeriodicSecondsLeft] = useState<number>(PERIODIC_CYCLE_SECONDS);
   const [isPeriodicAlarmActive, setIsPeriodicAlarmActive] = useState<boolean>(false);
 
@@ -130,6 +137,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       await api.startBreak({ breakType: 'LUNCH' });
       setIsOnBreak(true);
+      localStorage.setItem(ATTENDANCE_ON_BREAK_KEY, 'true');
     } catch (e) {
       console.warn('Failed to start lunch break:', e);
     }
@@ -140,6 +148,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       await api.endBreak();
       setIsOnBreak(false);
+      localStorage.setItem(ATTENDANCE_ON_BREAK_KEY, 'false');
     } catch (e) {
       console.warn('Failed to end break:', e);
     }
@@ -147,22 +156,27 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Load initial attendance state
   const refreshAttendanceStatus = useCallback(async () => {
-    if (!isTeamMember) return;
+    if (!isStaff) return;
     try {
       const res = await api.getTodayAttendance();
       const att = res.attendance;
       if (att && att.clockIn && !att.clockOut) {
         setIsClockedIn(true);
+        localStorage.setItem(ATTENDANCE_CLOCKED_IN_KEY, 'true');
         const activeBrk = att.breaks?.find((b: any) => !b.endTime);
-        setIsOnBreak(!!activeBrk);
+        const onBrk = !!activeBrk;
+        setIsOnBreak(onBrk);
+        localStorage.setItem(ATTENDANCE_ON_BREAK_KEY, String(onBrk));
       } else {
         setIsClockedIn(false);
         setIsOnBreak(false);
+        localStorage.setItem(ATTENDANCE_CLOCKED_IN_KEY, 'false');
+        localStorage.setItem(ATTENDANCE_ON_BREAK_KEY, 'false');
       }
     } catch {
       // ignore
     }
-  }, [isTeamMember]);
+  }, [isStaff]);
 
   useEffect(() => {
     refreshAttendanceStatus();
@@ -309,7 +323,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     // 3. Tick Daily Lunch Break Alarms (1:15 PM Start & 2:00 PM End)
-    if (isTeamMember && isClockedIn) {
+    if (isStaff && isClockedIn) {
       const nowObj = new Date();
       const hours = nowObj.getHours();
       const minutes = nowObj.getMinutes();
@@ -351,7 +365,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     focusTotalSeconds,
     focusNotes,
     saveFocusState,
-    isTeamMember,
+    isStaff,
     isClockedIn,
     isLunchStartAlarmActive,
     isLunchEndAlarmActive,
@@ -432,16 +446,27 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setAttendanceActiveState = useCallback((clockedIn: boolean, onBrk: boolean) => {
     setIsClockedIn(clockedIn);
     setIsOnBreak(onBrk);
+    localStorage.setItem(ATTENDANCE_CLOCKED_IN_KEY, String(clockedIn));
+    localStorage.setItem(ATTENDANCE_ON_BREAK_KEY, String(onBrk));
+
     if (!clockedIn || onBrk) {
       if (isPeriodicAlarmActive) {
         setIsPeriodicAlarmActive(false);
         soundAlerts.stopAlarm();
       }
     } else {
-      // Started shift or returned from break
-      const nextTarget = Date.now() + PERIODIC_CYCLE_SECONDS * 1000;
-      localStorage.setItem(PERIODIC_CHECKIN_STORAGE_KEY, String(nextTarget));
-      setPeriodicSecondsLeft(PERIODIC_CYCLE_SECONDS);
+      // Check if an existing valid future target is ALREADY running in localStorage
+      const savedTarget = localStorage.getItem(PERIODIC_CHECKIN_STORAGE_KEY);
+      const now = Date.now();
+      const existingTarget = savedTarget ? parseInt(savedTarget, 10) : 0;
+      if (!existingTarget || isNaN(existingTarget) || existingTarget <= now) {
+        const nextTarget = now + PERIODIC_CYCLE_SECONDS * 1000;
+        localStorage.setItem(PERIODIC_CHECKIN_STORAGE_KEY, String(nextTarget));
+        setPeriodicSecondsLeft(PERIODIC_CYCLE_SECONDS);
+      } else {
+        const remaining = Math.max(0, Math.ceil((existingTarget - now) / 1000));
+        setPeriodicSecondsLeft(remaining);
+      }
     }
   }, [isPeriodicAlarmActive]);
 
@@ -982,7 +1007,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                       <BellOff className="h-5 w-5" />
                       Stop Alarm
                     </button>
-                    {isTeamMember && (
+                    {isStaff && (
                       <button
                         type="button"
                         onClick={() => snoozeFocusTimer(15)}

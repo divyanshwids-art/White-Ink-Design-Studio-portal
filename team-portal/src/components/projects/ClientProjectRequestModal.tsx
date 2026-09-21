@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal';
 import { User } from '../../types';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { normalizeDateToDayEnd } from '@shared';
 import {
   Briefcase,
   CheckCircle2,
@@ -137,7 +138,7 @@ export const ClientProjectRequestModal: React.FC<ClientProjectRequestModalProps>
         name: name.trim(),
         description: description.trim(),
         startDate: new Date(startDate).toISOString(),
-        dueDate: new Date(endDate).toISOString(),
+        dueDate: normalizeDateToDayEnd(endDate) || new Date(endDate).toISOString(),
         estimatedBudget: estimatedBudget ? Number(estimatedBudget) : undefined,
         ...(leadOwnerId ? { leadOwnerId } : {}),
         preferredMeetingTime: new Date(preferredMeetingTime).toISOString(),

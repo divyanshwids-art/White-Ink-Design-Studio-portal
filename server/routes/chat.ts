@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { db, UserRecord } from '../db.ts';
 import { requireAuth, AuthenticatedRequest } from '../auth.ts';
+import { broadcastUpdate } from '../events.ts';
 
 export const chatRouter = Router();
 
@@ -195,6 +196,8 @@ chatRouter.post('/messages', (req: AuthenticatedRequest, res: Response) => {
       attachments: serializedAttachments,
     });
 
+    broadcastUpdate('chat', 'message', message);
+
     return res.status(201).json(message);
   } catch (err: any) {
     return res.status(400).json({ message: err.message || 'Failed to post message.' });
@@ -209,6 +212,7 @@ chatRouter.delete('/messages/:id', (req: AuthenticatedRequest, res: Response) =>
     if (!success) {
       return res.status(404).json({ message: 'Message not found.' });
     }
+    broadcastUpdate('chat', 'delete', { id: req.params.id, channel: req.query.channel });
     return res.status(200).json({ message: 'Message deleted.' });
   } catch (err: any) {
     return res.status(403).json({ message: err.message || 'Failed to delete message.' });

@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth, LoadingSpinner, Client, Project, api } from '@shared';
+import {
+  AuthProvider,
+  useAuth,
+  LoadingSpinner,
+  Client,
+  Project,
+  api,
+  triggerLocalNotification,
+  initAndRegisterFcmToken,
+  requestPushPermission,
+} from '@shared';
 import { Navbar } from './components/layout/Navbar';
+import { PushNotificationBanner } from './components/common/PushNotificationBanner';
 import { Sidebar } from './components/layout/Sidebar';
 import { BottomNavigation } from './components/layout/BottomNavigation';
 import { LoginPage } from './pages/LoginPage';
@@ -35,6 +46,63 @@ function ClientPortalApp() {
       api.getProjects().then(setProjects).catch(() => {});
     }
   }, [user]);
+
+  // Initialize FCM and Desktop Notifications for user once on login
+  useEffect(() => {
+    if (user?.id) {
+      initAndRegisterFcmToken().catch((err) => {
+        console.warn('FCM registration:', err);
+      });
+      requestPushPermission().catch(() => {});
+    }
+  }, [user?.id]);
+
+  // Real-time server events listener (SSE) for automatic live updates and desktop notifications
+  useEffect(() => {
+    if (!user) return;
+
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/events');
+
+      eventSource.addEventListener('update', (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          window.dispatchEvent(new CustomEvent('portal:data-updated', { detail: payload }));
+
+          // Dispatch desktop/external notifications ONLY for genuine notifications that go into the bell icon
+          if (payload.entity === 'notification' && payload.data) {
+            const notif = payload.data;
+            if (notif.userId === user.id) {
+              triggerLocalNotification(notif.title || 'White Ink Design Studio', {
+                body: notif.message,
+                tag: notif.id,
+                data: { linkUrl: notif.linkUrl || '/chat' },
+              });
+            }
+          }
+        } catch {
+          window.dispatchEvent(new CustomEvent('portal:data-updated', { detail: {} }));
+        }
+      });
+
+      eventSource.onerror = () => {};
+    } catch (e) {
+      console.warn('Live event connection failed, using focus sync:', e);
+    }
+
+    const handleFocus = () => {
+      window.dispatchEvent(new CustomEvent('portal:data-updated', { detail: { type: 'focus' } }));
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user?.id]);
 
   if (isLoading) {
     return (
@@ -98,6 +166,9 @@ function ClientPortalApp() {
     <div className="min-h-screen bg-[#FAF7F2] text-[#1C1917] flex flex-col antialiased selection:bg-[#EAE0D0] selection:text-[#1C1917]">
       {/* Top Navigation */}
       <Navbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} onNavigate={navigate} />
+
+      {/* Push Notification Banner */}
+      <PushNotificationBanner />
 
       {/* Body Layout */}
       <div className="flex-1 flex">

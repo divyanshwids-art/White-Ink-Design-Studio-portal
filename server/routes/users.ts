@@ -255,7 +255,7 @@ usersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Re
       updates.role = role;
     }
     if (profileImage !== undefined) {
-      updates.profileImage = profileImage;
+      updates.profileImage = profileImage === '' || profileImage === null ? null : profileImage;
     }
     if (req.body.skills !== undefined) {
       updates.skills = req.body.skills;

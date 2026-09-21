@@ -4,6 +4,7 @@ import { Task, Project, User, TaskStatus, TaskPriority, RevisionRequest } from '
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { AlertCircle, FileText, Calendar } from 'lucide-react';
+import { normalizeDateToDayEnd } from '@shared';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           assignedToId: isClient ? undefined : (assignedToId || undefined),
           status: isClient ? task.status : status,
           priority,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          dueDate: normalizeDateToDayEnd(dueDate),
           allocatedMinutes: allocatedNum,
         });
       } else {
@@ -109,7 +110,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           assignedToId: isClient ? undefined : (assignedToId || undefined),
           status: isClient ? 'TODO' : status,
           priority,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          dueDate: normalizeDateToDayEnd(dueDate),
           allocatedMinutes: allocatedNum,
         });
       }
@@ -301,10 +302,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
-              Due Date
+              Due Date <span className="text-gold-700">*</span>
             </label>
             <input
               type="date"
+              required
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-gold-300 rounded-lg text-black font-semibold focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500"

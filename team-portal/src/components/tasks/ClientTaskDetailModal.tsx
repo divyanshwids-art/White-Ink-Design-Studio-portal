@@ -5,6 +5,7 @@ import { api } from '../../services/api';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { StatusBadge } from '../common/StatusBadge';
 import { DeadlineCountdownBadge } from './DeadlineCountdownBadge';
+import { isTaskOrProjectOverdue } from '@shared';
 import {
   X,
   Calendar,
@@ -143,10 +144,7 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
     task.status === 'REVIEW' &&
     task.clientApprovalStatus === 'PENDING';
 
-  const isOverdue =
-    task.dueDate &&
-    new Date(task.dueDate).getTime() < Date.now() &&
-    task.status !== 'COMPLETED';
+  const isOverdue = isTaskOrProjectOverdue(task.dueDate, task.status);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-gold-fade-in">

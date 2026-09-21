@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal';
 import { PersonalTodo, User } from '../../types';
 import { api } from '../../services/api';
 import { AlertCircle, User as UserIcon, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { normalizeDateToDayEnd } from '@shared';
 
 interface TodoModalProps {
   isOpen: boolean;
@@ -62,14 +63,14 @@ export const TodoModal: React.FC<TodoModalProps> = ({
         await api.updateTodo(todo.id, {
           title: title.trim(),
           description: description.trim() || null,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+          dueDate: normalizeDateToDayEnd(dueDate) || null,
           assignedToId: assignedToId || null,
         });
       } else {
         await api.createTodo({
           title: title.trim(),
           description: description.trim() || null,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+          dueDate: normalizeDateToDayEnd(dueDate) || null,
           assignedToId: assignedToId || null,
         });
       }
@@ -111,6 +112,7 @@ export const TodoModal: React.FC<TodoModalProps> = ({
           </label>
           <input
             type="text"
+            required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Review brand guidelines, prepare presentation"
@@ -138,10 +140,11 @@ export const TodoModal: React.FC<TodoModalProps> = ({
           {/* Due Date */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
-              Due Date <span className="text-neutral-400 font-normal lowercase">(Optional)</span>
+              Due Date <span className="text-[#BA954F]">*</span>
             </label>
             <input
               type="date"
+              required
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
               className="w-full px-3 py-2 text-xs bg-[#FAF7F2]/40 border border-[#EDE7DD] rounded-xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#BA954F] font-medium text-neutral-900"

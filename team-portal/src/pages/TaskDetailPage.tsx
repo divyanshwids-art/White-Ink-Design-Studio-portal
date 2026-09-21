@@ -11,6 +11,7 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { TaskModal } from '../components/tasks/TaskModal';
 import { TaskOverdueReasonModal } from '../components/tasks/TaskOverdueReasonModal';
 import { soundAlerts } from '../utils/soundAlerts';
+import { isTaskOrProjectOverdue } from '@shared';
 import {
   ArrowLeft,
   Calendar,
@@ -357,10 +358,7 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
   }
 
   const isAssignee = task.assignedToId === user?.id;
-  const isOverdue =
-    task.dueDate &&
-    new Date(task.dueDate).getTime() < Date.now() &&
-    task.status !== 'COMPLETED';
+  const isOverdue = isTaskOrProjectOverdue(task.dueDate, task.status);
 
   const isSubmitted = Boolean(task.submittedAt);
   const isRevisionRequested = task.status === 'REVISION_REQUESTED';

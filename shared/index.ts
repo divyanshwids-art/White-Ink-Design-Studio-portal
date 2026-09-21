@@ -5,6 +5,7 @@ export * from './src/utils/fcm';
 export * from './src/utils/soundAlerts';
 export * from './src/utils/pushNotifications';
 export * from './src/utils/csvExport';
+export * from './src/utils/dateUtils';
 export * from './src/components/common/BrandLogo';
 export * from './src/components/common/ConfirmDialog';
 export * from './src/components/common/EmptyState';

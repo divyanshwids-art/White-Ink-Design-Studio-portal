@@ -14,6 +14,7 @@ import { ClientTaskDetailModal } from '../components/tasks/ClientTaskDetailModal
 import { DeadlineCountdownBadge } from '../components/tasks/DeadlineCountdownBadge';
 import { TaskFocusTimerModal } from '../components/tasks/TaskFocusTimerModal';
 import { TaskOverdueReasonModal } from '../components/tasks/TaskOverdueReasonModal';
+import { isTaskOrProjectOverdue } from '@shared';
 import {
   CheckSquare,
   Search,
@@ -264,9 +265,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({
 
               <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-[#EDE7DD]">
                 {/* Overdue delay button for team member */}
-                {task.dueDate &&
-                  new Date(task.dueDate).getTime() < Date.now() &&
-                  task.status !== 'COMPLETED' &&
+                {isTaskOrProjectOverdue(task.dueDate, task.status) &&
                   user?.role === 'TEAM_MEMBER' && (
                     <button
                       type="button"

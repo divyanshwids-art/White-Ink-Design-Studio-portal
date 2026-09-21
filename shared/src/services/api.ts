@@ -189,7 +189,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  updateUser: (id: string, payload: Partial<{ name: string; email: string; password: string; role: Role; profileImage?: string; clientId?: string | null; skills?: string[] | null }>) =>
+  updateUser: (id: string, payload: Partial<{ name: string; email: string; password: string; role: Role; profileImage?: string | null; clientId?: string | null; skills?: string[] | null }>) =>
     request<User>(`/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -908,7 +908,9 @@ export const api = {
       method: 'DELETE',
     }),
 
-  // Push Notifications
+  // Push Notifications (Native Web Push + VAPID)
+  getVapidPublicKey: () => request<{ publicKey: string }>('/push/vapid-key'),
+
   subscribePush: (payload: any) =>
     request<any>('/push/subscribe', {
       method: 'POST',
@@ -919,6 +921,12 @@ export const api = {
     request<any>('/push/unsubscribe', {
       method: 'POST',
       body: JSON.stringify({ endpoint }),
+    }),
+
+  testWebPush: (payload?: { title?: string; body?: string; linkUrl?: string }) =>
+    request<any>('/push/test-push', {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
     }),
 
   // Client Approvals

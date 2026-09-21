@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { getEffectiveDueDate } from '@shared';
 
 interface DeadlineCountdownBadgeProps {
   dueDate?: string | null;
@@ -39,7 +40,7 @@ export const DeadlineCountdownBadge: React.FC<DeadlineCountdownBadgeProps> = ({
     );
   }
 
-  const due = new Date(dueDate);
+  const due = getEffectiveDueDate(dueDate) || new Date(dueDate);
   const diffMs = due.getTime() - now.getTime();
   const isOverdue = diffMs < 0;
   const absDiff = Math.abs(diffMs);

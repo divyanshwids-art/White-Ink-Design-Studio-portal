@@ -19,6 +19,7 @@ import {
   Phone,
   Camera,
   Upload,
+  Trash2,
   Award,
   Plus,
   X as XIcon,
@@ -166,13 +167,50 @@ export const ProfilePage: React.FC = () => {
   const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setProfileError('Profile image size must be less than 5MB.');
+        return;
+      }
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         if (typeof reader.result === 'string') {
-          setProfileImageUrl(reader.result);
+          const dataUrl = reader.result;
+          setProfileImageUrl(dataUrl);
+          if (user?.id) {
+            try {
+              setProfileLoading(true);
+              setProfileError(null);
+              await api.updateUser(user.id, { profileImage: dataUrl });
+              await refreshUser();
+              setProfileSuccess('Profile picture updated successfully.');
+            } catch (err: any) {
+              setProfileError(err.message || 'Failed to update profile picture.');
+            } finally {
+              setProfileLoading(false);
+            }
+          }
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveProfileImage = async () => {
+    if (!profileImageUrl && !user?.profileImage) return;
+    if (!window.confirm('Are you sure you want to remove your profile picture?')) return;
+    setProfileImageUrl('');
+    if (user?.id) {
+      try {
+        setProfileLoading(true);
+        setProfileError(null);
+        await api.updateUser(user.id, { profileImage: null });
+        await refreshUser();
+        setProfileSuccess('Profile picture removed successfully.');
+      } catch (err: any) {
+        setProfileError(err.message || 'Failed to remove profile picture.');
+      } finally {
+        setProfileLoading(false);
+      }
     }
   };
 
@@ -195,7 +233,7 @@ export const ProfilePage: React.FC = () => {
       await api.updateUser(user.id, {
         name: profileName.trim(),
         email: profileEmail.trim().toLowerCase(),
-        profileImage: profileImageUrl.trim() || undefined,
+        profileImage: profileImageUrl.trim() ? profileImageUrl.trim() : null,
         skills,
       });
 
@@ -303,33 +341,60 @@ export const ProfilePage: React.FC = () => {
       {/* Main Profile Hero Card */}
       <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] p-6 sm:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          {/* Avatar Monogram Badge with upload trigger */}
-          <div className="relative group">
-            {profileImageUrl ? (
-              <img
-                src={profileImageUrl}
-                alt={user?.name}
-                className="h-24 w-24 rounded-full border-2 border-[#BA954F]/30 object-cover shadow-sm ring-4 ring-[#FAF7F2]"
+          {/* Avatar Monogram Badge with upload & remove triggers */}
+          <div className="flex flex-col items-center sm:items-start gap-2.5">
+            <div className="relative group">
+              {profileImageUrl ? (
+                <img
+                  src={profileImageUrl}
+                  alt={user?.name}
+                  className="h-24 w-24 rounded-full border-2 border-[#BA954F]/30 object-cover shadow-sm ring-4 ring-[#FAF7F2]"
+                />
+              ) : (
+                <div className="h-24 w-24 rounded-full bg-[#FAF7F2] border-2 border-[#BA954F]/30 flex items-center justify-center text-2xl font-serif font-bold text-[#BA954F] ring-4 ring-[#FAF7F2] shadow-inner">
+                  {getInitials(user?.name)}
+                </div>
+              )}
+              <label
+                htmlFor="avatar-upload"
+                className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-semibold"
+                title="Change photo"
+              >
+                <Camera className="h-4 w-4 mb-0.5" />
+                Change
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfileImageUpload}
               />
-            ) : (
-              <div className="h-24 w-24 rounded-full bg-[#FAF7F2] border-2 border-[#BA954F]/30 flex items-center justify-center text-2xl font-serif font-bold text-[#BA954F] ring-4 ring-[#FAF7F2] shadow-inner">
-                {getInitials(user?.name)}
-              </div>
-            )}
-            <label
-              htmlFor="avatar-upload"
-              className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] font-semibold"
-            >
-              <Camera className="h-4 w-4 mb-0.5" />
-              Change
-            </label>
-            <input
-              id="avatar-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleProfileImageUpload}
-            />
+            </div>
+
+            {/* Quick Action Buttons: Upload & Remove */}
+            <div className="flex items-center gap-1.5">
+              <label
+                htmlFor="avatar-upload"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#FAF7F2] hover:bg-[#F5ECE0] text-[#BA954F] text-xs font-semibold border border-[#EDE3D4] cursor-pointer transition-all shadow-2xs btn-hover-lift"
+              >
+                <Upload className="h-3 w-3" />
+                Upload
+              </label>
+
+              {(profileImageUrl || user?.profileImage) && (
+                <button
+                  type="button"
+                  onClick={handleRemoveProfileImage}
+                  disabled={profileLoading}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#FDF2F0] hover:bg-[#FBE4E2] text-[#B91C1C] text-xs font-semibold border border-[#F5D5D0] cursor-pointer transition-all shadow-2xs"
+                  title="Remove current profile picture"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="text-center sm:text-left space-y-2 flex-1">
@@ -511,9 +576,22 @@ export const ProfilePage: React.FC = () => {
             )}
 
             <div className={isClient ? 'sm:col-span-2' : ''}>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5">
-                Profile Image URL (or upload above)
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600">
+                  Profile Image URL (or upload above)
+                </label>
+                {(profileImageUrl || user?.profileImage) && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveProfileImage}
+                    disabled={profileLoading}
+                    className="text-xs text-[#B91C1C] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Remove photo
+                  </button>
+                )}
+              </div>
               <input
                 type="url"
                 value={profileImageUrl}

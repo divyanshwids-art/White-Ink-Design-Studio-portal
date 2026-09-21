@@ -107,7 +107,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           role,
           clientId: role === 'CLIENT' ? (clientId || currentUser?.clientId) : undefined,
           password: password || undefined,
-          profileImage: profileImage.trim() || undefined,
+          profileImage: profileImage.trim() ? profileImage.trim() : null,
         });
         onSuccess();
         onClose();
