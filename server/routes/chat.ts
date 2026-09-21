@@ -1,8 +1,33 @@
 import { Router, Response } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { db, UserRecord } from '../db.ts';
 import { requireAuth, AuthenticatedRequest } from '../auth.ts';
 
 export const chatRouter = Router();
+
+const chatUploadDir = path.join(process.cwd(), 'public', 'uploads', 'chat');
+if (!fs.existsSync(chatUploadDir)) {
+  fs.mkdirSync(chatUploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, chatUploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const sanitizedBase = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    cb(null, `${sanitizedBase}_${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+});
 
 chatRouter.use(requireAuth);
 
@@ -118,6 +143,28 @@ chatRouter.get('/messages', (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+// POST /upload - Upload a file (photo, PDF, document) for chat attachment
+chatRouter.post('/upload', upload.single('file'), (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file was provided for upload.' });
+    }
+
+    const file = req.file;
+    const fileUrl = `/uploads/chat/${file.filename}`;
+
+    return res.status(200).json({
+      url: fileUrl,
+      name: file.originalname,
+      size: file.size,
+      type: file.mimetype,
+    });
+  } catch (err: any) {
+    console.error('Chat file upload failed:', err);
+    return res.status(500).json({ message: err.message || 'Failed to upload chat file.' });
+  }
+});
+
 // POST /messages - Post a new message with access control
 chatRouter.post('/messages', (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -128,15 +175,24 @@ chatRouter.post('/messages', (req: AuthenticatedRequest, res: Response) => {
       return res.status(403).json({ message: `Forbidden: You cannot post in channel '${resolvedChannel}'.` });
     }
 
-    if (!content || !content.trim()) {
-      return res.status(400).json({ message: 'Message content cannot be empty.' });
+    const hasAttachments = attachments && (Array.isArray(attachments) ? attachments.length > 0 : !!attachments);
+    const trimmedContent = (content || '').trim();
+
+    if (!trimmedContent && !hasAttachments) {
+      return res.status(400).json({ message: 'Message content or an attachment is required.' });
     }
+
+    const serializedAttachments = attachments
+      ? typeof attachments === 'string'
+        ? attachments
+        : JSON.stringify(attachments)
+      : null;
 
     const message = db.createChatMessage({
       senderId: req.user!.id,
       channel: resolvedChannel,
-      content: content.trim(),
-      attachments: attachments ? JSON.stringify(attachments) : null,
+      content: trimmedContent,
+      attachments: serializedAttachments,
     });
 
     return res.status(201).json(message);

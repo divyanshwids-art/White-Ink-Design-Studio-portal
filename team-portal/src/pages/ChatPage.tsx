@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { ChatMessage, User } from '../types';
+import { ChatMessage, User, ChatAttachment } from '../types';
 import { triggerLocalNotification } from '../utils/pushNotifications';
 import {
   MessageSquare,
@@ -12,6 +12,18 @@ import {
   Users,
   Building2,
   Paperclip,
+  Image as ImageIcon,
+  FileText,
+  FileCode,
+  FileArchive,
+  FileSpreadsheet,
+  File as FileIcon,
+  Download,
+  Eye,
+  X,
+  Loader2,
+  UploadCloud,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const ChatPage: React.FC = () => {
@@ -23,7 +35,14 @@ export const ChatPage: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,18 +94,89 @@ export const ChatPage: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  const formatFileSize = (bytes: number) => {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  const handleFileUpload = async (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const fileList = Array.from(files);
+      const uploaded: ChatAttachment[] = [];
+
+      for (const file of fileList) {
+        // Upload each file
+        const res = await api.uploadChatFile(file);
+        uploaded.push(res);
+      }
+
+      setPendingAttachments((prev) => [...prev, ...uploaded]);
+    } catch (err: any) {
+      console.error('Failed to upload attachment:', err);
+      setUploadError(err.message || 'Failed to upload attachment.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileUpload(e.target.files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(e.dataTransfer.files);
+    }
+  };
+
+  const removePendingAttachment = (index: number) => {
+    setPendingAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
-
     const textToSend = inputText.trim();
+    if (!textToSend && pendingAttachments.length === 0) return;
+    if (isUploading) return;
+
+    const attachmentsToSend = [...pendingAttachments];
     setInputText('');
+    setPendingAttachments([]);
+    setUploadError(null);
 
     try {
       setSending(true);
       const res = await api.postChatMessage({
         channel: currentChannel,
         content: textToSend,
+        attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
       });
 
       const newMsg = res.chatMessage || res;
@@ -94,13 +184,16 @@ export const ChatPage: React.FC = () => {
       scrollToBottom();
 
       // If mentions current user, trigger local notification
-      if (textToSend.includes('@' + user?.name) || textToSend.includes('@all')) {
+      if (textToSend && (textToSend.includes('@' + user?.name) || textToSend.includes('@all'))) {
         triggerLocalNotification('New Workspace Mention', {
           body: `${user?.name || 'Someone'} mentioned you in #${currentChannel}`,
         });
       }
     } catch (err: any) {
       alert(err.message || 'Failed to send message');
+      // Restore on failure
+      setInputText(textToSend);
+      setPendingAttachments(attachmentsToSend);
     } finally {
       setSending(false);
     }
@@ -120,8 +213,71 @@ export const ChatPage: React.FC = () => {
     setInputText((prev) => `${prev} @${name} `);
   };
 
+  const parseAttachments = (raw: any): ChatAttachment[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const isImageAttachment = (att: ChatAttachment) => {
+    if (att.type && att.type.startsWith('image/')) return true;
+    const lower = att.url.toLowerCase();
+    return (
+      lower.endsWith('.png') ||
+      lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.gif') ||
+      lower.endsWith('.webp') ||
+      lower.endsWith('.svg')
+    );
+  };
+
+  const isPdfAttachment = (att: ChatAttachment) => {
+    if (att.type && att.type.includes('pdf')) return true;
+    return att.url.toLowerCase().endsWith('.pdf');
+  };
+
+  const getDocIcon = (att: ChatAttachment) => {
+    const lower = (att.name || att.url).toLowerCase();
+    if (lower.endsWith('.pdf')) return <FileText className="h-5 w-5 text-[#B91C1C]" />;
+    if (lower.endsWith('.xls') || lower.endsWith('.xlsx') || lower.endsWith('.csv')) {
+      return <FileSpreadsheet className="h-5 w-5 text-[#15803D]" />;
+    }
+    if (lower.endsWith('.zip') || lower.endsWith('.rar') || lower.endsWith('.7z')) {
+      return <FileArchive className="h-5 w-5 text-[#B45309]" />;
+    }
+    if (lower.endsWith('.js') || lower.endsWith('.ts') || lower.endsWith('.html') || lower.endsWith('.css')) {
+      return <FileCode className="h-5 w-5 text-[#2563EB]" />;
+    }
+    return <FileIcon className="h-5 w-5 text-[#BA954F]" />;
+  };
+
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row bg-white rounded-2xl border border-[#EDE7DD] shadow-xs overflow-hidden animate-gold-fade-in">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`relative h-[calc(100vh-8rem)] flex flex-col md:flex-row bg-white rounded-2xl border transition-colors shadow-xs overflow-hidden animate-gold-fade-in ${
+        isDraggingOver ? 'border-[#BA954F] ring-2 ring-[#BA954F]/30 bg-[#FAF4EC]/30' : 'border-[#EDE7DD]'
+      }`}
+    >
+      {/* Drag & Drop Visual Overlay */}
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-50 pointer-events-none bg-[#FAF4EC]/85 backdrop-blur-xs flex flex-col items-center justify-center text-[#BA954F] border-2 border-dashed border-[#BA954F] m-2 rounded-xl">
+          <UploadCloud className="h-14 w-14 animate-bounce mb-2" />
+          <p className="text-base font-bold text-[#1C1917]">Drop files here to share in chat</p>
+          <p className="text-xs text-[#78716C] mt-1 font-medium">Photos, PDFs, and all documents supported</p>
+        </div>
+      )}
+
       {/* Sidebar: Channels & Online Teammates */}
       <div className="w-full md:w-64 border-r border-[#EDE7DD] bg-[#FAF7F2] flex flex-col justify-between shrink-0">
         <div className="p-4 space-y-5 overflow-y-auto">
@@ -242,7 +398,7 @@ export const ChatPage: React.FC = () => {
                   'channel'}
               </h3>
               <p className="text-xs mt-1 font-normal">
-                Be the first to post a creative update or start a discussion.
+                Be the first to post a creative update, document, or photo.
               </p>
             </div>
           ) : (
@@ -252,6 +408,7 @@ export const ChatPage: React.FC = () => {
               const content = msg.content || (msg as any).message;
               const isMe = senderId === user?.id;
               const canDelete = isMe || user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+              const attachments = parseAttachments(msg.attachments);
 
               return (
                 <div
@@ -269,7 +426,7 @@ export const ChatPage: React.FC = () => {
                       : 'U'}
                   </div>
 
-                  <div className={`space-y-1 max-w-lg ${isMe ? 'items-end text-right' : ''}`}>
+                  <div className={`space-y-1.5 max-w-lg ${isMe ? 'items-end text-right' : ''}`}>
                     <div className={`flex items-center gap-2 ${isMe ? 'justify-end' : ''}`}>
                       <span className="text-xs font-bold text-[#1C1917]">
                         {isMe ? 'You' : sender?.name || 'Teammate'}
@@ -292,15 +449,133 @@ export const ChatPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div
-                      className={`text-xs sm:text-sm leading-relaxed p-3.5 rounded-2xl whitespace-pre-wrap font-normal ${
-                        isMe
-                          ? 'bg-[#FAF4EC] border border-[#EDE3D4] text-[#1C1917] rounded-tr-xs'
-                          : 'bg-[#FAF7F2] border border-[#EDE7DD] text-[#292524] rounded-tl-xs'
-                      }`}
-                    >
-                      {content}
-                    </div>
+                    {/* Text Message Content (if any) */}
+                    {content && content.trim() && (
+                      <div
+                        className={`text-xs sm:text-sm leading-relaxed p-3.5 rounded-2xl whitespace-pre-wrap font-normal ${
+                          isMe
+                            ? 'bg-[#FAF4EC] border border-[#EDE3D4] text-[#1C1917] rounded-tr-xs'
+                            : 'bg-[#FAF7F2] border border-[#EDE7DD] text-[#292524] rounded-tl-xs'
+                        }`}
+                      >
+                        {content}
+                      </div>
+                    )}
+
+                    {/* Attachments Section */}
+                    {attachments.length > 0 && (
+                      <div className={`space-y-2 mt-1 ${isMe ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}>
+                        {attachments.map((att, attIdx) => {
+                          const isImg = isImageAttachment(att);
+                          const isPdf = isPdfAttachment(att);
+
+                          if (isImg) {
+                            return (
+                              <div
+                                key={attIdx}
+                                className="relative rounded-2xl overflow-hidden border border-[#EDE7DD] bg-[#FAF7F2] group/img max-w-xs sm:max-w-sm shadow-2xs hover:shadow-md transition-all"
+                              >
+                                <img
+                                  src={att.url}
+                                  alt={att.name || 'Chat image'}
+                                  className="w-full max-h-64 object-cover cursor-pointer"
+                                  onClick={() => setLightboxImage({ url: att.url, name: att.name || 'Image' })}
+                                  loading="lazy"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => setLightboxImage({ url: att.url, name: att.name || 'Image' })}
+                                    className="p-2 bg-white/90 hover:bg-white text-[#1C1917] rounded-xl cursor-pointer shadow-sm"
+                                    title="View full image"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </button>
+                                  <a
+                                    href={att.url}
+                                    download={att.name || 'download'}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-2 bg-white/90 hover:bg-white text-[#1C1917] rounded-xl cursor-pointer shadow-sm"
+                                    title="Download image"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </a>
+                                </div>
+                                <div className="p-2 bg-white/95 border-t border-[#EDE7DD] flex items-center justify-between text-[11px] text-[#78716C]">
+                                  <span className="truncate max-w-[180px] font-medium">{att.name}</span>
+                                  <span>{formatFileSize(att.size)}</span>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (isPdf) {
+                            return (
+                              <div
+                                key={attIdx}
+                                className="w-full max-w-xs sm:max-w-sm p-3 rounded-2xl border border-[#F5D0C5] bg-[#FDF0ED]/50 flex items-center justify-between gap-3 shadow-2xs"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="p-2 bg-[#FDF0ED] border border-[#F5D0C5] rounded-xl text-[#B91C1C] shrink-0">
+                                    <FileText className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-[#1C1917] truncate">{att.name}</p>
+                                    <p className="text-[10px] text-[#78716C]">{formatFileSize(att.size)} · PDF Document</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <a
+                                    href={att.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1.5 bg-white hover:bg-[#FAF7F2] text-[#B91C1C] border border-[#F5D0C5] rounded-lg transition-colors cursor-pointer"
+                                    title="Open PDF in new tab"
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </a>
+                                  <a
+                                    href={att.url}
+                                    download={att.name || 'document.pdf'}
+                                    className="p-1.5 bg-[#B91C1C] hover:bg-[#991B1B] text-white rounded-lg transition-colors cursor-pointer shadow-xs"
+                                    title="Download PDF"
+                                  >
+                                    <Download className="h-3.5 w-3.5" />
+                                  </a>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // General Document (Word, Excel, ZIP, etc.)
+                          return (
+                            <div
+                              key={attIdx}
+                              className="w-full max-w-xs sm:max-w-sm p-3 rounded-2xl border border-[#EDE7DD] bg-white flex items-center justify-between gap-3 shadow-2xs"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="p-2 bg-[#FAF7F2] border border-[#EDE7DD] rounded-xl shrink-0">
+                                  {getDocIcon(att)}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-[#1C1917] truncate">{att.name}</p>
+                                  <p className="text-[10px] text-[#78716C]">{formatFileSize(att.size)}</p>
+                                </div>
+                              </div>
+                              <a
+                                href={att.url}
+                                download={att.name || 'attachment'}
+                                className="p-1.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white rounded-lg transition-colors cursor-pointer shadow-xs shrink-0"
+                                title="Download Document"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </a>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -309,9 +584,81 @@ export const ChatPage: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Pending Attachments Tray (visible when files are selected or uploaded) */}
+        {pendingAttachments.length > 0 && (
+          <div className="px-4 py-2 bg-[#FAF4EC]/60 border-t border-[#EDE3D4] flex items-center gap-2 overflow-x-auto">
+            <span className="text-[11px] font-bold text-[#BA954F] uppercase tracking-wider shrink-0 flex items-center gap-1">
+              <Paperclip className="h-3.5 w-3.5" /> Attached ({pendingAttachments.length}):
+            </span>
+            <div className="flex items-center gap-2">
+              {pendingAttachments.map((att, idx) => (
+                <div
+                  key={idx}
+                  className="inline-flex items-center gap-2 py-1 px-2.5 bg-white border border-[#EDE3D4] rounded-xl shadow-2xs text-xs"
+                >
+                  {isImageAttachment(att) ? (
+                    <img src={att.url} alt={att.name} className="w-5 h-5 rounded object-cover" />
+                  ) : (
+                    getDocIcon(att)
+                  )}
+                  <span className="font-semibold text-[#1C1917] max-w-[120px] truncate">{att.name}</span>
+                  <span className="text-[10px] text-[#A8A29E] font-mono">{formatFileSize(att.size)}</span>
+                  <button
+                    type="button"
+                    onClick={() => removePendingAttachment(idx)}
+                    className="p-0.5 text-[#A8A29E] hover:text-[#B91C1C] rounded cursor-pointer"
+                    title="Remove attachment"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upload Loading Banner */}
+        {isUploading && (
+          <div className="px-4 py-1.5 bg-[#FAF7F2] border-t border-[#EDE7DD] flex items-center gap-2 text-xs text-[#BA954F] font-semibold">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span>Uploading file(s)... please wait</span>
+          </div>
+        )}
+
+        {/* Upload Error Banner */}
+        {uploadError && (
+          <div className="px-4 py-1.5 bg-[#FDF0ED] border-t border-[#F5D0C5] text-xs text-[#B91C1C] font-semibold flex items-center justify-between">
+            <span>{uploadError}</span>
+            <button type="button" onClick={() => setUploadError(null)} className="cursor-pointer">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
         {/* Input Bar */}
         <form onSubmit={handleSendMessage} className="p-4 border-t border-[#EDE7DD] bg-[#FAF7F2]/50">
           <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-[#DFD5C6] focus-within:ring-2 focus-within:ring-[#BA954F]/20 focus-within:border-[#BA954F] shadow-2xs">
+            {/* Attach File Button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="p-2 text-[#78716C] hover:text-[#BA954F] hover:bg-[#FAF4EC] rounded-xl transition-colors cursor-pointer"
+              title="Attach photos, PDFs, or documents"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+
             <input
               type="text"
               placeholder={`Message ${
@@ -321,18 +668,52 @@ export const ChatPage: React.FC = () => {
               }...`}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 px-3 py-1 text-xs sm:text-sm bg-transparent border-none focus:outline-none text-[#1C1917] placeholder:text-[#A8A29E]"
+              className="flex-1 px-2 py-1 text-xs sm:text-sm bg-transparent border-none focus:outline-none text-[#1C1917] placeholder:text-[#A8A29E]"
             />
+
             <button
               type="submit"
-              disabled={sending || !inputText.trim()}
+              disabled={sending || isUploading || (!inputText.trim() && pendingAttachments.length === 0)}
               className="p-2.5 bg-[#BA954F] hover:bg-[#A17B2F] text-white rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-xs btn-hover-lift"
+              title="Send message"
             >
               <Send className="h-4 w-4 stroke-[2]" />
             </button>
           </div>
         </form>
       </div>
+
+      {/* Lightbox Modal for Full Image View */}
+      {lightboxImage && (
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-gold-fade-in">
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+            <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+              <a
+                href={lightboxImage.url}
+                download={lightboxImage.name}
+                className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl cursor-pointer"
+                title="Download"
+              >
+                <Download className="h-5 w-5" />
+              </a>
+              <button
+                type="button"
+                onClick={() => setLightboxImage(null)}
+                className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl cursor-pointer"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <img
+              src={lightboxImage.url}
+              alt={lightboxImage.name}
+              className="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/20"
+            />
+            <p className="text-white text-xs mt-2 font-medium truncate max-w-md">{lightboxImage.name}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

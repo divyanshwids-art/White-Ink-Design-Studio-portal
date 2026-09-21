@@ -16,6 +16,7 @@ import {
   Hourglass,
   Sparkles,
   FileText,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 interface ClockActionCardProps {
@@ -82,6 +83,11 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
   const activeBreak = attendance?.breaks?.find((b: Break) => !b.endTime) || null;
   const isOnBreak = !!activeBreak;
   const isCurrentlyWorking = isClockedIn && !isClockedOut && !isOnBreak;
+  const isLunchBreakActive = isOnBreak && activeBreak?.breakType === 'LUNCH';
+
+  const currentHours = currentTime.getHours();
+  const currentMins = currentTime.getMinutes();
+  const isLunchTimeNow = (currentHours === 13 && currentMins >= 15) || (currentHours === 14 && currentMins === 0);
 
   // Calculate live elapsed times
   const calculateLiveTimes = () => {
@@ -251,11 +257,11 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
     }
   };
 
-  const handleStartBreak = async () => {
+  const handleStartBreak = async (breakType: 'LUNCH' | 'REGULAR' = 'REGULAR') => {
     setIsProcessing(true);
     setActionError(null);
     try {
-      await api.startBreak();
+      await api.startBreak({ breakType });
       onAttendanceChange();
     } catch (err: any) {
       setActionError(err.message || 'Failed to start break.');
@@ -322,8 +328,12 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
               </span>
             ) : isOnBreak ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FDF6E9] text-[#B45309] border border-[#F9E2AF] shadow-xs animate-pulse">
-                <Coffee className="h-3.5 w-3.5 text-[#B45309]" />
-                On Break (Taking a breather)
+                {isLunchBreakActive ? (
+                  <UtensilsCrossed className="h-3.5 w-3.5 text-[#B45309]" />
+                ) : (
+                  <Coffee className="h-3.5 w-3.5 text-[#B45309]" />
+                )}
+                {isLunchBreakActive ? 'On Lunch Break 🍱' : 'On Break (Taking a breather)'}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF7F2] text-[#BA954F] border border-[#BA954F]/30 shadow-xs animate-pulse">
@@ -479,11 +489,15 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
             <div className="bg-[#FAF7F2] border border-[#EDE7DD] rounded-2xl p-6 sm:p-8 text-center space-y-4">
               <div>
                 <div className="inline-flex p-3 bg-white text-[#BA954F] border border-[#EDE7DD] rounded-full mb-1 shadow-xs animate-bounce">
-                  <Coffee className="h-6 w-6" />
+                  {isLunchBreakActive ? <UtensilsCrossed className="h-6 w-6" /> : <Coffee className="h-6 w-6" />}
                 </div>
-                <h3 className="font-serif text-lg font-bold text-neutral-900">Break in Progress</h3>
+                <h3 className="font-serif text-lg font-bold text-neutral-900">
+                  {isLunchBreakActive ? '🍱 Lunch Break in Progress' : 'Break in Progress'}
+                </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">
-                  Started at {formatShortTime(activeBreak?.startTime)}. Click the button below when you are ready to resume work.
+                  {isLunchBreakActive
+                    ? `Started at ${formatShortTime(activeBreak?.startTime)}. Scheduled until 2:00 PM. Click below when ready to resume work.`
+                    : `Started at ${formatShortTime(activeBreak?.startTime)}. Click the button below when you are ready to resume work.`}
                 </p>
               </div>
               <button
@@ -499,17 +513,54 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Dedicated Lunch Break Schedule & Quick Action Strip */}
+              <div className="p-4 rounded-2xl bg-[#FAF4EC] border border-[#EDE3D4] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-white rounded-xl border border-[#EDE3D4] text-[#BA954F] shadow-2xs shrink-0">
+                    <UtensilsCrossed className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-[#1C1917]">Scheduled Lunch Break</span>
+                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-white border border-[#EDE3D4] text-[#BA954F]">
+                        1:15 PM – 2:00 PM
+                      </span>
+                      {isLunchTimeNow && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#2D6A4F] text-white shadow-2xs animate-pulse">
+                          Active Lunch Window
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-[#78716C] mt-0.5">
+                      Audio chime rings at 1:15 PM and 2:00 PM. Timer never auto-switches to break.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  id="btn-start-lunch-break"
+                  onClick={() => handleStartBreak('LUNCH')}
+                  disabled={isProcessing}
+                  className="px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-2xs transition-all inline-flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                >
+                  <UtensilsCrossed className="h-3.5 w-3.5" />
+                  <span>{isProcessing ? 'Starting...' : 'Start Lunch Break'}</span>
+                </button>
+              </div>
+
+              {/* Action Buttons: Short Break & Clock Out */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* START BREAK Button */}
+                {/* START REGULAR BREAK Button */}
                 <button
                   type="button"
                   id="btn-start-break"
-                  onClick={handleStartBreak}
+                  onClick={() => handleStartBreak('REGULAR')}
                   disabled={isProcessing}
                   className="btn-gold-secondary py-3.5 px-6 text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-2.5 cursor-pointer"
                 >
                   <Coffee className="h-4 w-4 text-[#BA954F]" />
-                  <span>{isProcessing ? 'Starting Break...' : 'Start Studio Break'}</span>
+                  <span>{isProcessing ? 'Starting Break...' : 'Start Short Break'}</span>
                 </button>
 
                 {/* CLOCK OUT Button */}
@@ -550,6 +601,11 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
                     <span className="font-medium text-neutral-800">
                       {formatShortTime(b.startTime)} — {b.endTime ? formatShortTime(b.endTime) : 'In progress'}
                     </span>
+                    {b.breakType === 'LUNCH' && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
+                        🍱 Lunch Break
+                      </span>
+                    )}
                   </div>
                   <div className="font-semibold text-neutral-900">
                     {b.endTime ? `${b.durationMinutes} min` : 'Active'}

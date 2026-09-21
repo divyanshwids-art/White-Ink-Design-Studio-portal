@@ -218,6 +218,7 @@ export interface BreakRecord {
   startTime: string;
   endTime?: string | null;
   durationMinutes: number;
+  breakType?: 'LUNCH' | 'REGULAR';
   createdAt: string;
   updatedAt: string;
 }
@@ -1415,7 +1416,7 @@ class DatabaseService {
             driveFileMimeType: newTask.driveFileMimeType || null,
             submittedById: newTask.submittedById,
             submittedAt: newTask.submittedAt ? new Date(newTask.submittedAt) : null,
-            clientApprovalStatus: newTask.clientApprovalStatus,
+            clientApprovalStatus: newTask.clientApprovalStatus as any,
             clientReviewComments: newTask.clientReviewComments,
             reviewedById: newTask.reviewedById,
             reviewedAt: newTask.reviewedAt ? new Date(newTask.reviewedAt) : null,
@@ -1900,7 +1901,7 @@ class DatabaseService {
     return this.getAttendanceWithDetails(record);
   }
 
-  public startBreak(userId: string, customTimestamp?: string): AttendanceWithDetails {
+  public startBreak(userId: string, customTimestamp?: string, breakType?: 'LUNCH' | 'REGULAR'): AttendanceWithDetails {
     const now = customTimestamp ? new Date(customTimestamp) : new Date();
     const today = getTodayDateString(now);
 
@@ -1920,6 +1921,7 @@ class DatabaseService {
       startTime: now.toISOString(),
       endTime: null,
       durationMinutes: 0,
+      breakType: breakType || 'REGULAR',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -2433,7 +2435,7 @@ class DatabaseService {
             description: newApproval.description,
             projectId: newApproval.projectId,
             deliverableUrl: newApproval.deliverableUrl,
-            status: newApproval.status,
+            status: newApproval.status as any,
             requestedById: newApproval.requestedById,
             reviewedById: newApproval.reviewedById,
             reviewedAt: newApproval.reviewedAt ? new Date(newApproval.reviewedAt) : null,

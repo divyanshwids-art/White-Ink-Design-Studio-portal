@@ -27,6 +27,7 @@ import {
   EodReport,
   SubmitEodInput,
   ReportsOverview,
+  ChatAttachment,
 } from '../types';
 
 function getApiBaseUrl(): string {
@@ -526,7 +527,7 @@ export const api = {
       body: JSON.stringify(payload || {}),
     }),
 
-  startBreak: (payload?: { timestamp?: string }) =>
+  startBreak: (payload?: { timestamp?: string; breakType?: 'LUNCH' | 'REGULAR' }) =>
     request<{ message: string; attendance: Attendance }>('/attendance/break/start', {
       method: 'POST',
       body: JSON.stringify(payload || {}),
@@ -860,6 +861,23 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  uploadChatFile: async (file: File): Promise<ChatAttachment> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE}/chat/upload`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeader(),
+      },
+      body: formData,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to upload chat file.');
+    }
+    return data as ChatAttachment;
+  },
 
   deleteChatMessage: (id: string) =>
     request<{ message: string }>(`/chat/messages/${id}`, {

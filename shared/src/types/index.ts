@@ -298,6 +298,7 @@ export interface Break {
   startTime: string;
   endTime?: string | null;
   durationMinutes: number;
+  breakType?: 'LUNCH' | 'REGULAR';
   createdAt: string;
   updatedAt: string;
 }
@@ -486,12 +487,19 @@ export interface ActivityLog {
   user?: User;
 }
 
+export interface ChatAttachment {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+}
+
 export interface ChatMessage {
   id: string;
   senderId: string;
   channel: string;
   content: string;
-  attachments?: string | null;
+  attachments?: string | ChatAttachment[] | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;

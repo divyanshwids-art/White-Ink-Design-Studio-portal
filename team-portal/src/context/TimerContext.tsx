@@ -24,6 +24,8 @@ import {
   X,
   Volume2,
   Maximize2,
+  UtensilsCrossed,
+  Coffee,
 } from 'lucide-react';
 
 interface PersistedFocusState {
@@ -66,6 +68,12 @@ interface TimerContextType {
   openFocusModal: (task?: Task | PersonalTodo | null) => void;
   closeFocusModal: () => void;
   cancelFocusTimer: () => void;
+
+  // Lunch Break Audio Alarm (1:15 PM & 2:00 PM)
+  isLunchStartAlarmActive: boolean;
+  isLunchEndAlarmActive: boolean;
+  dismissLunchAlarm: () => void;
+  triggerTestLunchAlarm: (type?: 'start' | 'end') => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -94,7 +102,48 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isFocusModalOpen, setIsFocusModalOpen] = useState<boolean>(false);
   const [isLoggingFocus, setIsLoggingFocus] = useState<boolean>(false);
 
+  // Lunch Break audio alarms (1:15 PM Start & 2:00 PM End)
+  const [isLunchStartAlarmActive, setIsLunchStartAlarmActive] = useState<boolean>(false);
+  const [isLunchEndAlarmActive, setIsLunchEndAlarmActive] = useState<boolean>(false);
+
   const targetEndTsRef = useRef<number | null>(null);
+
+  const dismissLunchAlarm = useCallback(() => {
+    setIsLunchStartAlarmActive(false);
+    setIsLunchEndAlarmActive(false);
+    soundAlerts.stopAlarm();
+  }, []);
+
+  const triggerTestLunchAlarm = useCallback((type: 'start' | 'end' = 'start') => {
+    if (type === 'start') {
+      setIsLunchStartAlarmActive(true);
+      setIsLunchEndAlarmActive(false);
+    } else {
+      setIsLunchEndAlarmActive(true);
+      setIsLunchStartAlarmActive(false);
+    }
+    soundAlerts.startContinuousAlarm('lunch');
+  }, []);
+
+  const handleStartLunchBreakFromAlarm = useCallback(async () => {
+    dismissLunchAlarm();
+    try {
+      await api.startBreak({ breakType: 'LUNCH' });
+      setIsOnBreak(true);
+    } catch (e) {
+      console.warn('Failed to start lunch break:', e);
+    }
+  }, [dismissLunchAlarm]);
+
+  const handleEndLunchBreakFromAlarm = useCallback(async () => {
+    dismissLunchAlarm();
+    try {
+      await api.endBreak();
+      setIsOnBreak(false);
+    } catch (e) {
+      console.warn('Failed to end break:', e);
+    }
+  }, [dismissLunchAlarm]);
 
   // Load initial attendance state
   const refreshAttendanceStatus = useCallback(async () => {
@@ -258,6 +307,42 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
     }
+
+    // 3. Tick Daily Lunch Break Alarms (1:15 PM Start & 2:00 PM End)
+    if (isTeamMember && isClockedIn) {
+      const nowObj = new Date();
+      const hours = nowObj.getHours();
+      const minutes = nowObj.getMinutes();
+      const todayDateStr = `${nowObj.getFullYear()}-${String(nowObj.getMonth() + 1).padStart(2, '0')}-${String(nowObj.getDate()).padStart(2, '0')}`;
+
+      // 1:15 PM = 13:15
+      const lunchStartStorageKey = `white_ink_lunch_start_alert_${todayDateStr}`;
+      if (hours === 13 && minutes >= 15 && minutes < 30) {
+        if (!localStorage.getItem(lunchStartStorageKey) && !isLunchStartAlarmActive) {
+          localStorage.setItem(lunchStartStorageKey, 'true');
+          setIsLunchStartAlarmActive(true);
+          soundAlerts.startContinuousAlarm('lunch');
+          triggerLocalNotification('White Ink Design Studio', {
+            body: '🍱 Lunch Break Time (1:15 PM – 2:00 PM)! Take a break and recharge.',
+            icon: '/white-ink-logo.png',
+          });
+        }
+      }
+
+      // 2:00 PM = 14:00
+      const lunchEndStorageKey = `white_ink_lunch_end_alert_${todayDateStr}`;
+      if (hours === 14 && minutes >= 0 && minutes < 15) {
+        if (!localStorage.getItem(lunchEndStorageKey) && !isLunchEndAlarmActive) {
+          localStorage.setItem(lunchEndStorageKey, 'true');
+          setIsLunchEndAlarmActive(true);
+          soundAlerts.startContinuousAlarm('lunch');
+          triggerLocalNotification('White Ink Design Studio', {
+            body: '🍱 Lunch Break Over (2:00 PM)! Time to resume studio work.',
+            icon: '/white-ink-logo.png',
+          });
+        }
+      }
+    }
   }, [
     shouldRunPeriodic,
     isPeriodicAlarmActive,
@@ -266,6 +351,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     focusTotalSeconds,
     focusNotes,
     saveFocusState,
+    isTeamMember,
+    isClockedIn,
+    isLunchStartAlarmActive,
+    isLunchEndAlarmActive,
   ]);
 
   // Web Worker for background ticking (Chrome minimizes / background tabs do NOT throttle Web Workers!)
@@ -576,9 +665,75 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         openFocusModal,
         closeFocusModal,
         cancelFocusTimer,
+
+        isLunchStartAlarmActive,
+        isLunchEndAlarmActive,
+        dismissLunchAlarm,
+        triggerTestLunchAlarm,
       }}
     >
       {children}
+
+      {/* ========================================================================= */}
+      {/* 0. GLOBAL LUNCH BREAK ALARM MODAL (1:15 PM Start & 2:00 PM End) */}
+      {/* ========================================================================= */}
+      {(isLunchStartAlarmActive || isLunchEndAlarmActive) && (
+        <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-gold-fade-in">
+          <div className="relative w-full max-w-md bg-white rounded-3xl border-2 border-[#BA954F] shadow-2xl p-6 text-center space-y-5 animate-pulse">
+            <div className="mx-auto h-20 w-20 rounded-full bg-[#FAF4EC] border-2 border-[#BA954F] flex items-center justify-center text-[#BA954F]">
+              <UtensilsCrossed className="h-10 w-10 animate-bounce" />
+            </div>
+
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#BA954F] text-white text-xs font-bold shadow-xs">
+                <Volume2 className="h-3.5 w-3.5" />
+                {isLunchStartAlarmActive ? '🍱 Lunch Break Time (1:15 PM – 2:00 PM)' : '🍱 Lunch Break Complete (2:00 PM)'}
+              </div>
+              <h2 className="text-xl font-bold text-[#1C1917]">
+                {isLunchStartAlarmActive ? 'Studio Lunch Break Time!' : 'Lunch Break is Over!'}
+              </h2>
+              <p className="text-xs text-[#78716C] leading-relaxed">
+                {isLunchStartAlarmActive
+                  ? 'It is 1:15 PM. Studio lunch hours are 1:15 PM to 2:00 PM. Please take your lunch break, rest, and refresh.'
+                  : 'It is 2:00 PM. Studio lunch hours are complete. Time to resume your afternoon design work.'}
+              </p>
+            </div>
+
+            <div className="space-y-2.5 pt-2">
+              <button
+                type="button"
+                onClick={dismissLunchAlarm}
+                className="w-full py-3.5 px-6 rounded-2xl bg-[#BA954F] hover:bg-[#A17B2F] text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer btn-hover-lift"
+              >
+                <CheckCircle className="h-5 w-5" />
+                Dismiss Alarm · Silence Sound
+              </button>
+
+              {isLunchStartAlarmActive && !isOnBreak && (
+                <button
+                  type="button"
+                  onClick={handleStartLunchBreakFromAlarm}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#FAF7F2] hover:bg-[#FAF4EC] text-[#BA954F] font-semibold text-xs border border-[#EDE3D4] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Coffee className="h-4 w-4" />
+                  Log Lunch Break in Attendance (Optional)
+                </button>
+              )}
+
+              {isLunchEndAlarmActive && isOnBreak && (
+                <button
+                  type="button"
+                  onClick={handleEndLunchBreakFromAlarm}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#FAF7F2] hover:bg-[#FAF4EC] text-[#2D6A4F] font-semibold text-xs border border-[#D1E7D8] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  End Break & Resume Work
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 1. GLOBAL 15-MINUTE ATTENDANCE CHECK-IN ALARM MODAL */}

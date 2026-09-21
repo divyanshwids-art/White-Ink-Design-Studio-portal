@@ -52,8 +52,8 @@ attendanceRouter.post('/clock-out', (req: AuthenticatedRequest, res: Response) =
 attendanceRouter.post('/break/start', (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { timestamp } = req.body || {};
-    const attendance = db.startBreak(userId, timestamp);
+    const { timestamp, breakType } = req.body || {};
+    const attendance = db.startBreak(userId, timestamp, breakType);
     return res.status(200).json({
       message: 'Break started.',
       attendance,

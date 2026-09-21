@@ -123,6 +123,15 @@ async function startServer() {
   app.use(cors(corsOptions));
   app.use(express.json({ limit: '20mb' }));
 
+  // Static Uploads Serving (Images, PDFs, Documents uploaded in chat or projects)
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+  const chatUploadsDir = path.join(uploadsDir, 'chat');
+  if (!fs.existsSync(chatUploadsDir)) {
+    fs.mkdirSync(chatUploadsDir, { recursive: true });
+  }
+  app.use('/uploads', express.static(uploadsDir));
+  app.use('/api/uploads', express.static(uploadsDir));
+
   // API Health Check
   app.get('/api/health', (_req, res) => {
     res.json({

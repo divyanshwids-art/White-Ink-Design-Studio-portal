@@ -68,7 +68,7 @@ class SoundAlertService {
   /**
    * Start a continuous alarm loop (rings until stopAlarm is called)
    */
-  public startContinuousAlarm(pattern: 'timer' | 'checkin' = 'timer') {
+  public startContinuousAlarm(pattern: 'timer' | 'checkin' | 'lunch' = 'timer') {
     if (this.isAlarmPlaying) return;
     this.isAlarmPlaying = true;
 
@@ -80,6 +80,21 @@ class SoundAlertService {
         setTimeout(() => {
           if (this.isAlarmPlaying) this.playBeep(1174.66, 'triangle', 0.2, 0.35);
         }, 180);
+      } else if (pattern === 'lunch') {
+        // Distinct warm dining / lunch gong chime melody (C5 -> E5 -> G5 -> C6 -> A5)
+        this.playBeep(523.25, 'sine', 0.3, 0.35);
+        setTimeout(() => {
+          if (this.isAlarmPlaying) this.playBeep(659.25, 'sine', 0.3, 0.35);
+        }, 140);
+        setTimeout(() => {
+          if (this.isAlarmPlaying) this.playBeep(783.99, 'sine', 0.3, 0.35);
+        }, 280);
+        setTimeout(() => {
+          if (this.isAlarmPlaying) this.playBeep(1046.5, 'sine', 0.45, 0.35);
+        }, 420);
+        setTimeout(() => {
+          if (this.isAlarmPlaying) this.playBeep(880.0, 'sine', 0.5, 0.3);
+        }, 580);
       } else {
         // Periodic check-in 3-tone chime
         this.playBeep(659.25, 'sine', 0.2, 0.3);
@@ -93,7 +108,8 @@ class SoundAlertService {
     };
 
     ring();
-    this.alarmInterval = setInterval(ring, pattern === 'timer' ? 1200 : 2000);
+    const intervalMs = pattern === 'timer' ? 1200 : pattern === 'lunch' ? 2400 : 2000;
+    this.alarmInterval = setInterval(ring, intervalMs);
   }
 
   /**
