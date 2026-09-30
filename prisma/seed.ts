@@ -4,13 +4,13 @@ import bcrypt from 'bcryptjs';
 
 export async function getSeedData() {
   const salt = await bcrypt.genSalt(10);
-  const adminPasswordHash = await bcrypt.hash('Dev@123', salt);
+  const adminPasswordHash = await bcrypt.hash('123456', salt);
 
   const users = [
     {
       id: 'usr_superadmin_01',
-      name: 'Dev',
-      email: 'Dev@gmail.com',
+      name: 'Super Admin',
+      email: 'superadmin@gmail.com',
       passwordHash: adminPasswordHash,
       role: 'SUPER_ADMIN' as Role,
       clientId: null,
