@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { SystemSettings, EmployeeScheduleOverride, User } from '../types';
@@ -951,9 +952,14 @@ export const AdminSettingsPage: React.FC = () => {
       </div>
 
       {/* Add Override Modal */}
-      {isOverrideModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gold-300 space-y-4">
+      {isOverrideModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Full viewport backdrop blur */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+            onClick={() => setIsOverrideModalOpen(false)}
+          />
+          <div className="relative z-10 bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gold-300 space-y-4 animate-gold-fade-in">
             <div className="flex items-center justify-between border-b border-gold-200 pb-3">
               <h2 className="text-lg font-extrabold text-black flex items-center gap-2">
                 <Clock className="h-5 w-5 text-gold-600 stroke-[2.5]" />
@@ -1074,7 +1080,8 @@ export const AdminSettingsPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -21,6 +21,10 @@ import {
   Trash2,
   Calendar,
   X,
+  Eye,
+  RefreshCw,
+  ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 
 interface ApprovalsPageProps {
@@ -31,6 +35,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const role = user?.role || 'TEAM_MEMBER';
   const isClient = role === 'CLIENT' || role === 'CLIENT_ADMIN';
+  const isSuperAdminOrAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
   const canRequestApproval = !isClient;
   const canDelete = role === 'SUPER_ADMIN' || role === 'ADMIN';
 
@@ -85,9 +90,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
           search: search || undefined,
         }),
         api.getProjects(),
-        isClient
-          ? api.getTasks({ projectId: selectedProject, search: search || undefined })
-          : Promise.resolve([] as Task[]),
+        api.getTasks({ projectId: selectedProject, search: search || undefined }),
       ]);
       setApprovals(approvalsRes);
       setProjects(projectsRes);
@@ -95,7 +98,11 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
         tasksRes.filter(
           (task) =>
             Boolean(task.submittedAt) &&
-            ['REVIEW', 'REVISION_REQUESTED', 'COMPLETED'].includes(task.status)
+            (task.clientApprovalStatus === 'INTERNAL_REVIEW' ||
+             task.clientApprovalStatus === 'PENDING' ||
+             task.clientApprovalStatus === 'APPROVED' ||
+             task.clientApprovalStatus === 'REJECTED' ||
+             ['REVIEW', 'REVISION_REQUESTED', 'COMPLETED'].includes(task.status))
         )
       );
     } catch (err) {
@@ -107,6 +114,13 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     loadData();
+    const handleDataUpdated = () => {
+      loadData();
+    };
+    window.addEventListener('portal:data-updated', handleDataUpdated);
+    return () => {
+      window.removeEventListener('portal:data-updated', handleDataUpdated);
+    };
   }, [selectedProject, selectedStatus, search]);
 
   const handleOpenSubmit = () => {
@@ -195,11 +209,10 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
     if (
       task.progress !== 100 ||
       !task.submittedAt ||
-      !task.submissionDescription?.trim() ||
-      !task.proofDetails?.trim()
+      !task.submissionDescription?.trim()
     ) {
       alert(
-        'Task must reach 100% completion with submission description and proof details before approval.'
+        'Task must reach 100% completion with a submission description before approval.'
       );
       return;
     }
@@ -215,9 +228,23 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleAdminApproveTask = async (task: Task) => {
+    if (!window.confirm(`Approve deliverable and forward "${task.title}" to client for final sign-off?`)) return;
+    try {
+      setTaskActionLoading(task.id);
+      await api.adminApproveTask(task.id);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to approve task internally');
+    } finally {
+      setTaskActionLoading(null);
+    }
+  };
+
   const taskStatus = (task: Task): ApprovalStatus => {
     if (task.clientApprovalStatus === 'APPROVED') return 'APPROVED';
-    if (task.status === 'REVISION_REQUESTED') return 'REJECTED';
+    if (task.status === 'REVISION_REQUESTED' || task.clientApprovalStatus === 'REJECTED') return 'REJECTED';
+    if (task.clientApprovalStatus === 'INTERNAL_REVIEW') return 'INTERNAL_REVIEW';
     return 'PENDING';
   };
 
@@ -243,7 +270,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
   const totalCount = approvals.length + filteredTaskApprovals.length;
   const pendingCount =
     approvals.filter((a) => a.status === 'PENDING').length +
-    filteredTaskApprovals.filter((t) => taskStatus(t) === 'PENDING').length;
+    filteredTaskApprovals.filter((t) => taskStatus(t) === 'PENDING' || taskStatus(t) === 'INTERNAL_REVIEW').length;
   const approvedCount =
     approvals.filter((a) => a.status === 'APPROVED').length +
     filteredTaskApprovals.filter((t) => taskStatus(t) === 'APPROVED').length;
@@ -257,19 +284,25 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
       case 'APPROVED':
         return (
           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD]">
-            <CheckCircle2 className="h-3.5 w-3.5 text-[#2D6A4F]" /> Approved
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#2D6A4F]" /> Client Approved
           </span>
         );
       case 'REJECTED':
         return (
           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0]">
-            <XCircle className="h-3.5 w-3.5" /> Needs Revisions
+            <XCircle className="h-3.5 w-3.5" /> Changes / Re-Request
+          </span>
+        );
+      case 'INTERNAL_REVIEW':
+        return (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8]">
+            <Clock className="h-3.5 w-3.5 text-[#946B2D]" /> Internal Studio Review
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
-            <Clock className="h-3.5 w-3.5" /> Pending Review
+            <Clock className="h-3.5 w-3.5" /> Pending Client Sign-Off
           </span>
         );
     }
@@ -385,7 +418,9 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
           <p className="text-xs sm:text-sm text-[#78716C] font-normal mt-1">
             {isClient
               ? 'Review, provide feedback, and approve deliverables submitted for your projects'
-              : 'Submit milestones, design drafts, and creative assets for sign-off'}
+              : role === 'TEAM_MEMBER'
+              ? 'Track internal studio verification, client sign-off status, and revision requests for your submitted deliverables'
+              : 'Submit milestones, design drafts, and manage deliverable sign-offs'}
           </p>
         </div>
 
@@ -401,18 +436,9 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
         )}
       </div>
 
-      {/* For client: Filter Toolbar goes above the 4 KPI Summary cards */}
-      {isClient ? (
-        <>
-          {renderFilterToolbar()}
-          {renderKPISummary()}
-        </>
-      ) : (
-        <>
-          {renderKPISummary()}
-          {renderFilterToolbar()}
-        </>
-      )}
+      {/* Filter Toolbar and KPI Summary */}
+      {renderFilterToolbar()}
+      {renderKPISummary()}
 
       {/* Deliverables List */}
       {loading ? (
@@ -428,16 +454,6 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
               ? 'No approval requests match the selected filters.'
               : 'Deliverables requested for sign-off will appear here.'}
           </p>
-          {canRequestApproval && (
-            <button
-              type="button"
-              onClick={handleOpenSubmit}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer btn-hover-lift"
-            >
-              <Plus className="h-3.5 w-3.5 stroke-[2]" />
-              Submit First Deliverable
-            </button>
-          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -460,23 +476,59 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                   {tasks.map((task) => {
                     const status = taskStatus(task);
                     const isPending = status === 'PENDING';
+                    const isInternalReview = task.clientApprovalStatus === 'INTERNAL_REVIEW';
+                    const isClientApproved = task.clientApprovalStatus === 'APPROVED';
+                    const hasRevision =
+                      task.status === 'REVISION_REQUESTED' ||
+                      task.clientApprovalStatus === 'REJECTED' ||
+                      Boolean(task.revisionRequest);
+                    const hasAdminApproved =
+                      Boolean(task.adminApprovedAt) ||
+                      Boolean(task.adminApprovedBy) ||
+                      task.clientApprovalStatus === 'PENDING' ||
+                      task.clientApprovalStatus === 'APPROVED' ||
+                      (task.clientApprovalStatus === 'REJECTED' && !isInternalReview);
 
                     return (
                       <div
                         key={`task-${task.id}`}
-                        onClick={() => isClient && setClientViewTask(task)}
-                        className={`bg-white rounded-2xl border border-[#EDE7DD] p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all ${
-                          isClient
-                            ? 'cursor-pointer hover:border-[#DFD5C6] hover:shadow-md'
-                            : ''
-                        }`}
+                        onClick={() => setClientViewTask(task)}
+                        className="bg-white rounded-2xl border border-[#EDE7DD] p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all cursor-pointer hover:border-[#DFD5C6] hover:shadow-md card-hover-lift"
                       >
                         <div className="space-y-2 flex-1 min-w-0">
-                          <div className="flex items-center gap-2.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {getStatusPill(status)}
+
+                            {/* Internal Studio Verification Badge */}
+                            {hasAdminApproved ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD]">
+                                <ShieldCheck className="h-3 w-3" /> Admin Approved
+                              </span>
+                            ) : isInternalReview ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8]">
+                                <Clock className="h-3 w-3" /> Admin Review Pending
+                              </span>
+                            ) : null}
+
+                            {/* Client Approval / Re-Request Badge */}
+                            {isClientApproved ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD]">
+                                <UserCheck className="h-3 w-3" /> Client Sign-Off Complete
+                              </span>
+                            ) : isPending ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#FAF4EC] text-[#BA954F] border border-[#EDE3D4]">
+                                <Clock className="h-3 w-3" /> Awaiting Client Review
+                              </span>
+                            ) : hasRevision ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0]">
+                                <RefreshCw className="h-3 w-3" /> Changes / Re-Request
+                              </span>
+                            ) : null}
+
                             <span className="text-[10px] font-semibold text-[#BA954F] bg-[#FAF4EC] px-2.5 py-0.5 rounded-full border border-[#EDE3D4]">
-                              Task approval
+                              Task deliverable
                             </span>
+
                             {task.createdAt && (
                               <span className="text-xs text-[#A8A29E] flex items-center gap-1 font-mono">
                                 <Calendar className="h-3 w-3" />
@@ -485,6 +537,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                               </span>
                             )}
                           </div>
+
                           <h3 className="text-sm sm:text-base font-bold text-[#1C1917] leading-snug">
                             {task.title}
                           </h3>
@@ -497,8 +550,12 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                             <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EDE7DD] text-xs mt-2 space-y-1">
                               <div className="font-semibold text-[#1C1917]">Completion details</div>
                               <p className="text-[#57534E] font-normal">{task.submissionDescription}</p>
-                              <div className="font-semibold text-[#1C1917] pt-1">Proof</div>
-                              <p className="text-[#57534E] font-normal">{task.proofDetails}</p>
+                              {task.proofDetails && (
+                                <>
+                                  <div className="font-semibold text-[#1C1917] pt-1">Proof</div>
+                                  <p className="text-[#57534E] font-normal">{task.proofDetails}</p>
+                                </>
+                              )}
                               {task.deliverableUrl && (
                                 <a
                                   href={
@@ -516,17 +573,26 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                               )}
                             </div>
                           )}
-                          {task.revisionRequest && (
-                            <div className="p-3.5 bg-[#FDF2F0] rounded-xl border border-[#F5D5D0] text-xs mt-2">
-                              <div className="font-semibold text-[#B91C1C] mb-1">
-                                Revision request
+                          {(task.revisionRequest || (task.clientApprovalStatus === 'REJECTED' && task.clientReviewComments)) && (
+                            <div className="p-3.5 bg-[#FDF2F0] rounded-xl border border-[#F5D5D0] text-xs mt-2 space-y-1">
+                              <div className="font-semibold text-[#B91C1C] flex items-center gap-1.5">
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                Client Revision Feedback / Re-Request
                               </div>
-                              <p className="text-[#7F1D1D] font-normal">{task.revisionRequest.feedback}</p>
+                              <p className="text-[#7F1D1D] font-normal">
+                                {task.revisionRequest?.feedback || task.clientReviewComments}
+                              </p>
+                              {task.revisionRequest?.targetDate && (
+                                <div className="text-[11px] font-mono font-semibold text-[#991B1B] pt-0.5">
+                                  Target Date: {new Date(task.revisionRequest.targetDate).toLocaleDateString()}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
 
-                        {isClient && (
+                        {/* Action buttons on the right side */}
+                        {isClient ? (
                           <div
                             className="flex items-center gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#EDE7DD]"
                             onClick={(e) => e.stopPropagation()}
@@ -538,7 +604,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                             >
                               Review Details
                             </button>
-                            {isPending && (
+                            {isPending && task.clientApprovalStatus === 'PENDING' && (
                               <>
                                 <button
                                   type="button"
@@ -547,7 +613,6 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                                     taskActionLoading === task.id ||
                                     !task.submittedAt ||
                                     !task.submissionDescription?.trim() ||
-                                    !task.proofDetails?.trim() ||
                                     task.status !== 'REVIEW' ||
                                     task.clientApprovalStatus !== 'PENDING'
                                   }
@@ -575,6 +640,55 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
                                   Request Changes
                                 </button>
                               </>
+                            )}
+                          </div>
+                        ) : isSuperAdminOrAdmin ? (
+                          <div
+                            className="flex items-center gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#EDE7DD]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setClientViewTask(task)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-[#FAF7F2] text-[#443B30] border border-[#DFD5C6] text-xs font-semibold rounded-xl transition-colors cursor-pointer shadow-2xs"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-[#BA954F]" />
+                              View Deliverable
+                            </button>
+                            {task.clientApprovalStatus === 'INTERNAL_REVIEW' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdminApproveTask(task)}
+                                disabled={taskActionLoading === task.id}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#BA954F] hover:bg-[#A17B2F] text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 btn-hover-lift"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {taskActionLoading === task.id ? 'Forwarding...' : 'Approve & Send to Client'}
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div
+                            className="flex items-center gap-2.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#EDE7DD]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setClientViewTask(task)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-[#FAF7F2] text-[#443B30] border border-[#DFD5C6] text-xs font-semibold rounded-xl transition-colors cursor-pointer shadow-2xs btn-hover-lift"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-[#BA954F]" />
+                              View Task Details
+                            </button>
+                            {hasRevision && (
+                              <button
+                                type="button"
+                                onClick={() => setClientViewTask(task)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#FDF2F0] hover:bg-[#FCE7E4] text-[#B91C1C] border border-[#F5D5D0] text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                Review Requested Changes
+                              </button>
                             )}
                           </div>
                         )}

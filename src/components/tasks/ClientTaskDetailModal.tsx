@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Task, TaskStatus, Comment } from '../../types';
 import { api } from '../../services/api';
@@ -22,6 +23,7 @@ import {
   Sparkles,
   Info,
 } from 'lucide-react';
+import { ApprovalLifecycleTracker } from './ApprovalLifecycleTracker';
 
 export interface ClientTaskDetailModalProps {
   task: Task | null;
@@ -135,9 +137,14 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
     new Date(task.dueDate).getTime() < Date.now() &&
     task.status !== 'COMPLETED';
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-gold-fade-in">
-      <div className="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-2xl shadow-2xl border border-[#EDE7DD] flex flex-col max-h-[92vh] overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
+      {/* Full screen backdrop blur */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+        onClick={onClose}
+      />
+      <div className="relative z-10 bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-2xl shadow-2xl border border-[#EDE7DD] flex flex-col max-h-[92vh] overflow-hidden animate-gold-fade-in">
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-[#EDE7DD] bg-white shrink-0">
           <div className="flex items-start justify-between gap-4">
@@ -150,6 +157,26 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
                 </span>
                 <PriorityBadge priority={task.priority} size="sm" />
                 <StatusBadge status={task.status} size="sm" />
+                {task.clientApprovalStatus === 'INTERNAL_REVIEW' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8]">
+                    Pending Admin Review
+                  </span>
+                )}
+                {task.clientApprovalStatus === 'PENDING' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FAF2E6] text-[#946B2D] border border-[#E8DCC8]">
+                    Awaiting Client Sign-Off
+                  </span>
+                )}
+                {task.clientApprovalStatus === 'APPROVED' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F0F7F2] text-[#2D6A4F] border border-[#D1E7DD]">
+                    Client Approved
+                  </span>
+                )}
+                {(task.clientApprovalStatus === 'REJECTED' || task.status === 'REVISION_REQUESTED') && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FDF2F0] text-[#B91C1C] border border-[#F5D5D0]">
+                    Changes Requested
+                  </span>
+                )}
                 {task.dueDate && (
                   <DeadlineCountdownBadge dueDate={task.dueDate} status={task.status} size="sm" />
                 )}
@@ -208,6 +235,17 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
 
         {/* Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 bg-[#FCFBF8]/40 divide-y divide-[#F5EFE6]">
+          {/* Approval Lifecycle Tracker (Audit of Admin Review, Client Sign-off, and Revision Requests) */}
+          {Boolean(
+            task.submittedAt ||
+              task.clientApprovalStatus ||
+              ['REVIEW', 'COMPLETED', 'REVISION_REQUESTED'].includes(task.status)
+          ) && (
+            <div className="pb-2">
+              <ApprovalLifecycleTracker task={task} />
+            </div>
+          )}
+
           {/* Action Bar (Top CTAs for Team Member / Admin) */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -547,7 +585,8 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Task, TaskStatus, Comment } from '../../types';
 import { api } from '../../services/api';
@@ -133,9 +134,14 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
 
   const isOverdue = isTaskOrProjectOverdue(task.dueDate, task.status);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-gold-fade-in">
-      <div className="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-2xl shadow-2xl border border-[#EDE7DD] flex flex-col max-h-[92vh] overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
+      {/* Full screen backdrop blur */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+        onClick={onClose}
+      />
+      <div className="relative z-10 bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-2xl shadow-2xl border border-[#EDE7DD] flex flex-col max-h-[92vh] overflow-hidden animate-gold-fade-in">
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-[#EDE7DD] bg-white shrink-0">
           <div className="flex items-start justify-between gap-4">
@@ -545,7 +551,8 @@ export const ClientTaskDetailModal: React.FC<ClientTaskDetailModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

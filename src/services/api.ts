@@ -420,6 +420,11 @@ export const api = {
       method: 'PATCH',
     }),
 
+  adminApproveTask: (id: string) =>
+    request<Task>(`/tasks/${id}/admin-approve`, {
+      method: 'POST',
+    }),
+
   submitTask: (id: string, payload: { submissionDescription: string; proofDetails: string; deliverableUrl?: string; file?: File }) => {
     if (payload.file) {
       const formData = new FormData();

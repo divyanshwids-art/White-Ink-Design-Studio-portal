@@ -418,7 +418,7 @@ tasksRouter.get('/', requireAuth, (req: AuthenticatedRequest, res: Response) => 
     const allowedProjectIds = new Set(clientProjects.map((p) => p.id));
     allTasks = allTasks.filter((t) => allowedProjectIds.has(t.projectId));
   } else if (currentUser.role === 'TEAM_MEMBER') {
-    allTasks = allTasks.filter((t) => t.assignedToId === currentUser.id);
+    allTasks = allTasks.filter((t) => t.assignedToId === currentUser.id || t.submittedById === currentUser.id);
   }
 
   // Filters
@@ -457,13 +457,19 @@ tasksRouter.get('/', requireAuth, (req: AuthenticatedRequest, res: Response) => 
     const assignedTo = t.assignedToId ? db.getUserById(t.assignedToId) : null;
     const createdBy = db.getUserById(t.createdById);
     const commentsCount = db.getComments().filter((c) => c.taskId === t.id).length;
+    const reviewedBy = t.reviewedById ? db.getUserById(t.reviewedById) : null;
+    const adminApprovedBy = t.adminApprovedById
+      ? db.getUserById(t.adminApprovedById)
+      : (t.reviewedById && t.clientApprovalStatus !== 'INTERNAL_REVIEW' ? db.getUserById(t.reviewedById) : null);
 
     return {
       ...t,
-      revisionRequest: t.revisionRequest ? JSON.parse(t.revisionRequest) : null,
+      revisionRequest: t.revisionRequest ? (typeof t.revisionRequest === 'string' ? JSON.parse(t.revisionRequest) : t.revisionRequest) : null,
       project: project ? { id: project.id, name: project.name, status: project.status } : null,
       assignedTo: assignedTo ? sanitizeUser(assignedTo) : null,
       createdBy: createdBy ? sanitizeUser(createdBy) : null,
+      reviewedBy: reviewedBy ? sanitizeUser(reviewedBy) : null,
+      adminApprovedBy: adminApprovedBy ? sanitizeUser(adminApprovedBy) : null,
       commentsCount,
     };
   });
@@ -507,6 +513,10 @@ tasksRouter.get('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) 
 
   const assignedTo = task.assignedToId ? db.getUserById(task.assignedToId) : null;
   const createdBy = db.getUserById(task.createdById);
+  const reviewedBy = task.reviewedById ? db.getUserById(task.reviewedById) : null;
+  const adminApprovedBy = task.adminApprovedById
+    ? db.getUserById(task.adminApprovedById)
+    : (task.reviewedById && task.clientApprovalStatus !== 'INTERNAL_REVIEW' ? db.getUserById(task.reviewedById) : null);
   const rawComments = db.getComments().filter((c) => c.taskId === task.id);
   const comments = rawComments.map((c) => {
     const commentUser = db.getUserById(c.userId);
@@ -518,10 +528,12 @@ tasksRouter.get('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) 
 
   return res.json({
     ...task,
-    revisionRequest: task.revisionRequest ? JSON.parse(task.revisionRequest) : null,
+    revisionRequest: task.revisionRequest ? (typeof task.revisionRequest === 'string' ? JSON.parse(task.revisionRequest) : task.revisionRequest) : null,
     project,
     assignedTo: assignedTo ? sanitizeUser(assignedTo) : null,
     createdBy: createdBy ? sanitizeUser(createdBy) : null,
+    reviewedBy: reviewedBy ? sanitizeUser(reviewedBy) : null,
+    adminApprovedBy: adminApprovedBy ? sanitizeUser(adminApprovedBy) : null,
     comments,
   });
 });
@@ -1063,6 +1075,8 @@ tasksRouter.patch('/:id/admin-approve', requireAuth, (req: AuthenticatedRequest,
     clientApprovalStatus: 'PENDING',
     reviewedById: currentUser.id,
     reviewedAt: new Date().toISOString(),
+    adminApprovedById: currentUser.id,
+    adminApprovedAt: new Date().toISOString(),
   });
 
   const project = db.getProjectById(task.projectId);

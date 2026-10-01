@@ -37,6 +37,7 @@ import {
   Check,
   XCircle,
 } from 'lucide-react';
+import { ApprovalLifecycleTracker } from '../components/tasks/ApprovalLifecycleTracker';
 
 interface TaskDetailPageProps {
   taskId: string;
@@ -553,6 +554,15 @@ export const TaskDetailPage: React.FC<TaskDetailPageProps> = ({
             </p>
           )}
         </div>
+      )}
+
+      {/* Deliverable Approval Lifecycle & Audit Stepper */}
+      {Boolean(
+        task.submittedAt ||
+          task.clientApprovalStatus ||
+          ['REVIEW', 'COMPLETED', 'REVISION_REQUESTED'].includes(task.status)
+      ) && (
+        <ApprovalLifecycleTracker task={task} />
       )}
 
       {/* Main 2-Column Grid */}

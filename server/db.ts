@@ -159,6 +159,8 @@ export interface TaskRecord {
   clientReviewComments?: string | null;
   reviewedById?: string | null;
   reviewedAt?: string | null;
+  adminApprovedById?: string | null;
+  adminApprovedAt?: string | null;
   overdueReason?: string | null;
   overdueReasonSubmittedAt?: string | null;
   overdueNotifiedAt?: string | null;
@@ -1515,6 +1517,8 @@ class DatabaseService {
     if (updates.reviewedAt !== undefined) prismaData.reviewedAt = updates.reviewedAt ? new Date(updates.reviewedAt) : null;
 
     if (prisma && this.isPrismaActive) {
+      delete prismaData.adminApprovedById;
+      delete prismaData.adminApprovedAt;
       prisma.task
         .update({
           where: { id },

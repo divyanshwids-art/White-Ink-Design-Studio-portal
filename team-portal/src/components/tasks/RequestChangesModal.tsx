@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Task } from '../../types';
 import { api } from '../../services/api';
 import {
@@ -86,9 +87,14 @@ export const RequestChangesModal: React.FC<RequestChangesModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl border border-gold-300 flex flex-col max-h-[94vh] overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      {/* Full screen backdrop blur */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
+        onClick={onClose}
+      />
+      <div className="relative z-10 bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-2xl border border-gold-300 flex flex-col max-h-[94vh] overflow-hidden animate-gold-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gold-200 shrink-0">
           <div className="flex items-center gap-2.5">
@@ -262,6 +268,7 @@ export const RequestChangesModal: React.FC<RequestChangesModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

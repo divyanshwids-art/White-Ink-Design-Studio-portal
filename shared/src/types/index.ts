@@ -220,6 +220,8 @@ export interface Task {
   clientReviewComments?: string | null;
   reviewedById?: string | null;
   reviewedAt?: string | null;
+  adminApprovedById?: string | null;
+  adminApprovedAt?: string | null;
   overdueReason?: string | null;
   overdueReasonSubmittedAt?: string | null;
   overdueNotifiedAt?: string | null;
@@ -228,6 +230,8 @@ export interface Task {
   project?: { id: string; name: string; status?: ProjectStatus } | null;
   assignedTo?: User | null;
   createdBy?: User | null;
+  reviewedBy?: User | null;
+  adminApprovedBy?: User | null;
   comments?: Comment[];
   commentsCount?: number;
 }

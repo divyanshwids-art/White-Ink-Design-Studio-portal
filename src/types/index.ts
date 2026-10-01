@@ -5,7 +5,7 @@ export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'COMPLETED' | 'REVI
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY' | 'ON_LEAVE';
 export type MilestoneStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'OVERDUE';
-export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type ApprovalStatus = 'INTERNAL_REVIEW' | 'PENDING' | 'APPROVED' | 'REJECTED';
 export type NotificationType =
   | 'TASK_ASSIGNED'
   | 'TASK_STATUS'
@@ -220,6 +220,10 @@ export interface Task {
   clientReviewComments?: string | null;
   reviewedById?: string | null;
   reviewedAt?: string | null;
+  reviewedBy?: User | null;
+  adminApprovedById?: string | null;
+  adminApprovedAt?: string | null;
+  adminApprovedBy?: User | null;
   overdueReason?: string | null;
   overdueReasonSubmittedAt?: string | null;
   overdueNotifiedAt?: string | null;
