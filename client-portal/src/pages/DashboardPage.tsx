@@ -92,10 +92,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     return <LoadingSpinner message="Loading client workspace..." size="lg" />;
   }
 
-  const firstName = user?.name ? user.name.split(' ')[0] : 'there';
+  const fullName = user?.name?.trim() || 'Valued Client';
   const namePrefix =
-    user?.name?.split(' ')[0]?.toLowerCase().endsWith('a') ||
-    user?.name?.split(' ')[0]?.toLowerCase().endsWith('i')
+    user?.name?.trim().toLowerCase().endsWith('a') ||
+    user?.name?.trim().toLowerCase().endsWith('i')
       ? 'Ms.'
       : 'Mr.';
 
@@ -134,7 +134,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h1 className="text-lg font-bold text-[#1C1917]">
-                {namePrefix} {firstName}
+                {namePrefix} {fullName}
               </h1>
               <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
                 {user?.role?.replace(/_/g, ' ')}

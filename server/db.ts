@@ -225,6 +225,21 @@ export interface BreakRecord {
   updatedAt: string;
 }
 
+export interface OvertimeSessionRecord {
+  id: string;
+  attendanceId: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // ISO
+  endTime?: string | null; // ISO
+  durationMinutes: number;
+  reason?: string | null;
+  taskId?: string | null;
+  taskTitle?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AttendanceRecord {
   id: string;
   userId: string;
@@ -238,6 +253,7 @@ export interface AttendanceRecord {
   totalWorkingMinutes: number;
   totalBreakMinutes: number;
   effectiveWorkingMinutes: number;
+  totalOvertimeMinutes?: number;
   sheetsSyncedAt?: string | null;
   sheetsRowIndex?: number | null;
   createdAt: string;
@@ -345,6 +361,11 @@ export interface AttendanceWithDetails extends AttendanceRecord {
   user?: Omit<UserRecord, 'passwordHash'>;
   breaks: BreakRecord[];
   activeBreak?: BreakRecord | null;
+  overtimeSessions?: OvertimeSessionRecord[];
+  activeOvertime?: OvertimeSessionRecord | null;
+  isOvertimeActive?: boolean;
+  totalOvertimeMinutes?: number;
+  liveOvertimeMinutes?: number;
   isCurrentlyWorking?: boolean;
   liveWorkingMinutes?: number;
   liveBreakMinutes?: number;
@@ -433,6 +454,7 @@ export interface SystemSettingsRecord {
   taskRules?: string | null;
   reasonsList?: string | null;
   meetingLink?: string | null;
+  companyDriveUrl?: string | null;
   updatedAt: string;
 }
 
@@ -483,6 +505,7 @@ export interface DatabaseSchema {
   todos: PersonalTodoRecord[];
   taskTimeLogs: TaskTimeLogRecord[];
   eodReports: EodReportRecord[];
+  overtimeSessions: OvertimeSessionRecord[];
 }
 
 export function getTodayDateString(d: Date = new Date()): string {
@@ -537,6 +560,7 @@ class DatabaseService {
     todos: [],
     taskTimeLogs: [],
     eodReports: [],
+    overtimeSessions: [],
     settings: {
       id: 'system_config',
       officeStartTime: '09:00',
@@ -545,6 +569,7 @@ class DatabaseService {
       maxBreakMinutes: 60,
       defaultLeaveAllowance: 20,
       meetingLink: null,
+      companyDriveUrl: null,
       taskRules: JSON.stringify({
         requireReviewBeforeComplete: true,
         allowSelfAssign: true,
@@ -802,6 +827,7 @@ class DatabaseService {
         })) as PersonalTodoRecord[],
         taskTimeLogs: this.data?.taskTimeLogs || [],
         eodReports: this.data?.eodReports || [],
+        overtimeSessions: this.data?.overtimeSessions || [],
         googleIntegration: googleInt
           ? ({
               ...googleInt,
@@ -904,6 +930,7 @@ class DatabaseService {
       todos: (seed.todos || []) as PersonalTodoRecord[],
       taskTimeLogs: (seed.taskTimeLogs || []) as TaskTimeLogRecord[],
       eodReports: (seed.eodReports || []) as EodReportRecord[],
+      overtimeSessions: (seed.overtimeSessions || []) as OvertimeSessionRecord[],
     };
     this.recalculateAllProjectProgress();
     this.ensureClientAdmins();
@@ -996,6 +1023,11 @@ class DatabaseService {
 
   public getUserByEmail(email: string) {
     return this.data.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  }
+
+  public getUserByName(name: string) {
+    const clean = name.trim().toLowerCase();
+    return this.data.users.find((u) => u.name.trim().toLowerCase() === clean);
   }
 
   public createUser(user: Omit<UserRecord, 'createdAt' | 'updatedAt'>) {
@@ -1094,6 +1126,11 @@ class DatabaseService {
 
   public getClientByEmail(email: string) {
     return this.data.clients.find((c) => c.email.toLowerCase() === email.toLowerCase());
+  }
+
+  public getClientByName(name: string) {
+    const clean = name.trim().toLowerCase();
+    return this.data.clients.find((c) => c.name.trim().toLowerCase() === clean);
   }
 
   public createClient(client: Omit<ClientRecord, 'createdAt' | 'updatedAt'>) {
@@ -1655,16 +1692,23 @@ class DatabaseService {
     return this.data.breaks.filter((b) => b.attendanceId === attendanceId);
   }
 
+  public getOvertimeSessionsForAttendance(attendanceId: string): OvertimeSessionRecord[] {
+    if (!this.data.overtimeSessions) this.data.overtimeSessions = [];
+    return this.data.overtimeSessions.filter((s) => s.attendanceId === attendanceId);
+  }
+
   public getAttendanceWithDetails(attendance: AttendanceRecord): AttendanceWithDetails {
     const user = this.getUserById(attendance.userId);
     const breaks = this.getBreaksForAttendance(attendance.id);
     const activeBreak = breaks.find((b) => !b.endTime) || null;
+    const overtimeSessions = this.getOvertimeSessionsForAttendance(attendance.id);
+    const activeOvertime = overtimeSessions.find((s) => !s.endTime) || null;
 
     let liveWorkingMinutes = attendance.totalWorkingMinutes;
     let liveBreakMinutes = attendance.totalBreakMinutes;
 
+    const now = new Date();
     if (attendance.clockIn && !attendance.clockOut) {
-      const now = new Date();
       const inTime = new Date(attendance.clockIn);
       const totalElapsed = Math.max(0, Math.floor((now.getTime() - inTime.getTime()) / 60000));
 
@@ -1676,14 +1720,27 @@ class DatabaseService {
       liveWorkingMinutes = Math.max(0, totalElapsed - liveBreakMinutes);
     }
 
-    const liveEffectiveMinutes = Math.max(0, liveWorkingMinutes);
-    const isCurrentlyWorking = !!attendance.clockIn && !attendance.clockOut && !activeBreak;
+    let totalOvertimeMinutes = overtimeSessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+    let liveOvertimeMinutes = totalOvertimeMinutes;
+    if (activeOvertime) {
+      const otStart = new Date(activeOvertime.startTime);
+      const ongoingOtMins = Math.max(0, Math.floor((now.getTime() - otStart.getTime()) / 60000));
+      liveOvertimeMinutes += ongoingOtMins;
+    }
+
+    const liveEffectiveMinutes = Math.max(0, liveWorkingMinutes + liveOvertimeMinutes);
+    const isCurrentlyWorking = (!!attendance.clockIn && !attendance.clockOut && !activeBreak) || !!activeOvertime;
 
     return {
       ...attendance,
       user: user ? { id: user.id, name: user.name, email: user.email, role: user.role, profileImage: user.profileImage, createdAt: user.createdAt, updatedAt: user.updatedAt } : undefined,
       breaks,
       activeBreak,
+      overtimeSessions,
+      activeOvertime,
+      isOvertimeActive: !!activeOvertime,
+      totalOvertimeMinutes,
+      liveOvertimeMinutes,
       isCurrentlyWorking,
       liveWorkingMinutes,
       liveBreakMinutes,
@@ -1997,6 +2054,209 @@ class DatabaseService {
         })
         .catch(() => {});
     }
+
+    return this.getAttendanceWithDetails(record);
+  }
+
+  public startOvertime(userId: string, data?: { reason?: string; taskId?: string; taskTitle?: string; timestamp?: string }): AttendanceWithDetails {
+    const now = data?.timestamp ? new Date(data.timestamp) : new Date();
+    const today = getTodayDateString(now);
+
+    if (!this.data.overtimeSessions) this.data.overtimeSessions = [];
+
+    let record = this.data.attendances.find((a) => a.userId === userId && a.date === today);
+    if (!record) {
+      record = {
+        id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId,
+        date: today,
+        clockIn: now.toISOString(),
+        clockOut: now.toISOString(),
+        clockInReason: 'Overtime / Remote Session',
+        status: 'PRESENT',
+        totalWorkingMinutes: 0,
+        totalBreakMinutes: 0,
+        effectiveWorkingMinutes: 0,
+        totalOvertimeMinutes: 0,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      };
+      this.data.attendances.push(record);
+    }
+
+    const active = this.data.overtimeSessions.find((s) => s.attendanceId === record!.id && !s.endTime);
+    if (active) {
+      throw new Error('An overtime / work from home session is already running.');
+    }
+
+    let taskTitle = data?.taskTitle || null;
+    if (data?.taskId && !taskTitle) {
+      const task = this.getTaskById(data.taskId);
+      if (task) taskTitle = task.title;
+    }
+
+    const newSession: OvertimeSessionRecord = {
+      id: `ot_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      attendanceId: record.id,
+      userId,
+      date: today,
+      startTime: now.toISOString(),
+      endTime: null,
+      durationMinutes: 0,
+      reason: data?.reason?.trim() || 'Work from home / Late night work',
+      taskId: data?.taskId || null,
+      taskTitle: taskTitle || null,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+
+    this.data.overtimeSessions.push(newSession);
+
+    this.logActivity({
+      userId,
+      action: 'OVERTIME_STARTED',
+      entityType: 'ATTENDANCE',
+      entityId: newSession.id,
+      details: `Started overtime session: ${newSession.reason || 'Late night session'}`,
+    });
+
+    return this.getAttendanceWithDetails(record);
+  }
+
+  public endOvertime(userId: string, data?: { reason?: string; timestamp?: string }): AttendanceWithDetails {
+    const now = data?.timestamp ? new Date(data.timestamp) : new Date();
+    const today = getTodayDateString(now);
+
+    if (!this.data.overtimeSessions) this.data.overtimeSessions = [];
+
+    const record = this.data.attendances.find((a) => a.userId === userId && a.date === today);
+    if (!record) {
+      throw new Error('No attendance record found for today.');
+    }
+
+    const activeSession = this.data.overtimeSessions.find((s) => s.attendanceId === record.id && !s.endTime);
+    if (!activeSession) {
+      throw new Error('No active overtime session found to stop.');
+    }
+
+    const endIso = now.toISOString();
+    activeSession.endTime = endIso;
+    const startMs = new Date(activeSession.startTime).getTime();
+    const endMs = now.getTime();
+    const duration = Math.max(1, Math.floor((endMs - startMs) / 60000));
+    activeSession.durationMinutes = duration;
+    if (data?.reason?.trim()) {
+      activeSession.reason = data.reason.trim();
+    }
+    activeSession.updatedAt = endIso;
+
+    const sessions = this.getOvertimeSessionsForAttendance(record.id);
+    const totalOvertime = sessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+    record.totalOvertimeMinutes = totalOvertime;
+    record.effectiveWorkingMinutes = (record.totalWorkingMinutes || 0) + totalOvertime;
+    record.updatedAt = endIso;
+
+    if (activeSession.taskId) {
+      try {
+        this.logTaskTime({
+          taskId: activeSession.taskId,
+          userId,
+          durationMinutes: duration,
+          notes: activeSession.reason || 'Overtime session logged',
+          date: today,
+        });
+      } catch (err) {}
+    }
+
+    this.logActivity({
+      userId,
+      action: 'OVERTIME_ENDED',
+      entityType: 'ATTENDANCE',
+      entityId: activeSession.id,
+      details: `Completed overtime session: ${duration} minutes (${activeSession.reason || 'No note'})`,
+    });
+
+    return this.getAttendanceWithDetails(record);
+  }
+
+  public logManualOvertime(userId: string, data: { durationMinutes: number; reason: string; taskId?: string; taskTitle?: string; date?: string }): AttendanceWithDetails {
+    const today = data.date || getTodayDateString();
+    const duration = Math.max(1, Number(data.durationMinutes) || 0);
+    const now = new Date();
+
+    if (!this.data.overtimeSessions) this.data.overtimeSessions = [];
+
+    let record = this.data.attendances.find((a) => a.userId === userId && a.date === today);
+    if (!record) {
+      record = {
+        id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        userId,
+        date: today,
+        clockIn: now.toISOString(),
+        clockOut: now.toISOString(),
+        clockInReason: 'Overtime / Remote Entry',
+        status: 'PRESENT',
+        totalWorkingMinutes: 0,
+        totalBreakMinutes: 0,
+        effectiveWorkingMinutes: 0,
+        totalOvertimeMinutes: 0,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      };
+      this.data.attendances.push(record);
+    }
+
+    let taskTitle = data.taskTitle || null;
+    if (data.taskId && !taskTitle) {
+      const task = this.getTaskById(data.taskId);
+      if (task) taskTitle = task.title;
+    }
+
+    const startIso = new Date(now.getTime() - duration * 60000).toISOString();
+    const endIso = now.toISOString();
+
+    const newSession: OvertimeSessionRecord = {
+      id: `ot_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      attendanceId: record.id,
+      userId,
+      date: today,
+      startTime: startIso,
+      endTime: endIso,
+      durationMinutes: duration,
+      reason: data.reason?.trim() || 'Manual overtime / WFH entry',
+      taskId: data.taskId || null,
+      taskTitle: taskTitle || null,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+
+    this.data.overtimeSessions.push(newSession);
+
+    const sessions = this.getOvertimeSessionsForAttendance(record.id);
+    const totalOvertime = sessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+    record.totalOvertimeMinutes = totalOvertime;
+    record.effectiveWorkingMinutes = (record.totalWorkingMinutes || 0) + totalOvertime;
+    record.updatedAt = now.toISOString();
+
+    if (data.taskId) {
+      try {
+        this.logTaskTime({
+          taskId: data.taskId,
+          userId,
+          durationMinutes: duration,
+          notes: data.reason || 'Manual overtime entry',
+          date: today,
+        });
+      } catch (err) {}
+    }
+
+    this.logActivity({
+      userId,
+      action: 'OVERTIME_LOGGED_MANUALLY',
+      entityType: 'ATTENDANCE',
+      entityId: newSession.id,
+      details: `Logged manual overtime: ${duration} minutes for ${data.reason}`,
+    });
 
     return this.getAttendanceWithDetails(record);
   }
@@ -3538,7 +3798,17 @@ class DatabaseService {
     return this.data.settings;
   }
 
-  public updateSettings(updates: Partial<Omit<SystemSettingsRecord, 'id' | 'updatedAt'> & { meetingLink?: string | null }>, userId?: string) {
+  public getCompanyDriveUrl(): string {
+    if (this.data.settings?.companyDriveUrl && this.data.settings.companyDriveUrl.trim()) {
+      return this.data.settings.companyDriveUrl.trim();
+    }
+    if (this.data.googleIntegration?.driveRootFolderId) {
+      return `https://drive.google.com/drive/folders/${this.data.googleIntegration.driveRootFolderId}`;
+    }
+    return 'https://drive.google.com';
+  }
+
+  public updateSettings(updates: Partial<Omit<SystemSettingsRecord, 'id' | 'updatedAt'> & { meetingLink?: string | null; companyDriveUrl?: string | null }>, userId?: string) {
     const now = new Date().toISOString();
     this.data.settings = {
       ...this.data.settings,

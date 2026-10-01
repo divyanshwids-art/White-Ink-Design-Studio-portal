@@ -80,35 +80,15 @@ export const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
   const getRoleBadge = (role: Role) => {
     switch (role) {
       case 'SUPER_ADMIN':
-        return (
-          <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-black text-gold-400 border border-gold-600 shadow-2xs">
-            Super Admin
-          </span>
-        );
+        return <span className="text-xs font-bold text-black whitespace-nowrap">Super Admin</span>;
       case 'ADMIN':
-        return (
-          <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-gold-200 text-black border border-gold-400">
-            Admin
-          </span>
-        );
+        return <span className="text-xs font-bold text-black whitespace-nowrap">Admin</span>;
       case 'TEAM_MEMBER':
-        return (
-          <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-gold-100 text-black border border-gold-300">
-            Team Member
-          </span>
-        );
+        return <span className="text-xs font-semibold text-black whitespace-nowrap">Team Member</span>;
       case 'CLIENT_ADMIN':
-        return (
-          <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-gold-400 text-black border border-gold-600 shadow-2xs">
-            Client Admin
-          </span>
-        );
+        return <span className="text-xs font-semibold text-black whitespace-nowrap">Client Admin</span>;
       case 'CLIENT':
-        return (
-          <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-white text-black border border-gold-300">
-            Client Partner
-          </span>
-        );
+        return <span className="text-xs font-medium text-black whitespace-nowrap">Client Partner</span>;
     }
   };
 

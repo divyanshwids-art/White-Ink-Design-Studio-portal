@@ -28,10 +28,17 @@ accessRequestsRouter.post('/', async (req, res) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Check if user already exists
+    const cleanName = name.trim();
+
+    // Check if user already exists with this email or name
     const existingUser = db.getUserByEmail(cleanEmail);
     if (existingUser) {
-      return res.status(409).json({ message: 'A user account with this email address already exists.' });
+      return res.status(409).json({ message: 'An account with this email address already exists. Duplicate email is not allowed.' });
+    }
+
+    const existingUserByName = db.getUserByName(cleanName);
+    if (existingUserByName) {
+      return res.status(409).json({ message: 'An account with this name already exists. Duplicate name is not allowed.' });
     }
 
     // Check if there is already an active pending request for this email
@@ -115,10 +122,19 @@ accessRequestsRouter.post(
       }
 
       const cleanEmail = accessRequest.email.trim().toLowerCase();
+      const cleanName = accessRequest.name.trim();
+
       const existingUser = db.getUserByEmail(cleanEmail);
       if (existingUser) {
         return res.status(409).json({
-          message: 'An active user account with this email address already exists.',
+          message: 'An active user account with this email address already exists. Duplicate email is not allowed.',
+        });
+      }
+
+      const existingUserByName = db.getUserByName(cleanName);
+      if (existingUserByName) {
+        return res.status(409).json({
+          message: 'An active user account with this name already exists. Duplicate name is not allowed.',
         });
       }
 

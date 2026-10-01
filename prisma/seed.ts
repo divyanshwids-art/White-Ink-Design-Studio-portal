@@ -102,9 +102,14 @@ export async function runSeed() {
     await prisma.comment.deleteMany();
     await prisma.clientApproval.deleteMany();
     await prisma.milestone.deleteMany();
+    await prisma.meeting.deleteMany();
     await prisma.task.deleteMany();
     await prisma.projectMember.deleteMany();
     await prisma.project.deleteMany();
+    await prisma.personalTodo.deleteMany();
+    await prisma.issuedCredential.deleteMany();
+    await prisma.accessRequest.deleteMany();
+    await prisma.googleIntegration.deleteMany();
     await prisma.user.deleteMany();
     await prisma.client.deleteMany();
     await prisma.systemSettings.deleteMany();

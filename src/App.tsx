@@ -29,6 +29,7 @@ import { PerformancePage } from './pages/PerformancePage';
 import { ActivitiesPage } from './pages/ActivitiesPage';
 import { ChatPage } from './pages/ChatPage';
 import { AdminSettingsPage } from './pages/AdminSettingsPage';
+import { CompanyDrivePage } from './pages/CompanyDrivePage';
 import { ClientSettingsPage } from './pages/ClientSettingsPage';
 import { ForcePasswordChangePage } from './pages/ForcePasswordChangePage';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
@@ -262,6 +263,8 @@ function MainApp() {
             )
           ) : currentPath === '/sops' ? (
             <SOPPage />
+          ) : currentPath === '/drive' ? (
+            <CompanyDrivePage onNavigate={navigate} />
           ) : currentPath === '/performance' ? (
             user.role === 'CLIENT' || user.role === 'CLIENT_ADMIN' ? (
               <DashboardPage

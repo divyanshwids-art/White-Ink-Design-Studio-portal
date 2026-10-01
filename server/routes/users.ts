@@ -120,7 +120,13 @@ usersRouter.post(
       const cleanEmail = email.trim().toLowerCase();
       const existing = db.getUserByEmail(cleanEmail);
       if (existing) {
-        return res.status(409).json({ message: 'A user with this email address already exists.' });
+        return res.status(409).json({ message: 'An account with this email address already exists. Duplicate email is not allowed.' });
+      }
+
+      const cleanName = name.trim();
+      const existingByName = db.getUserByName(cleanName);
+      if (existingByName) {
+        return res.status(409).json({ message: 'An account with this name already exists. Duplicate name is not allowed.' });
       }
 
       // Use provided password or auto-generate strong password
@@ -240,13 +246,22 @@ usersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Re
     }
 
     const updates: any = {};
-    if (name) updates.name = name.trim();
+    if (name) {
+      const cleanName = name.trim();
+      if (cleanName.toLowerCase() !== targetUser.name.trim().toLowerCase()) {
+        const existingByName = db.getUsers().find((u) => u.name.trim().toLowerCase() === cleanName.toLowerCase() && u.id !== id);
+        if (existingByName) {
+          return res.status(409).json({ message: 'An account with this name already exists. Duplicate name is not allowed.' });
+        }
+      }
+      updates.name = cleanName;
+    }
     if (email) {
       const emailClean = email.trim().toLowerCase();
       if (emailClean !== targetUser.email.toLowerCase()) {
         const emailTaken = db.getUserByEmail(emailClean);
         if (emailTaken && emailTaken.id !== id) {
-          return res.status(409).json({ message: 'Email address already in use.' });
+          return res.status(409).json({ message: 'An account with this email address already exists. Duplicate email is not allowed.' });
         }
         updates.email = emailClean;
       }

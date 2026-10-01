@@ -17,6 +17,9 @@ import {
   Sparkles,
   FileText,
   UtensilsCrossed,
+  Moon,
+  PlusCircle,
+  StopCircle,
 } from 'lucide-react';
 
 interface ClockActionCardProps {
@@ -42,6 +45,17 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
   const [officeStartTime, setOfficeStartTime] = useState<string>('09:00');
   const [officeEndTime, setOfficeEndTime] = useState<string>('18:00');
   const [showEodModalAfterClockOut, setShowEodModalAfterClockOut] = useState(false);
+
+  // Overtime / Work From Home States
+  const [showStartOvertimeModal, setShowStartOvertimeModal] = useState(false);
+  const [showEndOvertimeModal, setShowEndOvertimeModal] = useState(false);
+  const [showManualOvertimeModal, setShowManualOvertimeModal] = useState(false);
+  const [overtimeReason, setOvertimeReason] = useState('');
+  const [overtimeTaskId, setOvertimeTaskId] = useState('');
+  const [manualDuration, setManualDuration] = useState('60');
+  const [manualReason, setManualReason] = useState('');
+  const [manualTaskId, setManualTaskId] = useState('');
+  const [userTasks, setUserTasks] = useState<{ id: string; title: string }[]>([]);
 
   // Update clock every second
   useEffect(() => {
@@ -76,13 +90,21 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
       }
     };
     loadScheduleInfo();
+
+    // Load user active tasks for overtime linking
+    api.getTasks({ status: 'IN_PROGRESS' })
+      .then((res: any) => {
+        if (Array.isArray(res)) {
+          setUserTasks(res.map((t: any) => ({ id: t.id, title: t.title })));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const isClockedIn = !!attendance?.clockIn;
   const isClockedOut = !!attendance?.clockOut;
   const activeBreak = attendance?.breaks?.find((b: Break) => !b.endTime) || null;
   const isOnBreak = !!activeBreak;
-  const isCurrentlyWorking = isClockedIn && !isClockedOut && !isOnBreak;
   const isLunchBreakActive = isOnBreak && activeBreak?.breakType === 'LUNCH';
 
   const currentHours = currentTime.getHours();
@@ -92,7 +114,15 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
   // Calculate live elapsed times
   const calculateLiveTimes = () => {
     if (!attendance || !attendance.clockIn) {
-      return { totalWorkingSec: 0, totalBreakSec: 0, effectiveWorkingSec: 0 };
+      return {
+        totalWorkingSec: 0,
+        totalBreakSec: 0,
+        effectiveWorkingSec: 0,
+        totalOvertimeSec: 0,
+        activeOvertimeSec: 0,
+        activeOvertime: null,
+        isOvertimeActive: false,
+      };
     }
 
     const nowMs = isClockedOut && attendance.clockOut
@@ -112,12 +142,48 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
       }
     }
 
-    const effectiveWorkingSec = Math.max(0, totalWorkingSec - totalBreakSec);
+    // Calculate overtime seconds
+    const activeOvertime = attendance.overtimeSessions?.find((s: any) => !s.endTime) || null;
+    const isOvertimeActive = !!activeOvertime;
 
-    return { totalWorkingSec, totalBreakSec, effectiveWorkingSec };
+    let totalOvertimeSec = 0;
+    let activeOvertimeSec = 0;
+    if (attendance.overtimeSessions && attendance.overtimeSessions.length > 0) {
+      for (const s of attendance.overtimeSessions) {
+        const startMs = new Date(s.startTime).getTime();
+        const endMs = s.endTime ? new Date(s.endTime).getTime() : currentTime.getTime();
+        const durSec = Math.max(0, Math.floor((endMs - startMs) / 1000));
+        totalOvertimeSec += durSec;
+        if (!s.endTime) {
+          activeOvertimeSec = durSec;
+        }
+      }
+    }
+
+    const effectiveWorkingSec = Math.max(0, totalWorkingSec - totalBreakSec + totalOvertimeSec);
+
+    return {
+      totalWorkingSec,
+      totalBreakSec,
+      effectiveWorkingSec,
+      totalOvertimeSec,
+      activeOvertimeSec,
+      activeOvertime,
+      isOvertimeActive,
+    };
   };
 
-  const { totalWorkingSec, totalBreakSec, effectiveWorkingSec } = calculateLiveTimes();
+  const {
+    totalWorkingSec,
+    totalBreakSec,
+    effectiveWorkingSec,
+    totalOvertimeSec,
+    activeOvertimeSec,
+    activeOvertime,
+    isOvertimeActive,
+  } = calculateLiveTimes();
+
+  const isCurrentlyWorking = (isClockedIn && !isClockedOut && !isOnBreak) || isOvertimeActive;
 
   const formatHMS = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -283,6 +349,79 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
     }
   };
 
+  const handleStartOvertime = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsProcessing(true);
+    setActionError(null);
+    try {
+      const selectedTask = userTasks.find((t) => t.id === overtimeTaskId);
+      await api.startOvertime({
+        reason: overtimeReason.trim() || 'Work from home / Late night work',
+        taskId: overtimeTaskId || undefined,
+        taskTitle: selectedTask?.title || undefined,
+      });
+      setShowStartOvertimeModal(false);
+      setOvertimeReason('');
+      setOvertimeTaskId('');
+      onAttendanceChange();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to start overtime session.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleEndOvertime = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsProcessing(true);
+    setActionError(null);
+    try {
+      await api.endOvertime({
+        reason: overtimeReason.trim() || undefined,
+      });
+      setShowEndOvertimeModal(false);
+      setOvertimeReason('');
+      onAttendanceChange();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to end overtime session.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleManualOvertime = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const duration = parseInt(manualDuration, 10);
+    if (!duration || duration <= 0) {
+      setActionError('Please enter a valid duration in minutes.');
+      return;
+    }
+    if (!manualReason.trim()) {
+      setActionError('Please enter a reason or task note for this overtime work.');
+      return;
+    }
+    setIsProcessing(true);
+    setActionError(null);
+    try {
+      const selectedTask = userTasks.find((t) => t.id === manualTaskId);
+      await api.logManualOvertime({
+        durationMinutes: duration,
+        reason: manualReason.trim(),
+        taskId: manualTaskId || undefined,
+        taskTitle: selectedTask?.title || undefined,
+      });
+      setShowManualOvertimeModal(false);
+      setManualDuration('60');
+      setManualReason('');
+      setManualTaskId('');
+      onAttendanceChange();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to log manual overtime.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
       {/* Top Banner / Time Info - Warm Ivory & Studio Gold Header */}
@@ -370,11 +509,11 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
       {/* Main Punch & Metrics Body */}
       <div className="p-6 space-y-6">
         {/* Working Duration Metrics Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className={`grid grid-cols-1 ${totalOvertimeSec > 0 || isOvertimeActive ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-4`}>
           {/* Total Working Time */}
           <div className="p-4 rounded-xl border border-[#EDE7DD] bg-[#FAF7F2] flex flex-col justify-between">
             <div className="flex items-center justify-between text-xs text-neutral-600 font-semibold mb-2">
-              <span>Total Working Duration</span>
+              <span>Standard Shift Time</span>
               <Timer className="h-4 w-4 text-[#BA954F]" />
             </div>
             <div>
@@ -404,10 +543,35 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
             </div>
           </div>
 
+          {/* Overtime Duration Card (if active or logged) */}
+          {(totalOvertimeSec > 0 || isOvertimeActive) && (
+            <div className={`p-4 rounded-xl border ${isOvertimeActive ? 'border-amber-300 bg-amber-50/80 shadow-xs' : 'border-[#EDE7DD] bg-[#FAF7F2]'} flex flex-col justify-between`}>
+              <div className="flex items-center justify-between text-xs text-neutral-600 font-semibold mb-2">
+                <span className="flex items-center gap-1.5 font-bold text-amber-900">
+                  <Moon className="h-3.5 w-3.5 text-amber-600" />
+                  Overtime / WFH
+                </span>
+                {isOvertimeActive && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900 animate-pulse">
+                    LIVE
+                  </span>
+                )}
+              </div>
+              <div>
+                <div className="text-2xl font-bold font-mono tracking-tight text-amber-950">
+                  {formatHMS(totalOvertimeSec)}
+                </div>
+                <div className="text-[11px] text-amber-800 font-medium mt-1">
+                  {attendance?.overtimeSessions?.length || 0} extra session(s)
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Effective Working Time */}
           <div className="p-4 rounded-xl border border-[#EDE7DD] bg-white flex flex-col justify-between shadow-xs">
             <div className="flex items-center justify-between text-xs text-neutral-600 font-semibold mb-2">
-              <span>Effective Working Duration</span>
+              <span>Total Effective Duration</span>
               <Hourglass className="h-4 w-4 text-[#BA954F]" />
             </div>
             <div>
@@ -415,7 +579,7 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
                 {isClockedIn ? formatHMS(effectiveWorkingSec) : '00:00:00'}
               </div>
               <div className="text-[11px] text-neutral-500 font-medium mt-1">
-                Total duration minus break time
+                Shift + Overtime minus break
               </div>
             </div>
           </div>
@@ -443,48 +607,169 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
               </button>
             </div>
           ) : isClockedOut ? (
-            <div className="bg-[#FAF7F2] border border-[#EDE7DD] rounded-2xl p-6 sm:p-8 text-center space-y-2">
-              <div className="inline-flex p-3 bg-white text-[#2D6A4F] border border-[#D1E7D8] rounded-full mb-1 shadow-xs">
-                <CheckCircle2 className="h-6 w-6" />
+            isOvertimeActive ? (
+              /* LIVE OVERTIME SESSION IN PROGRESS */
+              <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] border border-slate-700 rounded-2xl p-6 sm:p-8 text-center text-white space-y-5 shadow-lg">
+                <div className="inline-flex p-3 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full shadow-inner animate-pulse">
+                  <Moon className="h-7 w-7" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-300 text-xs font-semibold mb-3">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                    Overtime / Work From Home Session Active
+                  </div>
+                  <h3 className="font-serif text-3xl font-bold text-white tracking-wide font-mono">
+                    {formatHMS(activeOvertimeSec)}
+                  </h3>
+                  <div className="text-xs text-slate-300 mt-2 space-y-0.5 max-w-md mx-auto">
+                    <p>Started at <span className="font-semibold text-white">{formatShortTime(activeOvertime?.startTime)}</span></p>
+                    {activeOvertime?.taskTitle && (
+                      <p className="text-amber-300 font-medium">
+                        Task: {activeOvertime.taskTitle}
+                      </p>
+                    )}
+                    {activeOvertime?.reason && (
+                      <p className="text-slate-400 italic">
+                        "{activeOvertime.reason}"
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOvertimeReason(activeOvertime?.reason || '');
+                      setShowEndOvertimeModal(true);
+                    }}
+                    disabled={isProcessing}
+                    className="px-6 py-3 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-xl transition-all inline-flex items-center gap-2 cursor-pointer shadow-md"
+                  >
+                    <StopCircle className="h-4 w-4" />
+                    <span>{isProcessing ? 'Ending Session...' : 'End Overtime Session'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowEodModalAfterClockOut(true)}
+                    className="px-4 py-3 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all inline-flex items-center gap-2 cursor-pointer"
+                  >
+                    <FileText className="h-4 w-4" />
+                    EOD Report
+                  </button>
+                </div>
               </div>
-              <h3 className="font-serif text-lg font-bold text-neutral-900">
-                You have completed your shift for today!
-              </h3>
-              <p className="text-xs text-neutral-600 leading-relaxed max-w-md mx-auto">
-                Your attendance record for today has been stored. You logged{' '}
-                <strong className="font-bold text-neutral-900">
-                  {Math.floor(effectiveWorkingSec / 3600)}h {Math.floor((effectiveWorkingSec % 3600) / 60)}m
-                </strong>{' '}
-                of effective working time with status{' '}
-                <strong className="font-bold text-neutral-900">{attendance.status}</strong>.
-              </p>
-              {(attendance.clockInReason || attendance.earlyClockOutReason || attendance.clockOutReason) && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 text-left max-w-md mx-auto space-y-1">
-                  {attendance.clockInReason && (
-                    <div>
-                      <span className="font-semibold text-amber-800">Clock-In Note: </span>
-                      <span className="italic">{attendance.clockInReason}</span>
-                    </div>
-                  )}
-                  {(attendance.earlyClockOutReason || attendance.clockOutReason) && (
-                    <div>
-                      <span className="font-semibold text-amber-800">Clock-Out Reason: </span>
-                      <span className="italic">{attendance.earlyClockOutReason || attendance.clockOutReason}</span>
+            ) : (
+              /* SHIFT COMPLETE + OVERTIME ACTION CENTER */
+              <div className="bg-[#FAF7F2] border border-[#EDE7DD] rounded-2xl p-6 sm:p-8 space-y-5">
+                <div className="text-center space-y-2">
+                  <div className="inline-flex p-3 bg-white text-[#2D6A4F] border border-[#D1E7D8] rounded-full mb-1 shadow-xs">
+                    <CheckCircle2 className="h-6 w-6" />
+                  </div>
+                  <h3 className="font-serif text-lg font-bold text-neutral-900">
+                    You have completed your shift for today!
+                  </h3>
+                  <p className="text-xs text-neutral-600 leading-relaxed max-w-md mx-auto">
+                    Your standard office shift is closed. Total effective time logged today:{' '}
+                    <strong className="font-bold text-neutral-900">
+                      {Math.floor(effectiveWorkingSec / 3600)}h {Math.floor((effectiveWorkingSec % 3600) / 60)}m
+                    </strong>
+                    {totalOvertimeSec > 0 && (
+                      <span className="text-amber-800 font-semibold"> (includes {Math.floor(totalOvertimeSec / 60)}m overtime)</span>
+                    )}
+                    .
+                  </p>
+                  {(attendance.clockInReason || attendance.earlyClockOutReason || attendance.clockOutReason) && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 text-left max-w-md mx-auto space-y-1">
+                      {attendance.clockInReason && (
+                        <div>
+                          <span className="font-semibold text-amber-800">Clock-In Note: </span>
+                          <span className="italic">{attendance.clockInReason}</span>
+                        </div>
+                      )}
+                      {(attendance.earlyClockOutReason || attendance.clockOutReason) && (
+                        <div>
+                          <span className="font-semibold text-amber-800">Clock-Out Reason: </span>
+                          <span className="italic">{attendance.earlyClockOutReason || attendance.clockOutReason}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEodModalAfterClockOut(true)}
-                  className="px-4 py-2 text-xs font-bold text-[#BA954F] hover:text-[#A17B2F] bg-white hover:bg-[#FAF4EC] border border-[#EDE3D4] rounded-xl transition-all inline-flex items-center gap-2 cursor-pointer shadow-2xs"
-                >
-                  <FileText className="h-4 w-4" />
-                  View / Edit Today's EOD Report
-                </button>
+
+                {/* Overtime / Remote Work Box */}
+                <div className="p-4 bg-white border border-[#EDE7DD] rounded-xl shadow-2xs max-w-lg mx-auto space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-neutral-900">
+                      <Moon className="h-4 w-4 text-[#BA954F]" />
+                      <span>Late Night / Work From Home?</span>
+                    </div>
+                    <span className="text-[11px] text-neutral-500 font-medium">Track your extra hours</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-600 leading-normal">
+                    Agar aap ghar se extra kaam shuru kar rahe hain, to live overtime timer start karein ya completed hours log karein:
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowStartOvertimeModal(true)}
+                      className="btn-gold-primary px-4 py-2.5 text-xs font-semibold rounded-xl inline-flex items-center gap-2 cursor-pointer shadow-xs flex-1 justify-center"
+                    >
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <span>Start Overtime Timer</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowManualOvertimeModal(true)}
+                      className="btn-gold-secondary px-4 py-2.5 text-xs font-semibold rounded-xl inline-flex items-center gap-2 cursor-pointer flex-1 justify-center"
+                    >
+                      <PlusCircle className="h-3.5 w-3.5" />
+                      <span>Log Past Hours</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Display Today's Overtime Sessions if any */}
+                {attendance.overtimeSessions && attendance.overtimeSessions.length > 0 && (
+                  <div className="max-w-lg mx-auto bg-amber-50/60 border border-amber-200/80 rounded-xl p-3.5 space-y-2 text-left">
+                    <div className="flex items-center justify-between text-xs font-bold text-amber-900">
+                      <span className="flex items-center gap-1.5">
+                        <Moon className="h-3.5 w-3.5 text-amber-600" />
+                        Today's Overtime Sessions ({attendance.overtimeSessions.length})
+                      </span>
+                      <span className="text-amber-800 font-mono">
+                        +{Math.floor(totalOvertimeSec / 60)} mins
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {attendance.overtimeSessions.map((s, idx) => (
+                        <div key={s.id || idx} className="text-[11px] bg-white p-2.5 rounded-lg border border-amber-100 flex items-center justify-between text-neutral-700">
+                          <div>
+                            <span className="font-semibold text-neutral-900">{formatShortTime(s.startTime)} - {s.endTime ? formatShortTime(s.endTime) : 'Running'}</span>
+                            {s.taskTitle && <span className="ml-2 text-amber-700 font-medium">({s.taskTitle})</span>}
+                            {s.reason && <p className="text-neutral-500 italic mt-0.5">{s.reason}</p>}
+                          </div>
+                          <span className="font-bold font-mono text-amber-800 shrink-0 ml-2">
+                            {s.durationMinutes || Math.floor((new Date(s.endTime || currentTime).getTime() - new Date(s.startTime).getTime()) / 60000)}m
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowEodModalAfterClockOut(true)}
+                    className="px-4 py-2 text-xs font-bold text-[#BA954F] hover:text-[#A17B2F] bg-white hover:bg-[#FAF4EC] border border-[#EDE3D4] rounded-xl transition-all inline-flex items-center gap-2 cursor-pointer shadow-2xs"
+                  >
+                    <FileText className="h-4 w-4" />
+                    View / Edit Today's EOD Report
+                  </button>
+                </div>
               </div>
-            </div>
+            )
           ) : isOnBreak ? (
             <div className="bg-[#FAF7F2] border border-[#EDE7DD] rounded-2xl p-6 sm:p-8 text-center space-y-4">
               <div>
@@ -806,6 +1091,241 @@ export const ClockActionCard: React.FC<ClockActionCardProps> = ({
                 className="px-4 py-2 text-xs font-semibold text-white bg-[#9E2A2B] hover:bg-[#831F20] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors cursor-pointer shadow-xs"
               >
                 {isProcessing ? 'Processing...' : 'Confirm Clock Out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* START OVERTIME MODAL */}
+      {showStartOvertimeModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-2xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl">
+                <Moon className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-serif text-base font-bold text-neutral-900">
+                  Start Overtime / WFH Session
+                </h3>
+                <p className="text-xs text-neutral-500">
+                  Track extra evening or late night work from home
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  What are you working on? <span className="text-neutral-400 font-normal">(Optional note)</span>
+                </label>
+                <input
+                  type="text"
+                  value={overtimeReason}
+                  onChange={(e) => setOvertimeReason(e.target.value)}
+                  placeholder="e.g., Client revision, urgent 3D elevation renders..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F]"
+                />
+              </div>
+
+              {userTasks.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                    Link with Active Task <span className="text-neutral-400 font-normal">(Optional)</span>
+                  </label>
+                  <select
+                    value={overtimeTaskId}
+                    onChange={(e) => setOvertimeTaskId(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-white text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F]"
+                  >
+                    <option value="">-- No specific task (General Overtime) --</option>
+                    {userTasks.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#EDE7DD]">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowStartOvertimeModal(false);
+                  setOvertimeReason('');
+                  setOvertimeTaskId('');
+                }}
+                disabled={isProcessing}
+                className="btn-gold-secondary px-4 py-2 text-xs font-semibold rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleStartOvertime()}
+                disabled={isProcessing}
+                className="btn-gold-primary px-5 py-2 text-xs font-semibold rounded-xl inline-flex items-center gap-2 cursor-pointer shadow-xs"
+              >
+                <Play className="h-3.5 w-3.5 fill-current" />
+                <span>{isProcessing ? 'Starting...' : 'Start Session'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* END OVERTIME MODAL */}
+      {showEndOvertimeModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-2xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl">
+                <StopCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-serif text-base font-bold text-neutral-900">
+                  End Overtime Session
+                </h3>
+                <p className="text-xs text-neutral-500">
+                  Session duration: {formatHMS(activeOvertimeSec)}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                Work Summary / Accomplished <span className="text-neutral-400 font-normal">(Optional)</span>
+              </label>
+              <textarea
+                rows={2}
+                value={overtimeReason}
+                onChange={(e) => setOvertimeReason(e.target.value)}
+                placeholder="e.g., Completed all pending floor plan revisions..."
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F] resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#EDE7DD]">
+              <button
+                type="button"
+                onClick={() => setShowEndOvertimeModal(false)}
+                disabled={isProcessing}
+                className="btn-gold-secondary px-4 py-2 text-xs font-semibold rounded-xl"
+              >
+                Keep Working
+              </button>
+              <button
+                type="button"
+                onClick={() => handleEndOvertime()}
+                disabled={isProcessing}
+                className="px-5 py-2 text-xs font-semibold text-white bg-amber-700 hover:bg-amber-800 rounded-xl inline-flex items-center gap-2 cursor-pointer shadow-xs transition-colors"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>{isProcessing ? 'Saving...' : 'Finish Overtime'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LOG PAST / MANUAL OVERTIME MODAL */}
+      {showManualOvertimeModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-[#EDE7DD] shadow-2xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl">
+                <PlusCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-serif text-base font-bold text-neutral-900">
+                  Log Past Overtime Hours
+                </h3>
+                <p className="text-xs text-neutral-500">
+                  Did you work offline or forget to start the live timer?
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  Duration (in Minutes) <span className="text-[#9E2A2B]">*</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="5"
+                    step="5"
+                    value={manualDuration}
+                    onChange={(e) => setManualDuration(e.target.value)}
+                    placeholder="e.g. 60 or 90"
+                    className="w-32 px-3 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-white text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F]"
+                  />
+                  <span className="text-xs text-neutral-500">
+                    minutes ({Math.floor((Number(manualDuration) || 0) / 60)}h {(Number(manualDuration) || 0) % 60}m)
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                  Reason / Work Description <span className="text-[#9E2A2B]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={manualReason}
+                  onChange={(e) => setManualReason(e.target.value)}
+                  placeholder="e.g., Client requested urgent revisions at 11 PM"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F]"
+                />
+              </div>
+
+              {userTasks.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                    Related Task <span className="text-neutral-400 font-normal">(Optional)</span>
+                  </label>
+                  <select
+                    value={manualTaskId}
+                    onChange={(e) => setManualTaskId(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#EDE7DD] bg-white text-neutral-900 focus:outline-none focus:ring-1 focus:ring-[#BA954F] focus:border-[#BA954F]"
+                  >
+                    <option value="">-- No specific task --</option>
+                    {userTasks.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#EDE7DD]">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowManualOvertimeModal(false);
+                  setManualReason('');
+                  setManualTaskId('');
+                }}
+                disabled={isProcessing}
+                className="btn-gold-secondary px-4 py-2 text-xs font-semibold rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleManualOvertime()}
+                disabled={isProcessing || !manualReason.trim() || !Number(manualDuration)}
+                className="btn-gold-primary px-5 py-2 text-xs font-semibold rounded-xl inline-flex items-center gap-2 cursor-pointer shadow-xs"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>{isProcessing ? 'Logging...' : 'Save Overtime'}</span>
               </button>
             </div>
           </div>

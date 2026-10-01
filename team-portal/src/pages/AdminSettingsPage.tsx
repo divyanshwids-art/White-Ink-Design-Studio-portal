@@ -49,6 +49,7 @@ export const AdminSettingsPage: React.FC = () => {
     maxBreakMinutes: 60,
     defaultLeaveAllowance: 18,
     meetingLink: '',
+    companyDriveUrl: '',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
@@ -152,6 +153,8 @@ export const AdminSettingsPage: React.FC = () => {
     }
   };
 
+  const [recreatingDrive, setRecreatingDrive] = useState(false);
+
   const handleDisconnectGoogle = async () => {
     if (!window.confirm('Disconnect the portal Google account? Google services (Drive, Calendar, Sheets, Gmail) will fall back to local offline modes.')) return;
     try {
@@ -160,6 +163,19 @@ export const AdminSettingsPage: React.FC = () => {
       loadGoogleStatus();
     } catch (err: any) {
       setGoogleFeedback({ type: 'error', message: err.message || 'Failed to disconnect Google' });
+    }
+  };
+
+  const handleRecreateDriveFolder = async () => {
+    try {
+      setRecreatingDrive(true);
+      const res = await api.recreateGoogleDriveFolder();
+      setGoogleFeedback({ type: 'success', message: res.message || 'Drive root folder recreated and linked successfully!' });
+      loadGoogleStatus();
+    } catch (err: any) {
+      setGoogleFeedback({ type: 'error', message: err.message || 'Failed to recreate Drive folder' });
+    } finally {
+      setRecreatingDrive(false);
     }
   };
 
@@ -260,6 +276,7 @@ export const AdminSettingsPage: React.FC = () => {
         maxBreakMinutes: Number(settings.maxBreakMinutes),
         defaultLeaveAllowance: Number(settings.defaultLeaveAllowance),
         meetingLink: settings.meetingLink || null,
+        companyDriveUrl: settings.companyDriveUrl || null,
       });
 
       setSettings(res.settings);
@@ -501,6 +518,20 @@ export const AdminSettingsPage: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Company Google Drive Link
+                  <span className="ml-2 text-[10px] font-bold text-black/50 normal-case tracking-normal">Central Drive folder URL accessible by all company team members</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  value={settings.companyDriveUrl || ''}
+                  onChange={(e) => setSettings({ ...settings, companyDriveUrl: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-gold-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:outline-hidden bg-white text-black font-medium"
+                />
+              </div>
+
               <div className="pt-3 border-t border-gold-200 flex justify-end">
                 <button
                   type="submit"
@@ -642,16 +673,28 @@ export const AdminSettingsPage: React.FC = () => {
                   </div>
 
                   {/* Drive Root Status */}
-                  <div className="text-xs border border-gold-200 rounded-lg p-3 bg-white">
-                    <div className="font-bold text-black flex items-center gap-1.5">
-                      <Folder className="h-4 w-4 text-gold-600" />
-                      Google Drive Root Folder
+                  <div className="text-xs border border-gold-200 rounded-lg p-3 bg-white flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-bold text-black flex items-center gap-1.5">
+                        <Folder className="h-4 w-4 text-gold-600" />
+                        Google Drive Root Folder
+                      </div>
+                      <p className="text-[11px] text-black/60 font-semibold mt-0.5">
+                        {googleStatus.driveRootFolderId
+                          ? `Configured Folder ID: ${googleStatus.driveRootFolderId}`
+                          : 'Auto-creates "White Ink Portal" root folder on next project/file action.'}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-black/60 font-semibold mt-0.5">
-                      {googleStatus.driveRootFolderId
-                        ? `Configured Folder ID: ${googleStatus.driveRootFolderId}`
-                        : 'Auto-creates "White Ink Portal" root folder on next project/file action.'}
-                    </p>
+                    <button
+                      type="button"
+                      onClick={handleRecreateDriveFolder}
+                      disabled={recreatingDrive}
+                      title="Recreate or fix root folder if deleted in Google Drive"
+                      className="px-2.5 py-1.5 bg-gold-50 hover:bg-gold-100 text-gold-800 border border-gold-300 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${recreatingDrive ? 'animate-spin' : ''}`} />
+                      {recreatingDrive ? 'Recreating...' : 'Re-create / Fix Folder'}
+                    </button>
                   </div>
 
                   {/* Sheets Attendance Sync Settings */}

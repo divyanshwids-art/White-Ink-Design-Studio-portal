@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db.ts';
 import { requireAuth, requireRoles, AuthenticatedRequest } from '../auth.ts';
+import { ensureRootPortalFolder } from '../services/google/drive.ts';
 
 export const settingsRouter = Router();
 
@@ -28,6 +29,7 @@ settingsRouter.put('/', requireRoles(['SUPER_ADMIN', 'ADMIN']), (req: Authentica
       taskRules,
       reasonsList,
       meetingLink,
+      companyDriveUrl,
     } = req.body;
 
     const settings = db.updateSettings(
@@ -40,6 +42,7 @@ settingsRouter.put('/', requireRoles(['SUPER_ADMIN', 'ADMIN']), (req: Authentica
         ...(taskRules !== undefined && { taskRules: typeof taskRules === 'string' ? taskRules : JSON.stringify(taskRules) }),
         ...(reasonsList !== undefined && { reasonsList: typeof reasonsList === 'string' ? reasonsList : JSON.stringify(reasonsList) }),
         ...(meetingLink !== undefined && { meetingLink: meetingLink || null }),
+        ...(companyDriveUrl !== undefined && { companyDriveUrl: companyDriveUrl || null }),
       },
       req.user!.id
     );
@@ -97,3 +100,29 @@ settingsRouter.delete('/overrides/:userId', requireRoles(['SUPER_ADMIN', 'ADMIN'
     return res.status(400).json({ message: err.message || 'Failed to delete override.' });
   }
 });
+
+// GET /company-drive - Quick access to company drive URL for all company staff & members
+settingsRouter.get('/company-drive', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const google = db.getGoogleIntegration();
+    if (google?.isConnected) {
+      // Auto-heal if folder was deleted or missing in Google Drive
+      await ensureRootPortalFolder().catch((err) => {
+        console.warn('Auto-heal root folder check failed:', err?.message || err);
+      });
+    }
+
+    const driveUrl = db.getCompanyDriveUrl();
+    const settings = db.getSettings();
+    const updatedGoogle = db.getGoogleIntegration();
+    return res.status(200).json({
+      driveUrl,
+      configuredUrl: settings?.companyDriveUrl || null,
+      driveRootFolderId: updatedGoogle?.driveRootFolderId || null,
+      isGoogleConnected: Boolean(updatedGoogle?.isConnected),
+    });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message || 'Failed to fetch company drive' });
+  }
+});
+

@@ -80,6 +80,69 @@ attendanceRouter.post('/break/end', (req: AuthenticatedRequest, res: Response) =
   }
 });
 
+// POST /overtime/start - Start an overtime / work from home session
+attendanceRouter.post('/overtime/start', (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { reason, taskId, taskTitle, timestamp } = req.body || {};
+    const attendance = db.startOvertime(userId, { reason, taskId, taskTitle, timestamp });
+    // Background Google Sheets sync (non-blocking)
+    syncAttendanceToSheet(attendance.id).catch((err) => console.warn('[SHEETS] Sync on overtime-start skipped/failed:', err?.message));
+    return res.status(200).json({
+      message: 'Overtime session started.',
+      attendance,
+    });
+  } catch (err: any) {
+    return res.status(400).json({ message: err.message || 'Failed to start overtime session.' });
+  }
+});
+
+// POST /overtime/end - End active overtime / work from home session
+attendanceRouter.post('/overtime/end', (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { reason, timestamp } = req.body || {};
+    const attendance = db.endOvertime(userId, { reason, timestamp });
+    // Background Google Sheets sync (non-blocking)
+    syncAttendanceToSheet(attendance.id).catch((err) => console.warn('[SHEETS] Sync on overtime-end skipped/failed:', err?.message));
+    return res.status(200).json({
+      message: 'Overtime session ended successfully.',
+      attendance,
+    });
+  } catch (err: any) {
+    return res.status(400).json({ message: err.message || 'Failed to end overtime session.' });
+  }
+});
+
+// POST /overtime/manual - Log manual / past overtime hours
+attendanceRouter.post('/overtime/manual', (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { durationMinutes, reason, taskId, taskTitle, date } = req.body || {};
+    if (!durationMinutes || isNaN(Number(durationMinutes)) || Number(durationMinutes) <= 0) {
+      return res.status(400).json({ message: 'durationMinutes is required and must be greater than 0.' });
+    }
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ message: 'A brief reason / task note is required for overtime tracking.' });
+    }
+    const attendance = db.logManualOvertime(userId, {
+      durationMinutes: Number(durationMinutes),
+      reason,
+      taskId,
+      taskTitle,
+      date,
+    });
+    // Background Google Sheets sync (non-blocking)
+    syncAttendanceToSheet(attendance.id).catch((err) => console.warn('[SHEETS] Sync on manual-overtime skipped/failed:', err?.message));
+    return res.status(201).json({
+      message: 'Overtime hours logged successfully.',
+      attendance,
+    });
+  } catch (err: any) {
+    return res.status(400).json({ message: err.message || 'Failed to log overtime hours.' });
+  }
+});
+
 // GET /today - Today's attendance status and active state for current user
 attendanceRouter.get('/today', (req: AuthenticatedRequest, res: Response) => {
   try {

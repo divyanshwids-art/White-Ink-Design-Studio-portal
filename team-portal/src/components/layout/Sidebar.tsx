@@ -20,6 +20,7 @@ import {
   Settings,
   KeyRound,
   ListTodo,
+  HardDrive,
 } from 'lucide-react';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -127,6 +128,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       name: isClient ? 'Brand Book' : 'SOP Documentation',
       path: '/sops',
       icon: BookOpen,
+      show: true,
+      category: 'GENERAL',
+    },
+    {
+      name: 'Company Drive',
+      path: '/drive',
+      icon: HardDrive,
       show: true,
       category: 'GENERAL',
     },

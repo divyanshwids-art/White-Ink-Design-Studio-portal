@@ -95,24 +95,33 @@ clientsRouter.post(
       }
 
       const cleanEmail = email.trim().toLowerCase();
+      const cleanName = name.trim();
 
-      // Check if client already exists
+      // Check if client or user already exists with this email
       const existingClient = db.getClientByEmail(cleanEmail);
       if (existingClient) {
-        return res.status(409).json({ message: 'A client organization with this email already exists.' });
+        return res.status(409).json({ message: 'An account with this email address already exists. Duplicate email is not allowed.' });
       }
-
-      // Check if user already exists
       const existingUser = db.getUserByEmail(cleanEmail);
       if (existingUser) {
-        return res.status(409).json({ message: 'A user account with this email address already exists.' });
+        return res.status(409).json({ message: 'An account with this email address already exists. Duplicate email is not allowed.' });
+      }
+
+      // Check if client or user already exists with this name
+      const existingClientByName = db.getClientByName(cleanName);
+      if (existingClientByName) {
+        return res.status(409).json({ message: 'An account with this name already exists. Duplicate name is not allowed.' });
+      }
+      const existingUserByName = db.getUserByName(cleanName);
+      if (existingUserByName) {
+        return res.status(409).json({ message: 'An account with this name already exists. Duplicate name is not allowed.' });
       }
 
       // 1. Create the Client record
       const clientId = `cli_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       const newClient = db.createClient({
         id: clientId,
-        name: name.trim(),
+        name: cleanName,
         company: company.trim(),
         email: cleanEmail,
         phone: phone ? phone.trim() : null,
@@ -127,12 +136,12 @@ clientsRouter.post(
       const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       const newUser = db.createUser({
         id: userId,
-        name: name.trim(),
+        name: cleanName,
         email: cleanEmail,
         passwordHash,
         role: 'CLIENT_ADMIN',
         clientId: newClient.id,
-        profileImage: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name.trim())}`,
+        profileImage: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
         mustChangePassword: false,
       });
 
@@ -166,16 +175,24 @@ clientsRouter.post('/', requireAuth, requireRoles(['SUPER_ADMIN']), (req: Authen
       return res.status(400).json({ message: 'Name, company, and email are required fields.' });
     }
 
-    const existing = db.getClientByEmail(email.trim());
-    if (existing) {
-      return res.status(409).json({ message: 'A client with this email already exists.' });
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
+    const existingEmail = db.getClientByEmail(cleanEmail) || db.getUserByEmail(cleanEmail);
+    if (existingEmail) {
+      return res.status(409).json({ message: 'An account with this email address already exists. Duplicate email is not allowed.' });
+    }
+
+    const existingName = db.getClientByName(cleanName) || db.getUserByName(cleanName);
+    if (existingName) {
+      return res.status(409).json({ message: 'An account with this name already exists. Duplicate name is not allowed.' });
     }
 
     const newClient = db.createClient({
       id: `cli_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      name: name.trim(),
+      name: cleanName,
       company: company.trim(),
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       phone: phone ? phone.trim() : null,
       address: address ? address.trim() : null,
     });
@@ -208,16 +225,26 @@ clientsRouter.patch('/:id', requireAuth, (req: AuthenticatedRequest, res: Respon
     }
 
     const updates: any = {};
-    if (name) updates.name = name.trim();
+    if (name) {
+      const cleanName = name.trim();
+      if (cleanName.toLowerCase() !== target.name.trim().toLowerCase()) {
+        const existingName = db.getClients().find((c) => c.name.trim().toLowerCase() === cleanName.toLowerCase() && c.id !== id)
+          || db.getUsers().find((u) => u.name.trim().toLowerCase() === cleanName.toLowerCase());
+        if (existingName) {
+          return res.status(409).json({ message: 'An account with this name already exists. Duplicate name is not allowed.' });
+        }
+      }
+      updates.name = cleanName;
+    }
     if (company) updates.company = company.trim();
     if (phone !== undefined) updates.phone = phone ? phone.trim() : null;
     if (address !== undefined) updates.address = address ? address.trim() : null;
     if (email) {
       const emailClean = email.trim().toLowerCase();
       if (emailClean !== target.email.toLowerCase()) {
-        const existing = db.getClientByEmail(emailClean);
+        const existing = db.getClientByEmail(emailClean) || db.getUserByEmail(emailClean);
         if (existing && existing.id !== id) {
-          return res.status(409).json({ message: 'Email address already in use by another client.' });
+          return res.status(409).json({ message: 'An account with this email address already exists. Duplicate email is not allowed.' });
         }
         updates.email = emailClean;
       }

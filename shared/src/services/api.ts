@@ -376,6 +376,22 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  createTasks: (tasks: Array<{
+    title: string;
+    description?: string;
+    projectId: string;
+    assignedToId?: string;
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    progress?: number;
+    dueDate?: string;
+    allocatedMinutes?: number | null;
+  }>) =>
+    request<{ message: string; tasks: Task[]; count: number }>('/tasks', {
+      method: 'POST',
+      body: JSON.stringify({ tasks }),
+    }),
+
   updateTask: (
     id: string,
     payload: Partial<{
@@ -537,6 +553,24 @@ export const api = {
     request<{ message: string; attendance: Attendance }>('/attendance/break/end', {
       method: 'POST',
       body: JSON.stringify(payload || {}),
+    }),
+
+  startOvertime: (payload?: { reason?: string; taskId?: string; taskTitle?: string; timestamp?: string }) =>
+    request<{ message: string; attendance: Attendance }>('/attendance/overtime/start', {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    }),
+
+  endOvertime: (payload?: { reason?: string; timestamp?: string }) =>
+    request<{ message: string; attendance: Attendance }>('/attendance/overtime/end', {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    }),
+
+  logManualOvertime: (payload: { durationMinutes: number; reason: string; taskId?: string; taskTitle?: string; date?: string }) =>
+    request<{ message: string; attendance: Attendance }>('/attendance/overtime/manual', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 
   // Task Time Logging
@@ -887,6 +921,11 @@ export const api = {
   // System Settings & Overrides
   getSettings: () => request<any>('/settings'),
 
+  getCompanyDrive: () =>
+    request<{ driveUrl: string; configuredUrl: string | null; driveRootFolderId: string | null; isGoogleConnected: boolean }>(
+      '/settings/company-drive'
+    ),
+
   updateSettings: (payload: any) =>
     request<{ message: string; settings: any }>('/settings', {
       method: 'PUT',
@@ -1120,6 +1159,12 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  recreateGoogleDriveFolder: () =>
+    request<{ success: boolean; driveRootFolderId: string; driveUrl: string; message: string }>(
+      '/google/recreate-folder',
+      { method: 'POST' }
+    ),
+
   syncGoogleAttendance: () =>
     request<{ success: boolean; syncedCount: number; failedCount: number; error?: string }>(
       '/google/sync-attendance',
@@ -1186,6 +1231,12 @@ export const api = {
     request<{ message: string; todo: PersonalTodo }>('/todos', {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+
+  createTodos: (todos: CreateTodoInput[]) =>
+    request<{ message: string; todos: PersonalTodo[]; count: number }>('/todos', {
+      method: 'POST',
+      body: JSON.stringify({ todos }),
     }),
 
   updateTodo: (id: string, payload: UpdateTodoInput) =>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../services/api';
 import { EodReport, User } from '../../types';
 import {
@@ -38,6 +39,25 @@ export const EodReportsViewerModal: React.FC<EodReportsViewerModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen) {
       loadTeamUsers();
       loadReports();
@@ -74,7 +94,7 @@ export const EodReportsViewerModal: React.FC<EodReportsViewerModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const formatHoursMins = (minutes: number) => {
     const h = Math.floor(minutes / 60);
@@ -83,9 +103,14 @@ export const EodReportsViewerModal: React.FC<EodReportsViewerModalProps> = ({
     return `${m}m`;
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-gold-fade-in">
-      <div className="relative w-full max-w-5xl bg-white rounded-3xl border border-[#EDE7DD] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+      {/* Full viewport backdrop blur */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-[6px] transition-opacity"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-5xl bg-white rounded-3xl border border-[#EDE7DD] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col my-auto z-10 animate-fade-in">
         
         {/* Top Header */}
         <div className="p-5 bg-[#FAF7F2] border-b border-[#EDE7DD] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
@@ -305,6 +330,7 @@ export const EodReportsViewerModal: React.FC<EodReportsViewerModalProps> = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

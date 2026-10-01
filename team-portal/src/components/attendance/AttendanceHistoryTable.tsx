@@ -12,6 +12,7 @@ import {
   User as UserIcon,
   Download,
   AlertCircle,
+  Moon,
 } from 'lucide-react';
 
 interface AttendanceHistoryTableProps {
@@ -346,8 +347,16 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                         {formatMinutes(record.totalBreakMinutes || record.liveBreakMinutes || 0)}
                       </td>
 
-                      <td className="py-3.5 px-4 font-bold text-neutral-900 whitespace-nowrap">
-                        {formatMinutes(record.effectiveWorkingMinutes || record.liveEffectiveMinutes || 0)}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="font-bold text-neutral-900">
+                          {formatMinutes(record.effectiveWorkingMinutes || record.liveEffectiveMinutes || 0)}
+                        </div>
+                        {record.totalOvertimeMinutes && record.totalOvertimeMinutes > 0 ? (
+                          <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 mt-0.5">
+                            <Moon className="h-3 w-3 text-amber-600" />
+                            <span>+{record.totalOvertimeMinutes}m OT</span>
+                          </div>
+                        ) : null}
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -360,7 +369,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                           onClick={() => toggleRow(record.id)}
                           className="btn-gold-secondary inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg"
                         >
-                          <span>{hasBreaks ? `${record.breaks.length} Break(s)` : 'View'}</span>
+                          <span>{hasBreaks ? `${record.breaks.length} Break(s)` : (record.overtimeSessions && record.overtimeSessions.length > 0) ? `${record.overtimeSessions.length} OT` : 'View'}</span>
                           {isExpanded ? (
                             <ChevronUp className="h-3.5 w-3.5" />
                           ) : (
@@ -440,6 +449,49 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                             ) : (
                               <div className="text-xs text-neutral-400 italic font-medium">
                                 No break sessions were logged during this shift.
+                              </div>
+                            )}
+
+                            {/* Overtime Sessions Section */}
+                            {record.overtimeSessions && record.overtimeSessions.length > 0 && (
+                              <div className="space-y-2 pt-2 border-t border-[#EDE7DD]">
+                                <div className="text-xs font-semibold text-amber-900 flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <Moon className="h-3.5 w-3.5 text-amber-600" />
+                                    <span>Overtime / WFH Sessions ({record.overtimeSessions.length})</span>
+                                  </div>
+                                  <span className="font-mono text-amber-800 font-bold">
+                                    Total OT: +{record.totalOvertimeMinutes || 0} mins
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                  {record.overtimeSessions.map((ot, idx) => (
+                                    <div
+                                      key={ot.id || idx}
+                                      className="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs flex flex-col justify-between"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-amber-950">Overtime #{idx + 1}</span>
+                                        <span className="font-bold font-mono text-amber-900">
+                                          {ot.endTime ? `${ot.durationMinutes}m` : 'Running'}
+                                        </span>
+                                      </div>
+                                      <div className="text-neutral-500 text-[11px] mt-0.5">
+                                        {formatShortTime(ot.startTime)} - {ot.endTime ? formatShortTime(ot.endTime) : 'Ongoing'}
+                                      </div>
+                                      {ot.taskTitle && (
+                                        <div className="text-[11px] font-medium text-amber-800 mt-1 truncate">
+                                          Task: {ot.taskTitle}
+                                        </div>
+                                      )}
+                                      {ot.reason && (
+                                        <div className="text-[10px] text-neutral-600 italic mt-0.5">
+                                          "{ot.reason}"
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </div>

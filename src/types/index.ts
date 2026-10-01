@@ -205,6 +205,7 @@ export interface Task {
   priority: TaskPriority;
   progress: number;
   dueDate?: string | null;
+  allocatedMinutes?: number | null;
   revisionRequest?: RevisionRequest | null;
   submissionDescription?: string | null;
   proofDetails?: string | null;
@@ -301,6 +302,21 @@ export interface Break {
   updatedAt: string;
 }
 
+export interface OvertimeSession {
+  id: string;
+  attendanceId: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // ISO
+  endTime?: string | null; // ISO
+  durationMinutes: number;
+  reason?: string | null;
+  taskId?: string | null;
+  taskTitle?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Attendance {
   id: string;
   userId: string;
@@ -314,6 +330,11 @@ export interface Attendance {
   totalWorkingMinutes: number;
   totalBreakMinutes: number;
   effectiveWorkingMinutes: number;
+  totalOvertimeMinutes?: number;
+  overtimeSessions?: OvertimeSession[];
+  activeOvertime?: OvertimeSession | null;
+  isOvertimeActive?: boolean;
+  liveOvertimeMinutes?: number;
   sheetsSyncedAt?: string | null;
   sheetsRowIndex?: number | null;
   createdAt: string;
@@ -506,6 +527,8 @@ export interface SystemSettings {
   defaultLeaveAllowance: number;
   taskRules?: string | null;
   reasonsList?: string | null;
+  meetingLink?: string | null;
+  companyDriveUrl?: string | null;
   updatedAt: string;
 }
 

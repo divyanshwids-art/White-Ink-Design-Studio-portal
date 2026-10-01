@@ -152,9 +152,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   if (isLoading && !stats) return <LoadingSpinner message="Loading workspace..." size="lg" />;
 
-  const firstName = user?.name ? user.name.split(' ')[0] : 'there';
+  const fullName = user?.name?.trim() || 'there';
   const namePrefix = isClient
-    ? (user?.name?.split(' ')[0]?.toLowerCase().endsWith('a') || user?.name?.split(' ')[0]?.toLowerCase().endsWith('i') ? 'Ms.' : 'Mr.')
+    ? (user?.name?.trim().toLowerCase().endsWith('a') || user?.name?.trim().toLowerCase().endsWith('i') ? 'Ms.' : 'Mr.')
     : '';
 
   return (
@@ -184,7 +184,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="bg-white px-5 pb-4 pt-10 rounded-b-2xl">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
-                <h1 className="text-lg font-bold text-[#1C1917]">{namePrefix} {firstName}</h1>
+                <h1 className="text-lg font-bold text-[#1C1917]">{namePrefix} {fullName}</h1>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
                   {user?.role?.replace(/_/g, ' ')}
                 </span>
@@ -214,7 +214,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-[#EDE7DD] shadow-xs">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1C1917]">Welcome back, {firstName}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1C1917]">Welcome back, {fullName}</h1>
               <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-[#FAF4EC] text-[#BA954F] border border-[#EAE0D0]">
                 {user?.role?.replace(/_/g, ' ')}
               </span>

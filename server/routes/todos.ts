@@ -51,6 +51,52 @@ todosRouter.get('/:id', (req: AuthenticatedRequest, res: Response) => {
 // POST /api/todos - Create a new personal todo
 todosRouter.post('/', (req: AuthenticatedRequest, res: Response) => {
   try {
+    const todoList = Array.isArray(req.body)
+      ? req.body
+      : Array.isArray(req.body.todos)
+      ? req.body.todos
+      : null;
+
+    if (todoList && todoList.length > 0) {
+      // Validate all items
+      for (let i = 0; i < todoList.length; i++) {
+        const item = todoList[i];
+        if (!item.title || typeof item.title !== 'string' || item.title.trim() === '') {
+          return res.status(400).json({ message: `Todo #${i + 1}: Title is required` });
+        }
+        if (item.assignedToId) {
+          const target = db.getUserById(item.assignedToId);
+          if (!target) {
+            return res.status(400).json({ message: `Todo #${i + 1}: Selected assignee user does not exist` });
+          }
+          if (target.role === 'CLIENT' || target.role === 'CLIENT_ADMIN') {
+            return res.status(400).json({
+              message: `Todo #${i + 1}: Personal todos cannot be assigned to clients or client administrators`,
+            });
+          }
+        }
+      }
+
+      const createdTodos: any[] = [];
+      for (const item of todoList) {
+        const todo = db.createTodo({
+          title: item.title.trim(),
+          description: item.description ? String(item.description).trim() : null,
+          dueDate: item.dueDate || null,
+          createdById: req.user!.id,
+          assignedToId: item.assignedToId || null,
+        });
+        createdTodos.push(todo);
+      }
+
+      return res.status(201).json({
+        message: `${createdTodos.length} todos created successfully`,
+        count: createdTodos.length,
+        todos: createdTodos,
+        todo: createdTodos[0],
+      });
+    }
+
     const { title, description, dueDate, assignedToId } = req.body;
 
     if (!title || typeof title !== 'string' || title.trim() === '') {

@@ -530,6 +530,115 @@ tasksRouter.get('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) 
 tasksRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   try {
     const currentUser = req.user!;
+    const isClient = currentUser.role === 'CLIENT' || currentUser.role === 'CLIENT_ADMIN';
+
+    // Check if bulk creation payload is provided
+    const taskList = Array.isArray(req.body)
+      ? req.body
+      : Array.isArray(req.body.tasks)
+      ? req.body.tasks
+      : null;
+
+    if (taskList && taskList.length > 0) {
+      // Validate all items
+      for (let i = 0; i < taskList.length; i++) {
+        const item = taskList[i];
+        if (!item.title || !String(item.title).trim() || !item.projectId) {
+          return res.status(400).json({
+            message: `Task #${i + 1}: Title and Project are required.`,
+          });
+        }
+        const proj = db.getProjectById(item.projectId);
+        if (!proj) {
+          return res.status(400).json({
+            message: `Task #${i + 1}: Referenced project does not exist.`,
+          });
+        }
+        if (isClient) {
+          if (currentUser.clientId && proj.clientId && proj.clientId !== currentUser.clientId) {
+            return res.status(403).json({
+              message: `Task #${i + 1}: Forbidden: You can only create tasks for your own projects.`,
+            });
+          }
+        } else if (currentUser.role === 'TEAM_MEMBER') {
+          const isProjectMember = db.getProjectMembers(item.projectId).some((pm) => pm.userId === currentUser.id);
+          if (!isProjectMember && proj.createdById !== currentUser.id) {
+            return res.status(403).json({
+              message: `Task #${i + 1}: Forbidden: You can only create tasks in projects you are assigned to.`,
+            });
+          }
+        }
+      }
+
+      const createdTasks: any[] = [];
+      for (const item of taskList) {
+        const parsedAllocated =
+          typeof item.allocatedMinutes === 'number'
+            ? item.allocatedMinutes
+            : item.allocatedMinutes
+            ? Number(item.allocatedMinutes)
+            : null;
+
+        const taskDescription = (item.description && String(item.description).trim())
+          ? String(item.description).trim()
+          : String(item.title).trim();
+
+        const newTask = db.createTask({
+          id: `tsk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          title: String(item.title).trim(),
+          description: taskDescription,
+          projectId: item.projectId,
+          assignedToId: isClient ? null : (item.assignedToId || null),
+          createdById: currentUser.id,
+          status: isClient ? 'TODO' : ((item.status as TaskStatus) || 'TODO'),
+          priority: (item.priority as TaskPriority) || 'MEDIUM',
+          progress: typeof item.progress === 'number' ? item.progress : 0,
+          dueDate: item.dueDate || null,
+          allocatedMinutes: parsedAllocated,
+        });
+
+        const project = db.getProjectById(item.projectId)!;
+        if (isClient) {
+          const targetUserIds = new Set<string>();
+          const members = db.getProjectMembers(item.projectId);
+          members.forEach((m) => targetUserIds.add(m.userId));
+          if (project.createdById) targetUserIds.add(project.createdById);
+          if (project.leadOwnerId) targetUserIds.add(project.leadOwnerId);
+          db.getUsers()
+            .filter((u) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN')
+            .forEach((u) => targetUserIds.add(u.id));
+
+          targetUserIds.forEach((userId) => {
+            if (userId !== currentUser.id) {
+              db.createNotification({
+                id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                userId,
+                title: 'New Client Task Request',
+                message: `${currentUser.name} requested a new task: "${newTask.title}" in project "${project.name}".`,
+                type: 'TASK_ASSIGNED',
+                linkUrl: `/projects/${project.id}`,
+                isRead: false,
+              });
+            }
+          });
+        }
+
+        const assigned = newTask.assignedToId ? db.getUserById(newTask.assignedToId) : null;
+        broadcastUpdate('tasks', 'create', newTask);
+        createdTasks.push({
+          ...newTask,
+          project: { id: project.id, name: project.name },
+          assignedTo: assigned ? sanitizeUser(assigned) : null,
+        });
+      }
+
+      return res.status(201).json({
+        message: `${createdTasks.length} tasks created successfully`,
+        count: createdTasks.length,
+        tasks: createdTasks,
+      });
+    }
+
     const { title, description, projectId, assignedToId, status, priority, progress, dueDate, allocatedMinutes } = req.body;
 
     if (!title || !title.trim() || !description || !description.trim() || !projectId) {
@@ -540,8 +649,6 @@ tasksRouter.post('/', requireAuth, (req: AuthenticatedRequest, res: Response) =>
     if (!project) {
       return res.status(400).json({ message: 'Referenced project does not exist.' });
     }
-
-    const isClient = currentUser.role === 'CLIENT' || currentUser.role === 'CLIENT_ADMIN';
 
     if (isClient) {
       // Check that the project belongs to the client if clientId is present

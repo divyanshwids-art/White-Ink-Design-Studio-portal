@@ -6,7 +6,7 @@ import {
   disconnectGoogle,
   getSafeGoogleStatus,
 } from '../services/google/auth.ts';
-import { getDriveFileStream, getDriveFileMetadata } from '../services/google/drive.ts';
+import { getDriveFileStream, getDriveFileMetadata, ensureRootPortalFolder } from '../services/google/drive.ts';
 import { syncAllAttendancesToSheets } from '../services/google/sheets.ts';
 import { sanitizeErrorMessage } from '../services/google/crypto.ts';
 import { db } from '../db.ts';
@@ -98,6 +98,29 @@ googleRouter.put('/settings', requireAuth, requireRoles(['SUPER_ADMIN']), (req: 
     return res.json({ message: 'Google settings updated.', settings: getSafeGoogleStatus() });
   } catch (err: any) {
     return res.status(400).json({ message: sanitizeErrorMessage(err) || 'Failed to update Google settings' });
+  }
+});
+
+/**
+ * POST /api/google/recreate-folder — Recreates or repairs the Google Drive root folder if deleted in Drive.
+ * Accessible only by Super Admin.
+ */
+googleRouter.post('/recreate-folder', requireAuth, requireRoles(['SUPER_ADMIN']), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // Clear out stale folder ID so ensureRootPortalFolder creates a fresh one
+    db.updateGoogleIntegration({ driveRootFolderId: null });
+    const result = await ensureRootPortalFolder();
+    if (!result.success) {
+      return res.status(500).json({ message: result.error || 'Failed to create root folder in Google Drive' });
+    }
+    return res.json({
+      success: true,
+      driveRootFolderId: result.rootFolderId,
+      driveUrl: `https://drive.google.com/drive/folders/${result.rootFolderId}`,
+      message: 'New White Ink Portal root folder created and linked successfully.',
+    });
+  } catch (err: any) {
+    return res.status(500).json({ message: sanitizeErrorMessage(err) || 'Failed to recreate Google Drive folder' });
   }
 });
 

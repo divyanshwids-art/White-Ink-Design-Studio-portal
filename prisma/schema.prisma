@@ -469,6 +469,7 @@ model SystemSettings {
   taskRules             String?  // JSON string for task completion rules
   reasonsList           String?  // JSON string array of standard late/leave reasons
   meetingLink           String?  // Configurable client meeting link
+  companyDriveUrl       String?  // Configurable company drive folder link
   updatedAt             DateTime @updatedAt
 
   @@map("system_settings")

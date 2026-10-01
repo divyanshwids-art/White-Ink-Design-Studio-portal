@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { ClientApproval, Project, ApprovalStatus, Task } from '../types';
@@ -62,6 +63,17 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
   const [taskActionLoading, setTaskActionLoading] = useState<string | null>(null);
   const [requestChangesTask, setRequestChangesTask] = useState<Task | null>(null);
   const [clientViewTask, setClientViewTask] = useState<Task | null>(null);
+
+  useEffect(() => {
+    if (isSubmitModalOpen || reviewModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isSubmitModalOpen, reviewModalOpen]);
 
   const loadData = async () => {
     try {
@@ -711,9 +723,14 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
       )}
 
       {/* Submit Deliverable Modal */}
-      {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#EDE7DD] space-y-4">
+      {isSubmitModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+          {/* Backdrop with rich blur */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-[6px] transition-opacity"
+            onClick={() => setIsSubmitModalOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#EDE7DD] space-y-4 my-auto z-10 animate-fade-in">
             <div className="flex items-center justify-between border-b border-[#EDE7DD] pb-3.5">
               <h2 className="text-base font-serif font-bold text-[#1C1917] flex items-center gap-2">
                 <FileCheck className="h-5 w-5 text-[#BA954F] stroke-[2]" />
@@ -818,13 +835,19 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Review / Decision Modal */}
-      {reviewModalOpen && reviewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#EDE7DD] space-y-4">
+      {reviewModalOpen && reviewItem && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+          {/* Backdrop with rich blur */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-[6px] transition-opacity"
+            onClick={() => setReviewModalOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#EDE7DD] space-y-4 my-auto z-10 animate-fade-in">
             <div className="flex items-center justify-between border-b border-[#EDE7DD] pb-3.5">
               <h2 className="text-base font-serif font-bold text-[#1C1917] flex items-center gap-2">
                 {reviewDecision === 'APPROVED' ? (
@@ -915,7 +938,8 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ onNavigate }) => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {requestChangesTask && (

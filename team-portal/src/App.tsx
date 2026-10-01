@@ -40,6 +40,7 @@ import { PerformancePage } from './pages/PerformancePage';
 import { ActivitiesPage } from './pages/ActivitiesPage';
 import { ChatPage } from './pages/ChatPage';
 import { AdminSettingsPage } from './pages/AdminSettingsPage';
+import { CompanyDrivePage } from './pages/CompanyDrivePage';
 import { ForcePasswordChangePage } from './pages/ForcePasswordChangePage';
 import { ProjectModal } from './components/projects/ProjectModal';
 import { ClientProjectRequestModal } from './components/projects/ClientProjectRequestModal';
@@ -304,6 +305,8 @@ function TeamPortalMain() {
             <LeavesPage />
           ) : currentPath === '/sops' ? (
             <SOPPage />
+          ) : currentPath === '/drive' ? (
+            <CompanyDrivePage onNavigate={navigate} />
           ) : currentPath === '/performance' ? (
             <PerformancePage />
           ) : currentPath === '/activities' ? (
