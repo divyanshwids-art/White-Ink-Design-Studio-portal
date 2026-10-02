@@ -51,14 +51,14 @@ export const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
 
   const canEdit = (target: User) => {
     if (currentUser?.id === target.id) return true;
-    if (currentUser?.role === 'SUPER_ADMIN') return target.role === 'ADMIN' || target.role === 'CLIENT_ADMIN';
+    if (currentUser?.role === 'SUPER_ADMIN') return true;
     if (currentUser?.role === 'ADMIN') return target.role === 'TEAM_MEMBER';
     return false;
   };
 
   const canDelete = (target: User) => {
     if (currentUser?.id === target.id) return false;
-    if (currentUser?.role === 'SUPER_ADMIN') return target.role === 'ADMIN' || target.role === 'CLIENT_ADMIN';
+    if (currentUser?.role === 'SUPER_ADMIN') return true;
     if (currentUser?.role === 'ADMIN') return target.role === 'TEAM_MEMBER';
     return false;
   };
@@ -103,16 +103,17 @@ export const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
           </p>
         </div>
 
-        {currentUser?.role === 'SUPER_ADMIN' ? (
-          <button
-            type="button"
-            onClick={() => onNavigate && onNavigate('/access-requests')}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-black bg-gold-200 hover:bg-gold-300 border border-gold-400 shadow-xs transition-colors shrink-0 cursor-pointer"
-          >
-            <UserCheck className="h-4 w-4" />
-            Review Access Requests
-          </button>
-        ) : (
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {currentUser?.role === 'SUPER_ADMIN' && onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('/access-requests')}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-black bg-gold-200 hover:bg-gold-300 border border-gold-400 shadow-xs transition-colors shrink-0 cursor-pointer"
+            >
+              <UserCheck className="h-4 w-4" />
+              Access Requests
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -124,29 +125,8 @@ export const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
             <Plus className="h-4 w-4" />
             Add User
           </button>
-        )}
-      </div>
-
-      {/* Super Admin Notice */}
-      {currentUser?.role === 'SUPER_ADMIN' && (
-        <div className="p-3.5 bg-gold-100/70 border border-gold-300 rounded-xl flex items-center justify-between gap-3 text-xs text-black font-medium">
-          <div className="flex items-center gap-2.5">
-            <UserCheck className="h-4 w-4 text-gold-800 shrink-0" />
-            <span>
-              Admins must be provisioned through the <strong>Access Requests & Approval</strong> workflow. Client accounts are created directly from the Clients page.
-            </span>
-          </div>
-          {onNavigate && (
-            <button
-              type="button"
-              onClick={() => onNavigate('/access-requests')}
-              className="text-xs font-bold text-black underline hover:text-gold-900 cursor-pointer shrink-0"
-            >
-              View Requests &rarr;
-            </button>
-          )}
         </div>
-      )}
+      </div>
 
       {/* Toolbar */}
       <div className="bg-card p-3.5 rounded-xl border border-gold-200 shadow-xs flex flex-col sm:flex-row gap-3 items-center justify-between">

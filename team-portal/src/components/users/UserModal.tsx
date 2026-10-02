@@ -23,11 +23,14 @@ export const UserModal: React.FC<UserModalProps> = ({
 
   const getAllowedRoles = (): Role[] => {
     switch (currentUser?.role) {
-      case 'ADMIN':
-        return ['TEAM_MEMBER'];
       case 'SUPER_ADMIN':
+        return ['SUPER_ADMIN', 'ADMIN', 'TEAM_MEMBER', 'CLIENT_ADMIN', 'CLIENT'];
+      case 'ADMIN':
+        return ['ADMIN', 'TEAM_MEMBER'];
+      case 'CLIENT_ADMIN':
+        return ['CLIENT'];
       default:
-        return [];
+        return ['TEAM_MEMBER'];
     }
   };
 
@@ -155,10 +158,16 @@ export const UserModal: React.FC<UserModalProps> = ({
 
   const getRoleLabel = (r: Role) => {
     switch (r) {
+      case 'SUPER_ADMIN':
+        return 'SUPER ADMIN (Full Administrative Authority)';
+      case 'ADMIN':
+        return 'ADMIN (Studio Lead / Management)';
       case 'TEAM_MEMBER':
-        return 'TEAM MEMBER (Internal Staff)';
+        return 'TEAM MEMBER (Internal Staff / Design)';
+      case 'CLIENT_ADMIN':
+        return 'CLIENT ADMIN (Client Organization Lead)';
       case 'CLIENT':
-        return 'CLIENT (Client Company Member)';
+        return 'CLIENT (Client Stakeholder)';
       default:
         return r;
     }

@@ -85,36 +85,23 @@ usersRouter.post(
       let assignedClientId: string | null = null;
 
       if (currentUser.role === 'SUPER_ADMIN') {
-        // Super Admin defaults to creating ADMIN unless TEAM_MEMBER requested
-        if (!requestedRole || requestedRole === 'ADMIN') {
-          assignedRole = 'ADMIN';
+        // Super Admin can create SUPER_ADMIN, ADMIN, or TEAM_MEMBER
+        if (requestedRole === 'SUPER_ADMIN') {
+          assignedRole = 'SUPER_ADMIN';
         } else if (requestedRole === 'TEAM_MEMBER') {
           assignedRole = 'TEAM_MEMBER';
         } else {
-          return res.status(403).json({
-            message: 'Forbidden: Super Admin can only create Admin or Team Member accounts.',
-          });
+          assignedRole = 'ADMIN';
         }
       } else if (currentUser.role === 'ADMIN') {
-        // Admin can only create Team Members
-        if (requestedRole && requestedRole !== 'TEAM_MEMBER') {
-          return res.status(403).json({
-            message: 'Forbidden: Admins can only create Team Member accounts.',
-          });
+        // Admin can create Team Members or other Admins
+        if (requestedRole === 'ADMIN') {
+          assignedRole = 'ADMIN';
+        } else {
+          assignedRole = 'TEAM_MEMBER';
         }
-        assignedRole = 'TEAM_MEMBER';
       } else {
         return res.status(403).json({ message: 'Forbidden: Direct user creation is restricted.' });
-      }
-
-      // Enforce strict system limits: Exactly 1 ADMIN across the portal
-      if (assignedRole === 'ADMIN') {
-        const adminCount = db.getUsers().filter((u) => u.role === 'ADMIN').length;
-        if (adminCount >= 1) {
-          return res.status(400).json({
-            message: 'Only 1 Admin is allowed in the portal. An Admin account already exists.',
-          });
-        }
       }
 
       const cleanEmail = email.trim().toLowerCase();
@@ -192,11 +179,7 @@ usersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Re
     // Strict authorization matrix:
     if (!isSelf) {
       if (currentUser.role === 'SUPER_ADMIN') {
-        if (targetUser.role !== 'ADMIN' && targetUser.role !== 'CLIENT_ADMIN') {
-          return res.status(403).json({
-            message: 'Forbidden: Super Admins can only modify Admin and Client Admin accounts.',
-          });
-        }
+        // Super Admin can modify any staff or client account
       } else if (currentUser.role === 'ADMIN') {
         if (targetUser.role !== 'TEAM_MEMBER') {
           return res.status(403).json({
@@ -214,11 +197,7 @@ usersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Re
         return res.status(403).json({ message: 'You cannot change your own role.' });
       }
       if (currentUser.role === 'SUPER_ADMIN') {
-        if (role !== 'ADMIN' && role !== 'CLIENT_ADMIN') {
-          return res.status(403).json({
-            message: 'Forbidden: Super Admins can only assign Admin or Client Admin roles.',
-          });
-        }
+        // Super Admin can assign any role
       } else if (currentUser.role === 'ADMIN') {
         if (role !== 'TEAM_MEMBER') {
           return res.status(403).json({
@@ -227,21 +206,6 @@ usersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Re
         }
       } else {
         return res.status(403).json({ message: 'Forbidden: You cannot change user roles.' });
-      }
-
-      // Enforce system limits on role changes:
-      if (role === 'SUPER_ADMIN') {
-        const existingSuperAdmin = db.getUsers().find((u) => u.role === 'SUPER_ADMIN' && u.id !== id);
-        if (existingSuperAdmin) {
-          return res.status(400).json({ message: 'Only 1 Super Admin is allowed in the portal.' });
-        }
-      }
-
-      if (role === 'ADMIN') {
-        const existingAdmin = db.getUsers().find((u) => u.role === 'ADMIN' && u.id !== id);
-        if (existingAdmin) {
-          return res.status(400).json({ message: 'Only 1 Admin is allowed in the portal. An Admin account already exists.' });
-        }
       }
     }
 
@@ -320,11 +284,7 @@ usersRouter.delete(
 
     // Strict deletion authorization matrix:
     if (currentUser.role === 'SUPER_ADMIN') {
-      if (targetUser.role !== 'ADMIN' && targetUser.role !== 'CLIENT_ADMIN') {
-        return res.status(403).json({
-          message: 'Forbidden: Super Admins can only delete Admin and Client Admin accounts.',
-        });
-      }
+      // Super Admin can delete any account except themselves
     } else if (currentUser.role === 'ADMIN') {
       if (targetUser.role !== 'TEAM_MEMBER') {
         return res.status(403).json({

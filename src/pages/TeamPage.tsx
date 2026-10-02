@@ -45,12 +45,11 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
     name: '',
     email: '',
     password: '',
+    role: (role === 'SUPER_ADMIN' ? 'ADMIN' : 'TEAM_MEMBER') as Role,
   });
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [addError, setAddError] = useState('');
   const [showAddPassword, setShowAddPassword] = useState(false);
-
-  const hasAdmin = teamWorkload.some((m) => m.user.role === 'ADMIN');
 
   const fetchTeam = async () => {
     try {
@@ -76,23 +75,17 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
       return;
     }
 
-    const targetRole = (role === 'SUPER_ADMIN' ? 'ADMIN' : 'TEAM_MEMBER') as Role;
-    if (targetRole === 'ADMIN' && hasAdmin) {
-      setAddError('Only 1 Admin is allowed in the portal. An Admin account already exists.');
-      return;
-    }
-
     try {
       setAddSubmitting(true);
       await api.createUser({
         name: addForm.name.trim(),
         email: addForm.email.trim(),
         password: addForm.password.trim(),
-        role: targetRole,
+        role: addForm.role,
       });
       setIsAddModalOpen(false);
       setShowAddPassword(false);
-      setAddForm({ name: '', email: '', password: '' });
+      setAddForm({ name: '', email: '', password: '', role: (role === 'SUPER_ADMIN' ? 'ADMIN' : 'TEAM_MEMBER') as Role });
       fetchTeam();
     } catch (err: any) {
       setAddError(err.message || 'Failed to create user');
@@ -166,26 +159,20 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
         {canManage && (
           <button
             type="button"
-            disabled={role === 'SUPER_ADMIN' && hasAdmin}
             onClick={() => {
-              if (role === 'SUPER_ADMIN' && hasAdmin) return;
               setAddForm({
                 name: '',
                 email: '',
                 password: '',
+                role: (role === 'SUPER_ADMIN' ? 'ADMIN' : 'TEAM_MEMBER') as Role,
               });
               setAddError('');
               setIsAddModalOpen(true);
             }}
-            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg shadow-sm transition-colors ${
-              role === 'SUPER_ADMIN' && hasAdmin
-                ? 'bg-gold-100 text-gold-700 border border-gold-300 cursor-not-allowed opacity-75'
-                : 'btn-primary btn-hover-lift cursor-pointer'
-            }`}
-            title={role === 'SUPER_ADMIN' && hasAdmin ? 'Only 1 Admin is allowed in the portal. Admin already exists.' : undefined}
+            className="btn-primary btn-hover-lift cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg shadow-sm transition-colors"
           >
             <Plus className="h-4 w-4" />
-            {role === 'SUPER_ADMIN' ? (hasAdmin ? 'Admin Configured (1 Max)' : 'Add Admin') : 'Add Team Member'}
+            {role === 'SUPER_ADMIN' ? 'Add Staff Member' : 'Add Team Member'}
           </button>
         )}
       </div>
@@ -381,6 +368,23 @@ export const TeamPage: React.FC<TeamPageProps> = ({ onNavigate }) => {
                   className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden"
                 />
               </div>
+
+              {role === 'SUPER_ADMIN' && (
+                <div>
+                  <label className="form-label block mb-1">
+                    System Role *
+                  </label>
+                  <select
+                    value={addForm.role}
+                    onChange={(e) => setAddForm({ ...addForm, role: e.target.value as Role })}
+                    className="w-full px-3 py-2 text-sm bg-gold-50/40 border border-gold-300 rounded-lg text-heading focus:ring-2 focus:ring-gold-500 focus:outline-hidden cursor-pointer"
+                  >
+                    <option value="SUPER_ADMIN">Super Admin (Full Administrative Authority)</option>
+                    <option value="ADMIN">Admin (Studio Management)</option>
+                    <option value="TEAM_MEMBER">Team Member (Staff / Design)</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="form-label block mb-1">
