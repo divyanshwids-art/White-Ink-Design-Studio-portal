@@ -638,7 +638,7 @@ class DatabaseService {
     return this.initPromise;
   }
 
-  private async loadFromPrisma() {
+  public async loadFromPrisma() {
     if (!prisma || !this.isPrismaActive) return;
     try {
       const [
@@ -685,7 +685,7 @@ class DatabaseService {
         prisma.chatMessage.findMany().catch((err) => { console.warn('Prisma load chatMessages err:', err?.message); return []; }),
         prisma.systemSettings.findFirst().catch((err) => { console.warn('Prisma load settings err:', err?.message); return null; }),
         prisma.employeeScheduleOverride.findMany().catch((err) => { console.warn('Prisma load scheduleOverrides err:', err?.message); return []; }),
-        prisma.pushSubscription.findMany().catch((err) => { console.warn('Prisma load pushSubscriptions err:', err?.message); return []; }),
+        prisma.pushSubscriptions?.findMany().catch((err: any) => { console.warn('Prisma load pushSubscriptions err:', err?.message); return []; }) || (prisma as any).pushSubscription?.findMany().catch((err: any) => { console.warn('Prisma load pushSubscription err:', err?.message); return []; }) || [],
         prisma.accessRequest.findMany().catch((err) => { console.warn('Prisma load accessRequests err:', err?.message); return []; }),
         prisma.issuedCredential.findMany().catch((err) => { console.warn('Prisma load issuedCredentials err:', err?.message); return []; }),
         prisma.meeting.findMany().catch((err) => { console.warn('Prisma load meetings err:', err?.message); return []; }),
@@ -796,7 +796,7 @@ class DatabaseService {
           createdAt: toIsoSafe(o.createdAt),
           updatedAt: toIsoSafe(o.updatedAt),
         })) as EmployeeScheduleOverrideRecord[],
-        pushSubscriptions: pushSubscriptions.map((ps) => ({
+        pushSubscriptions: (pushSubscriptions || []).map((ps: any) => ({
           ...ps,
           createdAt: toIsoSafe(ps.createdAt),
         })) as PushSubscriptionRecord[],
@@ -846,6 +846,10 @@ class DatabaseService {
     } catch (e) {
       console.warn('Prisma load skipped or table query failed:', e);
     }
+  }
+
+  public async refreshFromPrisma(): Promise<void> {
+    await this.loadFromPrisma();
   }
 
   private ensureClientAdmins() {
@@ -1023,8 +1027,83 @@ class DatabaseService {
     return this.data.users.find((u) => u.id === id);
   }
 
+  public async getUserByIdAsync(id: string): Promise<UserRecord | undefined> {
+    const existing = this.data.users.find((u) => u.id === id);
+    if (existing) return existing;
+
+    if (prisma && this.isPrismaActive) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id },
+        });
+        if (dbUser) {
+          const userRec: UserRecord = {
+            id: dbUser.id,
+            name: dbUser.name,
+            email: dbUser.email,
+            passwordHash: dbUser.passwordHash,
+            role: dbUser.role as Role,
+            profileImage: dbUser.profileImage,
+            clientId: dbUser.clientId,
+            mustChangePassword: dbUser.mustChangePassword,
+            createdAt: dbUser.createdAt.toISOString(),
+            updatedAt: dbUser.updatedAt.toISOString(),
+          };
+          const idx = this.data.users.findIndex((u) => u.id === userRec.id);
+          if (idx === -1) {
+            this.data.users.push(userRec);
+          } else {
+            this.data.users[idx] = userRec;
+          }
+          return userRec;
+        }
+      } catch (err: any) {
+        console.warn('[DB] getUserByIdAsync prisma lookup note:', err?.message);
+      }
+    }
+    return undefined;
+  }
+
   public getUserByEmail(email: string) {
     return this.data.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  }
+
+  public async getUserByEmailAsync(email: string): Promise<UserRecord | undefined> {
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = this.data.users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) return existing;
+
+    if (prisma && this.isPrismaActive) {
+      try {
+        const dbUser = await prisma.user.findFirst({
+          where: { email: { equals: cleanEmail, mode: 'insensitive' } },
+        });
+        if (dbUser) {
+          const userRec: UserRecord = {
+            id: dbUser.id,
+            name: dbUser.name,
+            email: dbUser.email,
+            passwordHash: dbUser.passwordHash,
+            role: dbUser.role as Role,
+            profileImage: dbUser.profileImage,
+            clientId: dbUser.clientId,
+            mustChangePassword: dbUser.mustChangePassword,
+            createdAt: dbUser.createdAt.toISOString(),
+            updatedAt: dbUser.updatedAt.toISOString(),
+          };
+          const idx = this.data.users.findIndex((u) => u.id === userRec.id);
+          if (idx === -1) {
+            this.data.users.push(userRec);
+          } else {
+            this.data.users[idx] = userRec;
+          }
+          return userRec;
+        }
+      } catch (err: any) {
+        console.warn('[DB] getUserByEmailAsync prisma lookup note:', err?.message);
+      }
+    }
+    return undefined;
   }
 
   public getUserByName(name: string) {
@@ -1055,7 +1134,45 @@ class DatabaseService {
             mustChangePassword: newUser.mustChangePassword ?? false,
           },
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error('[DB] Failed to persist user to Prisma in createUser:', err?.message || err);
+        });
+    }
+
+    return newUser;
+  }
+
+  public async createUserAsync(user: Omit<UserRecord, 'createdAt' | 'updatedAt'>): Promise<UserRecord> {
+    const now = new Date().toISOString();
+    const newUser: UserRecord = {
+      ...user,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const existingIdx = this.data.users.findIndex((u) => u.id === newUser.id);
+    if (existingIdx === -1) {
+      this.data.users.push(newUser);
+    } else {
+      this.data.users[existingIdx] = newUser;
+    }
+
+    if (prisma && this.isPrismaActive) {
+      try {
+        await prisma.user.create({
+          data: {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            passwordHash: newUser.passwordHash,
+            role: newUser.role,
+            profileImage: newUser.profileImage,
+            clientId: newUser.clientId,
+            mustChangePassword: newUser.mustChangePassword ?? false,
+          },
+        });
+      } catch (err: any) {
+        console.error('[DB] Failed to persist user to Prisma in createUserAsync:', err?.message || err);
+      }
     }
 
     return newUser;
@@ -1126,6 +1243,43 @@ class DatabaseService {
     return this.data.clients.find((c) => c.id === id);
   }
 
+  public async getClientByIdAsync(id: string): Promise<ClientRecord | undefined> {
+    const existing = this.data.clients.find((c) => c.id === id);
+    if (existing) return existing;
+
+    if (prisma && this.isPrismaActive) {
+      try {
+        const dbClient = await prisma.client.findUnique({
+          where: { id },
+        });
+        if (dbClient) {
+          const clientRec: ClientRecord = {
+            id: dbClient.id,
+            name: dbClient.name,
+            company: dbClient.company,
+            email: dbClient.email,
+            phone: dbClient.phone,
+            address: dbClient.address,
+            driveFolderId: dbClient.driveFolderId || null,
+            driveFolderUrl: dbClient.driveFolderUrl || null,
+            createdAt: dbClient.createdAt.toISOString(),
+            updatedAt: dbClient.updatedAt.toISOString(),
+          };
+          const idx = this.data.clients.findIndex((c) => c.id === clientRec.id);
+          if (idx === -1) {
+            this.data.clients.push(clientRec);
+          } else {
+            this.data.clients[idx] = clientRec;
+          }
+          return clientRec;
+        }
+      } catch (err: any) {
+        console.warn('[DB] getClientByIdAsync prisma lookup note:', err?.message);
+      }
+    }
+    return undefined;
+  }
+
   public getClientByEmail(email: string) {
     return this.data.clients.find((c) => c.email.toLowerCase() === email.toLowerCase());
   }
@@ -1158,7 +1312,45 @@ class DatabaseService {
             driveFolderUrl: newClient.driveFolderUrl || null,
           },
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.error('[DB] Failed to persist client to Prisma in createClient:', err?.message || err);
+        });
+    }
+
+    return newClient;
+  }
+
+  public async createClientAsync(client: Omit<ClientRecord, 'createdAt' | 'updatedAt'>): Promise<ClientRecord> {
+    const now = new Date().toISOString();
+    const newClient: ClientRecord = {
+      ...client,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const existingIdx = this.data.clients.findIndex((c) => c.id === newClient.id);
+    if (existingIdx === -1) {
+      this.data.clients.push(newClient);
+    } else {
+      this.data.clients[existingIdx] = newClient;
+    }
+
+    if (prisma && this.isPrismaActive) {
+      try {
+        await prisma.client.create({
+          data: {
+            id: newClient.id,
+            name: newClient.name,
+            company: newClient.company,
+            email: newClient.email,
+            phone: newClient.phone,
+            address: newClient.address,
+            driveFolderId: newClient.driveFolderId || null,
+            driveFolderUrl: newClient.driveFolderUrl || null,
+          },
+        });
+      } catch (err: any) {
+        console.error('[DB] Failed to persist client to Prisma in createClientAsync:', err?.message || err);
+      }
     }
 
     return newClient;

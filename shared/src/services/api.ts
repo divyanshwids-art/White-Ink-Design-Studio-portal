@@ -214,7 +214,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  createClientWithLogin: (payload: { name: string; company: string; email: string; phone?: string; address?: string }) =>
+  createClientWithLogin: (payload: { name: string; company: string; email: string; phone?: string; address?: string; password?: string }) =>
     request<Client & { generatedPassword?: string; loginEmail?: string }>('/clients/with-login', {
       method: 'POST',
       body: JSON.stringify(payload),

@@ -119,7 +119,7 @@ clientsRouter.post(
 
       // 1. Create the Client record
       const clientId = `cli_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      const newClient = db.createClient({
+      const newClient = await db.createClientAsync({
         id: clientId,
         name: cleanName,
         company: company.trim(),
@@ -128,13 +128,16 @@ clientsRouter.post(
         address: address ? address.trim() : null,
       });
 
-      // 2. Auto-generate strong password
-      const plaintextPassword = generateStrongPassword(12);
+      // 2. Use provided password or auto-generate strong password
+      const plaintextPassword =
+        req.body.password && typeof req.body.password === 'string' && req.body.password.trim().length >= 6
+          ? req.body.password.trim()
+          : generateStrongPassword(12);
       const passwordHash = await hashPassword(plaintextPassword);
 
       // 3. Create User record with role CLIENT_ADMIN, linked clientId, mustChangePassword: false
       const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      const newUser = db.createUser({
+      const newUser = await db.createUserAsync({
         id: userId,
         name: cleanName,
         email: cleanEmail,

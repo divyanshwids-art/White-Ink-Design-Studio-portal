@@ -20,7 +20,13 @@ authRouter.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
 
-    const user = db.getUserByEmail(email.trim());
+    let user = db.getUserByEmail(email.trim());
+    if (!user) {
+      // Sync fresh data from PostgreSQL in case user was added by another process/portal
+      await db.refreshFromPrisma().catch(() => {});
+      user = (await db.getUserByEmailAsync(email.trim())) || db.getUserByEmail(email.trim());
+    }
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }

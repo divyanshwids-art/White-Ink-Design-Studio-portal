@@ -81,7 +81,7 @@ export function sanitizeUser(user: UserRecord) {
   return safeUser;
 }
 
-export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   let authHeader = (req.headers.authorization || req.headers['x-access-token']) as string | undefined;
   if (!authHeader) {
     return res.status(401).json({ message: 'Authentication required. Missing or malformed token.' });
@@ -106,6 +106,9 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
   let user = db.getUserById(payload.userId);
   if (!user && payload.email) {
     user = db.getUserByEmail(payload.email);
+  }
+  if (!user) {
+    user = (await db.getUserByIdAsync(payload.userId)) || (payload.email ? await db.getUserByEmailAsync(payload.email) : undefined);
   }
   if (!user) {
     return res.status(401).json({ message: 'User account not found.' });

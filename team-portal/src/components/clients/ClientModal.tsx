@@ -24,6 +24,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [customPassword, setCustomPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,12 +45,14 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       setEmail(client.email || '');
       setPhone(client.phone || '');
       setAddress(client.address || '');
+      setCustomPassword('');
     } else {
       setName('');
       setCompany('');
       setEmail('');
       setPhone('');
       setAddress('');
+      setCustomPassword('');
     }
     setError(null);
     setCreatedCredentials(null);
@@ -84,6 +87,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           email: email.trim().toLowerCase(),
           phone: phone.trim() || undefined,
           address: address.trim() || undefined,
+          password: customPassword.trim() || undefined,
         });
 
         if (res.generatedPassword) {
@@ -298,10 +302,25 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         </div>
 
         {!isEditing && (
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
+              Custom Password <span className="text-neutral-500 font-normal lowercase">(optional - leave blank to auto-generate)</span>
+            </label>
+            <input
+              type="text"
+              value={customPassword}
+              onChange={(e) => setCustomPassword(e.target.value)}
+              placeholder="e.g. 123456 (min 6 characters)"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-gold-300 rounded-lg text-black focus:outline-hidden focus:ring-2 focus:ring-gold-500 font-medium"
+            />
+          </div>
+        )}
+
+        {!isEditing && (
           <div className="p-3 bg-gold-50/70 border border-gold-200 rounded-xl flex items-center gap-2.5 text-xs text-black/80 font-medium">
             <KeyRound className="h-4 w-4 text-gold-700 shrink-0" />
             <span>
-              A Client Admin account with auto-generated secure credentials will be created immediately.
+              A Client Admin account will be created immediately with credentials you can copy or view in Credentials Vault.
             </span>
           </div>
         )}

@@ -6,6 +6,21 @@ export async function getSeedData() {
   const salt = await bcrypt.genSalt(10);
   const adminPasswordHash = await bcrypt.hash('123456', salt);
 
+  const clientPasswordHash = await bcrypt.hash('123456', salt);
+
+  const clients = [
+    {
+      id: 'cli_google_01',
+      name: 'jiya',
+      company: 'google',
+      email: 'jiyawids@gmail.com',
+      phone: null,
+      address: null,
+      driveFolderId: null,
+      driveFolderUrl: null,
+    },
+  ];
+
   const users = [
     {
       id: 'usr_superadmin_01',
@@ -16,9 +31,16 @@ export async function getSeedData() {
       clientId: null,
       profileImage: null,
     },
+    {
+      id: 'usr_jiya_01',
+      name: 'jiya',
+      email: 'jiyawids@gmail.com',
+      passwordHash: clientPasswordHash,
+      role: 'CLIENT_ADMIN' as Role,
+      clientId: 'cli_google_01',
+      profileImage: null,
+    },
   ];
-
-  const clients: any[] = [];
   const projects: any[] = [];
   const projectMembers: any[] = [];
   const tasks: any[] = [];
